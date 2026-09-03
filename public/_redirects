@@ -7,3 +7,7 @@
 # Verified against the live site: /partial-trailer-wrap/ returns 301 -> /
 /partial-trailer-wrap/  /  301
 /partial-trailer-wrap   /  301
+
+# /catalogues/ returns 301 -> /catalogues-color-selection-vwt/
+/catalogues/  /catalogues-color-selection-vwt/  301
+/catalogues   /catalogues-color-selection-vwt/  301
