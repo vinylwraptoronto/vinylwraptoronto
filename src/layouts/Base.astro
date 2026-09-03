@@ -1,0 +1,69 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { site } from '../data/site';
+import '../styles/tokens.css';
+import '../styles/global.css';
+
+export interface Props {
+  title: string;
+  description?: string;
+  canonical?: string;
+  ogImage?: string | null;
+}
+
+const { title, description = '', canonical, ogImage } = Astro.props;
+const canonicalUrl = canonical ?? new URL(Astro.url.pathname, site.url).href;
+const ogImageUrl = ogImage ? new URL(ogImage, site.url).href : undefined;
+---
+
+<!doctype html>
+<html lang="en-CA">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    <link rel="canonical" href={canonicalUrl} />
+
+    <meta property="og:locale" content="en_CA" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:site_name" content={site.name} />
+    {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Self-hosted, exactly the faces the live site serves. "Roboto Slab" is
+         declared in the Elementor kit but loads no face there, so it is not
+         requested here either. -->
+    <link rel="preconnect" href="/" />
+    <link rel="stylesheet" href="/fonts/poppins.css" />
+    <link rel="stylesheet" href="/fonts/roboto.css" />
+
+    <link rel="sitemap" href="/sitemap-index.xml" />
+  </head>
+
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <Header />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+
+    <style is:global>
+      .skip {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        background: var(--e-global-color-d077a13);
+        color: #fff;
+        padding: 10px 16px;
+        z-index: 999;
+      }
+      .skip:focus { left: 0; }
+    </style>
+  </body>
+</html>

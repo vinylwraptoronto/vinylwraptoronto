@@ -1,0 +1,89 @@
+/* ---------------------------------------------------------------------------
+ * Globals. Values here are measured off the live site with getComputedStyle at
+ * 1440px, not read off the kit — a kit declaration routinely loses the cascade
+ * to a per-element rule, so what computes is what gets ported.
+ * ------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  /* measured: 16px / 24px, #333 on #fff */
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--body-text);
+  background-color: #ffffff;
+  overflow-x: hidden;
+}
+
+img,
+video { max-width: 100%; height: auto; }
+
+a { color: var(--brand-green); }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans);
+  margin: 0 0 16px;
+}
+
+/* measured h2: 45px / 58.5px, weight 600, #14A278, capitalize */
+h2 {
+  font-size: 45px;
+  line-height: 58.5px;
+  font-weight: 600;
+  color: var(--brand-green);
+  text-transform: capitalize;
+}
+
+/* measured h3: 21px / 21px, weight 400, capitalize.
+   The measured colour was #fff because the first h3 on the homepage sits on a
+   dark panel; the default here is the body ink and sections that need white
+   set it themselves. */
+h3 {
+  font-size: 21px;
+  line-height: 1.3;
+  font-weight: 400;
+  text-transform: capitalize;
+  color: var(--ink-strong);
+}
+
+h1 {
+  font-size: 40px;
+  line-height: 1.25;
+  font-weight: 600;
+  color: var(--brand-navy);
+}
+
+h4 { font-size: 18px; font-weight: 500; color: var(--ink-strong); }
+
+p { margin: 0 0 16px; }
+
+.container {
+  max-width: var(--container-max-width);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* .elementor-widget:not(:last-child){margin-block-end:20px} */
+.stack > * + * { margin-block-start: var(--widget-gap); }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+@media (max-width: 1024px) {
+  h1 { font-size: 34px; }
+  h2 { font-size: 34px; line-height: 1.3; }
+}
+
+@media (max-width: 767px) {
+  h1 { font-size: 28px; }
+  h2 { font-size: 26px; line-height: 1.3; }
+  h3 { font-size: 19px; }
+}

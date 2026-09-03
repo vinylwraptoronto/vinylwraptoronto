@@ -1,0 +1,202 @@
+---
+/**
+ * Footer — port of Elementor template 18407.
+ *
+ * Columns sit on the navy (#15334C, --e-global-color-d077a13) with 15px padding;
+ * headings are 20px/500 uppercase white; icon-list text is 16px/400 white.
+ * The bottom credit bar (#b853c7a) is white.
+ */
+import { site, social, legalLinks } from '../data/site';
+import {
+  areasServed, areasIndex, workflow, fasterProcess, warranty, credit, hours, addressFull,
+} from '../data/footer';
+---
+
+<footer class="site-footer">
+  <div class="cols">
+    <!-- #70aa3a51 — navy column -->
+    <section class="col">
+      <h2>Areas We Serve</h2>
+      <ul class="list list--green">
+        {areasServed.map((a) => (
+          <li><a href={a.href}>{a.text}</a></li>
+        ))}
+        <li><a href={areasIndex.href}>{areasIndex.text}</a></li>
+      </ul>
+    </section>
+
+    <!-- #6ef5e811 — contact column, pink icons (#32151746) -->
+    <section class="col">
+      <h2>Contact Us</h2>
+      <ul class="list list--pink">
+        <li><a href={site.phoneHref}>{site.phone}</a></li>
+        <li><a href={`mailto:${site.email}`}>{site.email}</a></li>
+        <li><a href={site.mapUrl} rel="noopener">{addressFull}</a></li>
+        <li>{hours}</li>
+      </ul>
+    </section>
+
+    <section class="col">
+      <h2>Workflow</h2>
+      <ul class="list list--green">
+        {workflow.map((w) => <li>{w}</li>)}
+      </ul>
+      <h2>Things that make the process Faster</h2>
+      <ul class="list list--green">
+        {fasterProcess.map((w) => <li>{w}</li>)}
+      </ul>
+    </section>
+
+    <section class="col">
+      <h2>Warranty</h2>
+      <ul class="list list--green"><li>{warranty}</li></ul>
+
+      <h2>Get a Quote</h2>
+      <!-- #89ec862 — navy button, green border, green on hover -->
+      <p class="btns">
+        <a class="btn btn--solid" href={site.phoneHref}>Get an Estimate {site.phone}</a>
+        <a class="btn btn--ghost" href="/contact/">Send a Message</a>
+      </p>
+
+      <ul class="social">
+        {social.map((s) => (
+          <li><a href={s.href} rel="noopener">{s.name}</a></li>
+        ))}
+      </ul>
+    </section>
+  </div>
+
+  <!-- #b853c7a — white credit bar -->
+  <div class="credit">
+    <p>{credit.copyright}</p>
+    <ul class="legal">
+      {legalLinks.map((l) => (
+        <li><a href={l.href}>{l.text}</a></li>
+      ))}
+    </ul>
+    <p>
+      <a href={credit.byHref} rel="noopener">{credit.byText}</a>
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer { font-family: 'Poppins', sans-serif; }
+
+  .cols {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    background: var(--e-global-color-d077a13); /* #15334C */
+  }
+
+  /* #70aa3a51 / #6ef5e811 > .elementor-element-populated{padding:15px} */
+  .col {
+    background: var(--e-global-color-d077a13);
+    padding: 15px;
+    color: #ffffff;
+  }
+
+  /* #51a60bc8 / #e935660 / #71701d39 .elementor-heading-title */
+  .col h2 {
+    font-size: 20px;
+    font-weight: 500;
+    text-transform: uppercase;
+    color: var(--e-global-color-accent); /* #FFFFFF */
+    margin: 0 0 12px;
+    line-height: 1.3;
+  }
+  .col h2 + ul + h2 { margin-top: 22px; }
+
+  /* #441ba18 icon-list: 16px/400 white, 10px/2 spacing between items */
+  .list {
+    list-style: none;
+    margin: 0 0 4px;
+    padding: 0;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+  .list > li {
+    padding-block-end: calc(10px / 2);
+    padding-inline-start: 22px;
+    position: relative;
+    color: #ffffff;
+  }
+  .list > li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  /* #441ba18 icons are green; #32151746 icons are pink */
+  .list--green > li::before { background: var(--e-global-color-8c22d81); /* #14A278 */ }
+  .list--pink > li::before { background: var(--e-global-color-f32bb28); /* #FF0099 */ }
+
+  .list a { color: #ffffff; text-decoration: none; }
+  .list a:hover { text-decoration: underline; }
+
+  .btns { display: flex; flex-direction: column; gap: 8px; margin: 0 0 16px; }
+
+  .btn {
+    display: inline-block;
+    font-size: 16px;
+    font-weight: 500;
+    color: #ffffff;
+    text-decoration: none;
+    border: 1px solid var(--e-global-color-a8178e9); /* #99CC33 */
+    text-align: center;
+  }
+  /* #89ec862 */
+  .btn--solid {
+    background-color: var(--e-global-color-d077a13);
+    padding: 8px 15px;
+  }
+  /* #556696d — transparent, 0 15px 5px */
+  .btn--ghost {
+    background-color: transparent;
+    padding: 0 15px 5px;
+  }
+  .btn:hover { background-color: var(--e-global-color-a8178e9); }
+
+  .social {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+  }
+  .social a { color: #ffffff; text-decoration: none; }
+  .social a:hover { color: var(--e-global-color-f32bb28); }
+
+  /* #b853c7a — white credit bar */
+  .credit {
+    background-color: #ffffff;
+    padding: 12px 15px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 20px;
+    font-size: 14px;
+    color: var(--e-global-color-text);
+  }
+  .credit p { margin: 0; }
+  .credit a { color: var(--e-global-color-d077a13); text-decoration: none; }
+  .credit a:hover { color: var(--e-global-color-f32bb28); }
+
+  .legal { display: flex; gap: 16px; list-style: none; margin: 0; padding: 0; }
+
+  @media (max-width: 1024px) {
+    .cols { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 767px) {
+    .cols { grid-template-columns: 1fr; }
+    .credit { justify-content: flex-start; }
+  }
+</style>

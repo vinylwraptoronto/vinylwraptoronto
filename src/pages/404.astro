@@ -1,0 +1,51 @@
+---
+/**
+ * Workers does not infer 404 handling. This page plus
+ * `assets.not_found_handling: "404-page"` in wrangler.jsonc is what stops an
+ * unknown address returning a bare error.
+ */
+import Base from '../layouts/Base.astro';
+import { site } from '../data/site';
+
+export const prerender = true;
+---
+
+<Base title={`Page not found — ${site.name}`} description="The page you were looking for could not be found.">
+  <section class="nf">
+    <div class="container">
+      <h1>Page not found</h1>
+      <p>
+        The page you were looking for is not here. It may have moved, or the
+        address may be slightly off.
+      </p>
+      <p class="actions">
+        <a class="btn" href="/">Back to home</a>
+        <a class="btn btn--ghost" href="/contact/">Contact us</a>
+        <a class="btn btn--ghost" href={site.phoneHref}>Call {site.phone}</a>
+      </p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .nf { padding: 70px 0 90px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .btn {
+    display: inline-block;
+    background-color: var(--e-global-color-d077a13);
+    color: var(--e-global-color-accent);
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 15px;
+    line-height: 15px;
+    padding: 12px 24px;
+    text-decoration: none;
+  }
+  .btn:hover { background-color: var(--e-global-color-a8178e9); }
+  .btn--ghost {
+    background-color: transparent;
+    color: var(--e-global-color-d077a13);
+    border: 1px solid var(--e-global-color-a8178e9);
+  }
+  .btn--ghost:hover { color: #fff; }
+</style>

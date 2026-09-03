@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vinylwraptoronto",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "dist/_worker.js/index.js",
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS",
+    // Workers does not infer 404 handling. This serves src/pages/404.astro
+    // for any address that does not match a prerendered page.
+    "not_found_handling": "404-page"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

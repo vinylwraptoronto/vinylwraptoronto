@@ -1,0 +1,32 @@
+---
+/**
+ * One route for every address in page-sitemap.xml.
+ *
+ * Slugs match the live URLs exactly, so the addresses the old site serves keep
+ * working without a redirect for anything in this set.
+ */
+import Base from '../layouts/Base.astro';
+import Blocks from '../components/Blocks.astro';
+import type { PageData } from '../types';
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const files = import.meta.glob<PageData>('../data/pages/*.json', { eager: true, import: 'default' });
+  return Object.values(files).map((page) => ({
+    params: { slug: page.slug === '' ? undefined : page.slug },
+    props: { page },
+  }));
+}
+
+const { page } = Astro.props as { page: PageData };
+---
+
+<Base
+  title={page.title}
+  description={page.description}
+  canonical={page.url || undefined}
+  ogImage={page.ogImage}
+>
+  <Blocks sections={page.sections} />
+</Base>

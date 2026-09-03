@@ -1,0 +1,202 @@
+---
+/**
+ * Renders the block model produced from each live page's Elementor markup.
+ *
+ * Elementor's nesting is not reproduced — it is a builder artefact, not the
+ * design. Each page is reduced to ordered sections of typed blocks and drawn
+ * with the measured type scale and palette.
+ */
+import type { Section } from '../types';
+
+export interface Props {
+  sections: Section[];
+}
+
+const { sections } = Astro.props;
+const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined);
+---
+
+{sections.map((section) => (
+  <section class="sec" data-eid={section.id ?? undefined}>
+    <div class="container stack">
+      {section.blocks.map((b) => {
+        if (b.type === 'heading') {
+          const Tag = `h${Math.min(Math.max(b.level, 1), 6)}` as 'h1';
+          return (
+            <Tag>{b.href ? <a class="hlink" href={b.href}>{b.text}</a> : b.text}</Tag>
+          );
+        }
+
+        if (b.type === 'text') return <div class="rt" set:html={b.html} />;
+
+        if (b.type === 'image') {
+          const img = (
+            <img
+              src={b.src}
+              alt={b.alt}
+              width={num(b.width)}
+              height={num(b.height)}
+              loading="lazy"
+              decoding="async"
+            />
+          );
+          return <figure class="fig">{b.href ? <a href={b.href}>{img}</a> : img}</figure>;
+        }
+
+        if (b.type === 'button') return <p><a class="btn" href={b.href}>{b.text}</a></p>;
+
+        if (b.type === 'list') {
+          return (
+            <ul class="ilist">
+              {b.items.map((i) => (
+                <li>{i.href ? <a href={i.href}>{i.text}</a> : i.text}</li>
+              ))}
+            </ul>
+          );
+        }
+
+        if (b.type === 'feature') {
+          return (
+            <div class="feature">
+              {b.title && <h3>{b.title}</h3>}
+              {b.text && <p>{b.text}</p>}
+            </div>
+          );
+        }
+
+        if (b.type === 'gallery') {
+          return (
+            <div class="gallery">
+              {b.images.map((i) => (
+                <img src={i.src} alt={i.alt} loading="lazy" decoding="async" />
+              ))}
+            </div>
+          );
+        }
+
+        if (b.type === 'faq') {
+          return (
+            <div class="faq">
+              {b.items.map((qa) => (
+                <details>
+                  <summary>{qa.q}</summary>
+                  <div class="rt" set:html={qa.a} />
+                </details>
+              ))}
+            </div>
+          );
+        }
+
+        if (b.type === 'video') {
+          return (
+            <div class="video">
+              <iframe
+                src={b.src}
+                title="Video"
+                loading="lazy"
+                allowfullscreen
+                referrerpolicy="strict-origin-when-cross-origin"
+              ></iframe>
+            </div>
+          );
+        }
+
+        return null;
+      })}
+    </div>
+  </section>
+))}
+
+<style>
+  .sec { padding: 34px 0; }
+  .sec:first-child { padding-top: 26px; }
+
+  .rt :global(p) { margin: 0 0 16px; }
+  .rt :global(p:last-child) { margin-bottom: 0; }
+  .rt :global(ul),
+  .rt :global(ol) { margin: 0 0 16px; padding-inline-start: 22px; }
+  .rt :global(li) { margin-bottom: 6px; }
+  .rt :global(a) { color: var(--brand-green); }
+  .rt :global(a:hover) { color: var(--brand-pink); }
+  .rt :global(h2),
+  .rt :global(h3),
+  .rt :global(h4) { margin-top: 24px; }
+
+  .hlink { color: inherit; text-decoration: none; }
+  .hlink:hover { color: var(--brand-pink); }
+
+  .fig { margin: 0; }
+  .fig img { display: block; border-radius: 4px; }
+
+  /* Button styling follows the header CTA: navy, green on hover, square. */
+  .btn {
+    display: inline-block;
+    background-color: var(--e-global-color-d077a13);
+    color: var(--e-global-color-accent);
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 15px;
+    line-height: 15px;
+    padding: 12px 24px;
+    border-radius: 0;
+    text-decoration: none;
+  }
+  .btn:hover { background-color: var(--e-global-color-a8178e9); }
+
+  .ilist { list-style: none; margin: 0; padding: 0; }
+  .ilist > li {
+    position: relative;
+    padding-inline-start: 22px;
+    padding-block-end: 5px;
+  }
+  .ilist > li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--brand-green);
+  }
+  .ilist a { color: inherit; text-decoration: none; }
+  .ilist a:hover { color: var(--brand-pink); }
+
+  .feature { padding: 16px; background: var(--panel); border-radius: 4px; }
+  .feature h3 { margin-bottom: 8px; }
+  .feature p { margin: 0; }
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  .gallery img { width: 100%; display: block; border-radius: 4px; }
+
+  .faq details {
+    border-bottom: 1px solid var(--rule);
+    padding: 12px 0;
+  }
+  .faq summary {
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 18px;
+    color: var(--brand-navy);
+  }
+  .faq summary:hover { color: var(--brand-pink); }
+
+  .video { position: relative; padding-top: 56.25%; }
+  .video iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
+  @media (max-width: 767px) {
+    .sec { padding: 24px 0; }
+    .gallery { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  }
+</style>

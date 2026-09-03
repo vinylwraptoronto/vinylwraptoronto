@@ -1,0 +1,68 @@
+/* ---------------------------------------------------------------------------
+ * Design tokens, taken verbatim from the live Elementor kit.
+ *
+ * Source: the `elementor-frontend-inline-css` <style> block served on every
+ * page (Elementor CSS Print Method = Internal Embedding, so there is no
+ * /uploads/elementor/css/post-N.css to read — nothing 404s, the rules are in
+ * the HTML).
+ *
+ * Near-duplicate values are kept where they were found. Elementor drift is not
+ * a mistake to tidy: collapsing #14A278 and a neighbouring green into one token
+ * is a visible change to the design.
+ * ------------------------------------------------------------------------- */
+
+:root {
+  /* --- kit palette, .elementor-kit-* verbatim ---------------------------- */
+  --e-global-color-primary: #000000;
+  --e-global-color-secondary: #232323;
+  --e-global-color-text: #444444;
+  --e-global-color-accent: #ffffff;
+  --e-global-color-f4d2693: #353535;
+  --e-global-color-5a5fe09: #d3d3d3;
+  --e-global-color-f32bb28: #ff0099;
+  --e-global-color-a8178e9: #99cc33;
+  --e-global-color-d077a13: #15334c;
+  --e-global-color-2b9d0eb: #dcdc90;
+  --e-global-color-8c22d81: #14a278;
+  --e-global-color-e591e0d: #f4dceb;
+
+  /* Readable aliases for the same values. The kit names above stay authoritative
+     so a re-port after a redesign is a diff, not a rediscovery. */
+  --brand-green: var(--e-global-color-8c22d81);  /* #14A278 — h2 colour, measured */
+  --brand-pink: var(--e-global-color-f32bb28);   /* #FF0099 — nav + accents, measured */
+  --brand-navy: var(--e-global-color-d077a13);   /* #15334C */
+  --ink: var(--e-global-color-text);             /* #444444 */
+  --ink-strong: var(--e-global-color-secondary); /* #232323 */
+  --body-text: #333333;                          /* measured on <body>, not the kit */
+  --rule: #c7c7c7;
+  --panel: #f8f8f8;
+
+  /* --- typography ------------------------------------------------------- */
+  /* Kit declares four families. Settled by measurement, not by reading:
+     Poppins renders (300/400/500/600/700/900 all load), Roboto renders at 400,
+     and "Roboto Slab" — declared as --e-global-typography-secondary — loads no
+     face at all and measures identical to a bogus family. It is not imported. */
+  --e-global-typography-primary-font-family: 'Poppins';
+  --e-global-typography-primary-font-weight: 500;
+  --e-global-typography-text-font-family: 'Roboto';
+  --e-global-typography-text-font-weight: 400;
+  --e-global-typography-accent-font-family: 'Roboto';
+  --e-global-typography-accent-font-weight: 500;
+
+  --font-sans: 'Poppins', sans-serif;
+  --font-text: 'Roboto', sans-serif;
+
+  /* --- layout ----------------------------------------------------------- */
+  /* .e-con{--container-max-width} at each of Elementor's two breakpoints. */
+  --container-max-width: 1200px;
+  --gutter: 20px;
+  --widget-gap: 20px; /* .elementor-widget:not(:last-child){margin-block-end:20px} */
+}
+
+/* Elementor's two breakpoints — every other rule on the site keys off these. */
+@media (max-width: 1024px) {
+  :root { --container-max-width: 1024px; }
+}
+@media (max-width: 767px) {
+  :root { --container-max-width: 767px; }
+}
