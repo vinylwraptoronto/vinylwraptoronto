@@ -15,9 +15,22 @@ export type Block =
   | { type: 'feature'; title: string; text: string }
   | { type: 'gallery'; images: { src: string; alt: string }[] }
   | { type: 'faq'; items: { q: string; a: string }[] }
-  | { type: 'video'; src: string };
+  | { type: 'video'; src: string }
+  | {
+      /* The jet-image-comparison before/after slider on wraps-before-after. */
+      type: 'compare';
+      pairs: {
+        before: { src: string; alt: string };
+        after: { src: string; alt: string };
+        beforeLabel: string;
+        afterLabel: string;
+      }[];
+    };
 
 export type Section = { id?: string | null; blocks: Block[] };
+
+/** page | post | archive | story — archives carry the slugs they list. */
+export type PageKind = 'page' | 'post' | 'archive' | 'story';
 
 export type PageData = {
   slug: string;
@@ -25,5 +38,20 @@ export type PageData = {
   title: string;
   description: string;
   ogImage: string | null;
+  kind: PageKind;
   sections: Section[];
+  published?: string | null;
+  modified?: string | null;
+  author?: string | null;
+  /** archive only: the addresses this page lists, newest first */
+  members?: string[];
+};
+
+export type Summary = {
+  slug: string;
+  title: string;
+  description: string;
+  image: string | null;
+  published: string | null;
+  kind: PageKind;
 };

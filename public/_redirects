@@ -1,0 +1,9 @@
+# Redirects served by Cloudflare Workers static assets.
+#
+# Addresses that are linked from site content but are 301s on the live site
+# rather than real pages. Keeping the same behaviour means the ported pages
+# link exactly where they did before.
+#
+# Verified against the live site: /partial-trailer-wrap/ returns 301 -> /
+/partial-trailer-wrap/  /  301
+/partial-trailer-wrap   /  301

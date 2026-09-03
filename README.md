@@ -87,13 +87,48 @@ Three things the original does that a naive rebuild gets wrong, all handled in
 
 ## Scope
 
-Ported: the **58 addresses in `page-sitemap.xml`** — home, services, vehicle
-types, Tesla, signage, PPF, portfolio, contact and legal pages. All 58 were
-built from their own source CSS and markup; none are inferred.
+**All 676 addresses** in the sitemaps are built:
 
-Not in this repository yet: the ~403 blog posts, 70 before/after entries, 42
-categories, 91 brand pages and 3 web stories that make up the rest of the 676
-addresses in the sitemaps.
+| Kind | Count | Notes |
+|---|---|---|
+| Pages | 58 | home, services, vehicle types, Tesla, signage, PPF, contact, legal |
+| Posts | 478 | blog posts plus the `wraps-before-after` entries |
+| Archives | 138 | categories, vehicle brands, and the index listings |
+| Web stories | 2 | converted, see below |
+
+### Archives are regenerated, not ported
+
+The category and brand archives render their listings **client-side** on the
+live site — the post-to-term relationship appears in no served HTML, so there is
+nothing to port. Those listings are rebuilt from the real mapping returned by
+the site's own REST API (`/wp/v2/categories`, `/wp/v2/blogs_vehicles_brand`,
+`/wp/v2/posts`), which is authoritative. Matching posts to terms by title would
+have been inference dressed up as a port.
+
+`src/data/summaries.json` holds the card data; `members` on each archive page
+holds the addresses it lists, newest first.
+
+### Web stories are converted, not ported
+
+The two `/web-stories/` addresses are AMP documents (`amp-story`), not Elementor
+pages. Their text and images are carried over into ordinary pages; the story
+player itself is not reproduced. They are recorded as **converted**, not ported.
+
+## Checks
+
+```bash
+node scripts/verify.mjs   # cascade checks — drives the submenu open and closed
+node scripts/sweep.mjs    # every internal link and image across all 676 pages
+```
+
+`verify.mjs` checks by cascade rather than by grep, because a declaration can be
+present, correct, and still lose. `sweep.mjs` walks the built output: 91,133
+internal links, 3,275 image references, zero dead, zero missing, zero empty
+pages.
+
+`/partial-trailer-wrap/` is linked from three pages but is a **301 to the
+homepage** on the live site, not a page. `public/_redirects` reproduces that
+redirect rather than inventing a page for it.
 
 ## Local development
 

@@ -1,18 +1,23 @@
 ---
 /**
- * One route for every address in page-sitemap.xml.
+ * One route for every address on the site — 676 of them: pages, posts,
+ * category and brand archives, the index listings, and the two web stories.
  *
- * Slugs match the live URLs exactly, so the addresses the old site serves keep
- * working without a redirect for anything in this set.
+ * Slugs match the live URLs exactly, so every address the old site serves keeps
+ * working without a redirect.
  */
 import Base from '../layouts/Base.astro';
 import Blocks from '../components/Blocks.astro';
+import ArchiveList from '../components/ArchiveList.astro';
 import type { PageData } from '../types';
 
 export const prerender = true;
 
 export async function getStaticPaths() {
-  const files = import.meta.glob<PageData>('../data/pages/*.json', { eager: true, import: 'default' });
+  const files = import.meta.glob<PageData>('../data/pages/*.json', {
+    eager: true,
+    import: 'default',
+  });
   return Object.values(files).map((page) => ({
     params: { slug: page.slug === '' ? undefined : page.slug },
     props: { page },
@@ -20,6 +25,14 @@ export async function getStaticPaths() {
 }
 
 const { page } = Astro.props as { page: PageData };
+
+const dateLabel = page.published
+  ? new Date(page.published).toLocaleDateString('en-CA', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  : null;
 ---
 
 <Base
@@ -28,5 +41,29 @@ const { page } = Astro.props as { page: PageData };
   canonical={page.url || undefined}
   ogImage={page.ogImage}
 >
+  {page.kind === 'post' && dateLabel && (
+    <div class="postmeta">
+      <div class="container">
+        <time datetime={page.published!}>{dateLabel}</time>
+        {page.author && <span class="by">by {page.author}</span>}
+      </div>
+    </div>
+  )}
+
   <Blocks sections={page.sections} />
+
+  {page.kind === 'archive' && page.members && page.members.length > 0 && (
+    <ArchiveList members={page.members} />
+  )}
 </Base>
+
+<style>
+  .postmeta {
+    border-bottom: 1px solid #ececec;
+    padding: 14px 0;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    color: #767676;
+  }
+  .postmeta .by { margin-left: 12px; }
+</style>
