@@ -12,7 +12,13 @@ export type Block =
     }
   | { type: 'button'; text: string; href: string }
   | { type: 'list'; items: { text: string; href?: string | null }[] }
-  | { type: 'feature'; title: string; text: string }
+  | { type: 'feature'; title: string; text: string; image?: string | null; alt?: string }
+  | { type: 'cards'; cards: { title: string; href: string; image: string | null }[] }
+  | {
+      type: 'postnav';
+      prev?: { href: string; text: string };
+      next?: { href: string; text: string };
+    }
   | { type: 'gallery'; images: { src: string; alt: string }[] }
   | { type: 'faq'; items: { q: string; a: string }[] }
   | { type: 'video'; src: string }
