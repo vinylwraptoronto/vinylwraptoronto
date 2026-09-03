@@ -10,9 +10,11 @@ export interface Props {
   description?: string;
   canonical?: string;
   ogImage?: string | null;
+  /** Carried from the original: most taxonomy archives are noindex there. */
+  robots?: string | null;
 }
 
-const { title, description = '', canonical, ogImage } = Astro.props;
+const { title, description = '', canonical, ogImage, robots } = Astro.props;
 const canonicalUrl = canonical ?? new URL(Astro.url.pathname, site.url).href;
 const ogImageUrl = ogImage ? new URL(ogImage, site.url).href : undefined;
 ---
@@ -24,6 +26,7 @@ const ogImageUrl = ogImage ? new URL(ogImage, site.url).href : undefined;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
+    {robots && <meta name="robots" content={robots} />}
     <link rel="canonical" href={canonicalUrl} />
 
     <meta property="og:locale" content="en_CA" />

@@ -14,6 +14,10 @@ export type Block =
   | { type: 'list'; items: { text: string; href?: string | null }[] }
   | { type: 'feature'; title: string; text: string; image?: string | null; alt?: string }
   | { type: 'cards'; cards: { title: string; href: string; image: string | null }[] }
+  /* Both are built client-side on the live site, so they are regenerated at
+     render time rather than ported as markup that would arrive empty. */
+  | { type: 'toc'; title: string }
+  | { type: 'categories'; title: string }
   | {
       type: 'postnav';
       prev?: { href: string; text: string };
@@ -44,6 +48,7 @@ export type PageData = {
   title: string;
   description: string;
   ogImage: string | null;
+  robots?: string | null;
   kind: PageKind;
   sections: Section[];
   published?: string | null;

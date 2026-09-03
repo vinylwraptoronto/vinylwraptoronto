@@ -7,6 +7,7 @@
  * with the measured type scale and palette.
  */
 import type { Section } from '../types';
+import categories from '../data/categories.json';
 
 export interface Props {
   sections: Section[];
@@ -14,6 +15,19 @@ export interface Props {
 
 const { sections } = Astro.props;
 const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined);
+
+/** Stable anchor id from heading text, so the table of contents can link to it. */
+const slugify = (t: string) =>
+  t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+
+/* The live table of contents is built client-side from the page's own h2/h3s.
+   Rebuilt here from the same source so it lists the same entries. */
+const tocEntries = sections
+  .flatMap((s) => s.blocks)
+  .filter((b): b is Extract<typeof b, { type: 'heading' }> =>
+    b.type === 'heading' && (b.level === 2 || b.level === 3))
+  .map((b) => ({ text: b.text, level: b.level, id: slugify(b.text) }))
+  .filter((e) => e.id);
 ---
 
 {sections.map((section) => (
@@ -22,8 +36,39 @@ const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined
       {section.blocks.map((b) => {
         if (b.type === 'heading') {
           const Tag = `h${Math.min(Math.max(b.level, 1), 6)}` as 'h1';
+          const id = b.level === 2 || b.level === 3 ? slugify(b.text) : undefined;
           return (
-            <Tag>{b.href ? <a class="hlink" href={b.href}>{b.text}</a> : b.text}</Tag>
+            <Tag id={id}>{b.href ? <a class="hlink" href={b.href}>{b.text}</a> : b.text}</Tag>
+          );
+        }
+
+        if (b.type === 'toc') {
+          return tocEntries.length > 0 ? (
+            <nav class="toc" aria-label={b.title}>
+              <h4 class="toc-title">{b.title}</h4>
+              <ol>
+                {tocEntries.map((e) => (
+                  <li class={e.level === 3 ? 'lvl3' : 'lvl2'}>
+                    <a href={`#${e.id}`}>{e.text}</a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          ) : null;
+        }
+
+        if (b.type === 'categories') {
+          return (
+            <nav class="catlist" aria-label={b.title}>
+              <h5 class="cat-title">{b.title}</h5>
+              <ul>
+                {categories.map((c) => (
+                  <li>
+                    <a href={c.href}>{c.name}</a> <span class="n">({c.count})</span>
+                  </li>
+                ))}
+              </ul>
+            </nav>
           );
         }
 
@@ -170,6 +215,20 @@ const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined
   .rt :global(ul),
   .rt :global(ol) { margin: 0 0 16px; padding-inline-start: 22px; }
   .rt :global(li) { margin-bottom: 6px; }
+  /* Gutenberg in-body images (figure.wp-block-image) inside post content. */
+  .rt :global(img) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+  }
+  .rt :global(figure) { margin: 20px 0; }
+  .rt :global(figcaption) {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #767676;
+    text-align: center;
+  }
   .rt :global(a) { color: var(--brand-green); }
   .rt :global(a:hover) { color: var(--brand-pink); }
   .rt :global(h2),
@@ -329,6 +388,44 @@ const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--brand-navy);
+  }
+
+  .toc {
+    background: var(--panel);
+    border: 1px solid #e9e9e9;
+    border-radius: 6px;
+    padding: 16px 20px;
+  }
+  .toc-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--brand-navy);
+    margin: 0 0 10px;
+  }
+  .toc ol { margin: 0; padding-inline-start: 20px; }
+  .toc li { margin-bottom: 5px; }
+  .toc li.lvl3 { margin-inline-start: 16px; list-style: circle; }
+  .toc a { color: var(--brand-green); text-decoration: none; }
+  .toc a:hover { color: var(--brand-pink); text-decoration: underline; }
+
+  .catlist { border-top: 1px solid var(--rule); padding-top: 14px; }
+  .cat-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 17px;
+    font-weight: 500;
+    text-transform: uppercase;
+    color: var(--brand-navy);
+    margin: 0 0 10px;
+  }
+  .catlist ul { list-style: none; margin: 0; padding: 0; columns: 2; }
+  .catlist li { margin-bottom: 5px; break-inside: avoid; font-size: 15px; }
+  .catlist a { color: var(--brand-green); text-decoration: none; }
+  .catlist a:hover { color: var(--brand-pink); }
+  .catlist .n { color: #767676; font-size: 13px; }
+
+  @media (max-width: 767px) {
+    .catlist ul { columns: 1; }
   }
 
   .video { position: relative; padding-top: 56.25%; }
