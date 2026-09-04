@@ -73,7 +73,15 @@ for (const f of htmlFiles) {
 
   for (const m of html.matchAll(/href="(\/[^"#?]*)"/g)) {
     const href = m[1];
-    if (/\.(css|js|png|jpe?g|webp|svg|ico|xml|pdf|woff2?|txt)$/i.test(href)) continue;
+    if (/\.(css|js|png|jpe?g|webp|svg|ico|xml|pdf|woff2?|txt)$/i.test(href)) {
+      // Asset links used to be skipped outright. That hid three colour-guide
+      // PDFs that 404'd the moment the uploads tree stopped shipping in the
+      // Worker: they are downloads, not <img>, so the image pass never saw
+      // them either. Hold them to the same rule.
+      if (href.startsWith('/wp-content/uploads/')) collect(unrewritten, href, route);
+      else if (!exists(href)) collect(missingImages, href, route);
+      continue;
+    }
     totalLinks++;
     const norm = href.endsWith('/') ? href : href + '/';
     if (!routes.has(norm) && !routes.has(href)) {

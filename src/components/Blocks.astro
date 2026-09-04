@@ -45,7 +45,7 @@ const tocEntries = sections
           const id = b.level === 2 || b.level === 3 ? slugify(b.text) : undefined;
           return (
             <Tag id={id} style={b.style ?? undefined}>
-              {b.href ? <a class="hlink" href={b.href}>{b.text}</a> : b.text}
+              {b.href ? <a class="hlink" href={img(b.href)}>{b.text}</a> : b.text}
             </Tag>
           );
         }
@@ -115,7 +115,7 @@ const tocEntries = sections
           return (
             <p class="btnrow" style={b.style ?? undefined}>
               {run.map((rb) => (
-                <a class="btn" href={rb.href} style={rb.style ?? undefined}>{rb.text}</a>
+                <a class="btn" href={img(rb.href)} style={rb.style ?? undefined}>{rb.text}</a>
               ))}
             </p>
           );
@@ -125,7 +125,7 @@ const tocEntries = sections
           return (
             <ul class="ilist">
               {b.items.map((i) => (
-                <li>{i.href ? <a href={i.href}>{i.text}</a> : i.text}</li>
+                <li>{i.href ? <a href={img(i.href)}>{i.text}</a> : i.text}</li>
               ))}
             </ul>
           );

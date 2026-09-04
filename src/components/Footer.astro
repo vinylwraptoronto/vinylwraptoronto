@@ -8,6 +8,7 @@
  */
 import QuoteForm from './QuoteForm.astro';
 import { site, social, legalLinks } from '../data/site';
+import { img } from '../lib/img';
 import {
   areasServed, areasIndex, workflow, fasterProcess, warranty, credit, hours, addressFull,
 } from '../data/footer';
@@ -20,7 +21,7 @@ import {
       <h2>Areas We Serve</h2>
       <ul class="list list--green">
         {areasServed.map((a) => (
-          <li><a href={a.href}>{a.text}</a></li>
+          <li><a href={img(a.href)}>{a.text}</a></li>
         ))}
         <li><a href={areasIndex.href}>{areasIndex.text}</a></li>
       </ul>
@@ -79,7 +80,7 @@ import {
     <p>{credit.copyright}</p>
     <ul class="legal">
       {legalLinks.map((l) => (
-        <li><a href={l.href}>{l.text}</a></li>
+        <li><a href={img(l.href)}>{l.text}</a></li>
       ))}
     </ul>
     <p>

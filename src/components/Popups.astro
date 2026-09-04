@@ -8,6 +8,7 @@
  */
 import QuoteForm from './QuoteForm.astro';
 import { wantToPopup, quotePopup } from '../data/popups';
+import { img } from '../lib/img';
 ---
 
 <div class="pop" id={wantToPopup.id} hidden role="dialog" aria-modal="true" aria-label={wantToPopup.title}>
@@ -21,7 +22,7 @@ import { wantToPopup, quotePopup } from '../data/popups';
           <h3>{col.heading}</h3>
           <ul>
             {col.links.map((l) => (
-              <li><a href={l.href}>{l.text}</a></li>
+              <li><a href={img(l.href)}>{l.text}</a></li>
             ))}
           </ul>
         </div>
@@ -40,7 +41,7 @@ import { wantToPopup, quotePopup } from '../data/popups';
     <ul class="pop-contacts">
       {quotePopup.contacts.map((c) => (
         <li>
-          <a href={c.href} rel={c.href.startsWith('http') ? 'noopener' : undefined}>{c.text}</a>
+          <a href={img(c.href)} rel={c.href.startsWith('http') ? 'noopener' : undefined}>{c.text}</a>
         </li>
       ))}
     </ul>
