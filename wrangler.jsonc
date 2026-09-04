@@ -4,6 +4,14 @@
   "compatibility_date": "2025-09-01",
   "compatibility_flags": ["nodejs_compat"],
   "main": "dist/_worker.js/index.js",
+  // Both default to true when absent, which published the whole site at
+  // vinylwraptoronto.ash-47a.workers.dev — a guessable public address serving
+  // a byte-identical copy of the client's live site while it is still on
+  // WordPress. That is duplicate content pointed at their own domain, and it
+  // is reachable by anyone. The site is meant to be private until cutover, and
+  // staging.vinylwraptoronto.com is the hostname for looking at it.
+  "workers_dev": false,
+  "preview_urls": false,
   "assets": {
     "directory": "dist",
     "binding": "ASSETS",

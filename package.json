@@ -7,10 +7,15 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "check": "node scripts/sweep.mjs",
+    "deploy": "astro build && node scripts/sweep.mjs && wrangler deploy"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.10",
     "astro": "^5.14.1"
+  },
+  "devDependencies": {
+    "wrangler": "^4.59.2"
   }
 }

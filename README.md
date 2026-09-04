@@ -156,9 +156,46 @@ npm run build    # static output + Workers entry in dist/
 
 ## Deployment
 
-Not deployed by this repository. Hosting is Cloudflare Workers via Workers
-Builds (`wrangler.jsonc` is committed, with `not_found_handling: "404-page"` so
-unknown addresses reach `404.astro`).
+Cloudflare Workers, deployed by `wrangler` from
+`.github/workflows/deploy.yml` on every push to `main`.
+
+**Workers Builds is deliberately not used.** The deploy is defined in this
+repository, so it is readable in the diff and reviewable in a PR, and no
+Cloudflare GitHub app is installed against the org.
+
+The workflow needs two repository secrets:
+
+| Secret | Value |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | token with **Workers Scripts: Edit** on the account |
+| `CLOUDFLARE_ACCOUNT_ID` | `47a82355b575e264047206a36c2cd05c` |
+
+The deploy is gated on `scripts/sweep.mjs`, so a dead link, an image reference
+that resolves to nothing, an empty page, or any reference to
+`*.backblazeb2.com` fails the run before anything ships.
+
+To deploy by hand — same build, same check, same command the workflow runs:
+
+```bash
+export CLOUDFLARE_API_TOKEN=…
+export CLOUDFLARE_ACCOUNT_ID=47a82355b575e264047206a36c2cd05c
+npm run deploy
+```
+
+`wrangler.jsonc` is committed, with `not_found_handling: "404-page"` so unknown
+addresses reach `404.astro`. `public/.assetsignore` keeps `_worker.js` and
+`_routes.json` out of the uploaded asset set — without it `wrangler deploy`
+refuses to run, because uploading `_worker.js` as an asset would publish the
+server bundle.
+
+### Hostnames
+
+| Hostname | Points at |
+|---|---|
+| `staging.vinylwraptoronto.com` | this Worker, as a Custom Domain |
+| `vinylwraptoronto.com` | **still the old WordPress server** — not this site |
+
+The apex has not been cut over. Only staging serves this build.
 
 ## Images
 
