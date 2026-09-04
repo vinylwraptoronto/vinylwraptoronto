@@ -20,7 +20,20 @@ export type Block =
      meaningful — the original marks decorative images that way. */
   | {
       type: 'cards';
-      cards: { title: string; href: string; image: string | null; alt?: string }[];
+      cards: {
+        title: string;
+        href: string;
+        image: string | null;
+        alt?: string;
+        /* The original's post widget puts a byline, a date and a "Read More"
+           link on every card. The port kept only the thumbnail and title. */
+        author?: string;
+        date?: string;
+        more?: string;
+        /* Theme-rendered taxonomy archives give each entry a paragraph of copy
+           that the Elementor-keyed extractor never saw. */
+        desc?: string;
+      }[];
     }
   /* Both are built client-side on the live site, so they are regenerated at
      render time rather than ported as markup that would arrive empty. */
