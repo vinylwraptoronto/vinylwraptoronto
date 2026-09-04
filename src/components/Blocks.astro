@@ -53,7 +53,7 @@ const tocEntries = (sections ?? [])
           const Tag = (b.tag ?? `h${Math.min(Math.max(b.level, 1), 6)}`) as 'h1';
           const id = !b.tag && (b.level === 2 || b.level === 3) ? slugify(b.text) : undefined;
           return (
-            <Tag id={id} style={b.style ?? undefined}>
+            <Tag id={id} data-eid={b.eid} style={b.style ?? undefined}>
               {b.href ? <a class="hlink" href={img(b.href)}>{b.text}</a> : b.text}
             </Tag>
           );
@@ -90,7 +90,7 @@ const tocEntries = (sections ?? [])
         }
 
         if (b.type === 'text')
-          return <div class="rt" style={b.style ?? undefined} set:html={imgHtml(b.html)} />;
+          return <div class="rt" data-eid={b.eid} style={b.style ?? undefined} set:html={imgHtml(b.html)} />;
 
         if (b.type === 'image') {
           const pic = (
@@ -104,7 +104,7 @@ const tocEntries = (sections ?? [])
             />
           );
           return (
-            <figure class={b.full ? 'fig fig--full' : 'fig'}>
+            <figure class={b.full ? 'fig fig--full' : 'fig'} data-eid={b.eid}>
               {b.href ? <a href={img(b.href)}>{pic}</a> : pic}
             </figure>
           );
@@ -122,7 +122,7 @@ const tocEntries = (sections ?? [])
             run.push(nb);
           }
           return (
-            <p class="btnrow" style={b.style ?? undefined}>
+            <p class="btnrow" data-eid={b.eid} style={b.style ?? undefined}>
               {run.map((rb) => (
                 <a class="btn" href={img(rb.href)} style={rb.style ?? undefined}>
                   {rb.icon && <i class:list={['btn-ic', rb.icon]} aria-hidden="true"></i>}
@@ -135,7 +135,7 @@ const tocEntries = (sections ?? [])
 
         if (b.type === 'list') {
           return (
-            <ul class="ilist" style={b.style ?? undefined}>
+            <ul class="ilist" data-eid={b.eid} style={b.style ?? undefined}>
               {b.items.map((i) => (
                 <li class:list={{ 'has-ic': !!i.icon }} style={b.itemStyle ?? undefined}>
                   {i.icon && <i class:list={['li-ic', i.icon]} aria-hidden="true"></i>}
@@ -149,7 +149,7 @@ const tocEntries = (sections ?? [])
         if (b.type === 'feature') {
           const T = `h${Math.min(Math.max(b.level ?? 3, 1), 6)}` as 'h3';
           return (
-            <div class="feature" style={b.style ?? undefined}>
+            <div class="feature" data-eid={b.eid} style={b.style ?? undefined}>
               {b.icon && (
                 b.iconHref
                   ? <a class="feature-ic" href={img(b.iconHref)} tabindex="-1" aria-hidden="true"><i class={b.icon}></i></a>
@@ -164,7 +164,7 @@ const tocEntries = (sections ?? [])
 
         if (b.type === 'cards') {
           return (
-            <ul class="cards">
+            <ul class="cards" data-eid={b.eid}>
               {b.cards.map((c) => (
                 <li>
                   {c.badge && <span class="card-badge" style={b.badgeStyle ?? undefined}>{c.badge}</span>}

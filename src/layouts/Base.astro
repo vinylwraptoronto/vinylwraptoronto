@@ -19,9 +19,11 @@ export interface Props {
   robots?: string | null;
   /** The original's own head tags and Yoast JSON-LD graph for this page. */
   head?: HeadData;
+  /** The page's own responsive rules, keyed by each block's data-eid. */
+  pageCss?: string;
 }
 
-const { title, description = '', canonical, ogImage, robots, head } = Astro.props;
+const { title, description = '', canonical, ogImage, robots, head, pageCss } = Astro.props;
 const canonicalUrl = canonical ?? new URL(Astro.url.pathname, site.url).href;
 const ogImageUrl = ogImage ? new URL(img(ogImage), site.url).href : undefined;
 
@@ -120,6 +122,10 @@ const iconHref = new URL(img(site.favicon), site.url).href;
       type="font/woff2"
       crossorigin
     />
+    {/* Elementor keeps 19% of its per-widget CSS inside a breakpoint. The
+        extractor used to drop all of it, so below 1440px every ported heading
+        kept its desktop size while the original shrank it. */}
+    {pageCss && <style is:inline set:html={pageCss} />}
   </head>
 
   <body>

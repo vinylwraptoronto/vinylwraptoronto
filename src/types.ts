@@ -1,5 +1,5 @@
 /** The block model produced from each live page's Elementor markup. */
-export type Block =
+export type Block = (
   | {
       type: 'heading';
       level: number;
@@ -137,7 +137,12 @@ export type Block =
         afterLabel: string;
       }[];
     }
-  | ColumnsBlock;
+  | ColumnsBlock
+) & {
+  /** The Elementor id of the widget this block came from. It is rendered as
+      `data-eid` so the page's own responsive rules have something to select. */
+  eid?: string;
+};
 
 /** An Elementor row: columns side by side, each with its own percentage width.
     93% of pages have at least one. The extractor used to flatten them into a
@@ -183,6 +188,10 @@ export type HeadData = {
 
 export type PageData = {
   slug: string;
+  /** The page's own responsive rules, keyed by each block's `eid`. Elementor
+      keeps 19% of its per-widget CSS inside a breakpoint; the extractor used to
+      drop all of it, which made the port a desktop-only rendering. */
+  css?: string;
   url: string;
   title: string;
   description: string;
