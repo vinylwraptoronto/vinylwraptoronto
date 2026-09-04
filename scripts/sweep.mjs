@@ -44,7 +44,7 @@ if (fs.existsSync(redirectsFile)) {
 const deadLinks = new Map();
 const missingImages = new Map();
 const unrewritten = new Map();
-const offHost = new Map();
+const directToB2 = new Map();
 const remoteKeys = new Set();
 const emptyPages = [];
 
@@ -103,19 +103,25 @@ for (const f of htmlFiles) {
       continue;
     }
 
+    // Collected for img-check.mjs, which requests every one of them over the
+    // network. An offline check against public/wp-content/uploads would be
+    // cheaper but no longer sound: a handful of files whose names contain an
+    // en-dash are in the bucket under names the local tree does not carry.
     if (src.startsWith(IMG_BASE + '/')) {
       remoteKeys.add(src.slice(IMG_BASE.length + 1));
       continue;
     }
 
-    // Going straight to the bucket skips Cloudflare and is billed egress.
-    if (/backblazeb2\.com/.test(src)) {
-      collect(offHost, src, route);
-      continue;
-    }
-
     if (!src.startsWith('/')) continue;
     if (!exists(src)) collect(missingImages, src, route);
+  }
+
+  // The site must never name the bucket's own origin: that address bypasses
+  // Cloudflare and bills the client for every image view. Scanned across the
+  // whole document, not just <img src> — a stylesheet url() or a link href
+  // would cost the same.
+  for (const m of html.matchAll(/["'(]([^"'()\s]*backblazeb2\.com[^"'()\s]*)/g)) {
+    collect(directToB2, m[1], route);
   }
 }
 
@@ -124,7 +130,7 @@ console.log(`internal links checked: ${totalLinks}   dead: ${deadLinks.size}`);
 console.log(`image refs checked:     ${totalImages}   missing: ${missingImages.size}`);
 console.log(`  on image host:        ${remoteKeys.size} distinct keys`);
 console.log(`  not rewritten:        ${unrewritten.size}`);
-console.log(`  bypassing Cloudflare: ${offHost.size}`);
+console.log(`direct *.backblazeb2.com refs: ${directToB2.size}   (must be 0)`);
 console.log(`empty pages:  ${emptyPages.length}`);
 
 // The keys the built pages ask for, so img-check.mjs can request exactly those.
@@ -143,11 +149,11 @@ const show = (label, map, n = 15) => {
 show('DEAD LINKS', deadLinks);
 show('MISSING IMAGES', missingImages);
 show('NOT REWRITTEN TO IMAGE HOST', unrewritten);
-show('BYPASSING CLOUDFLARE', offHost);
+show('DIRECT TO BACKBLAZE — must go through Cloudflare', directToB2);
 if (emptyPages.length) console.log('\nEMPTY PAGES:\n  ' + emptyPages.slice(0, 15).join('\n  '));
 
 process.exit(
-  deadLinks.size || missingImages.size || unrewritten.size || offHost.size || emptyPages.length
+  deadLinks.size || missingImages.size || unrewritten.size || directToB2.size || emptyPages.length
     ? 1
     : 0,
 );

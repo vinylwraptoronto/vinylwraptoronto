@@ -1,0 +1,52 @@
+# Deploy to Cloudflare Workers.
+#
+# Workers Builds is deliberately not used. This runs wrangler itself, so the
+# deploy is defined in this repository, readable in the diff, and needs no
+# Cloudflare GitHub app against the org.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never cancel a deploy that is already uploading — a half-uploaded asset set
+# is worse than a queued run. Later pushes wait instead.
+concurrency:
+  group: deploy-worker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # Gate the deploy on the sweep: dead internal links, image references
+      # that resolve to nothing, empty pages, or any reference to
+      # *.backblazeb2.com (which would bypass Cloudflare and bill the client
+      # per image view) all fail the build before anything ships.
+      - name: Check the built site
+        run: node scripts/sweep.mjs
+
+      # Not `wrangler deploy`. The hostname is attached as a Custom Domain,
+      # which wrangler cannot see, so with workers_dev false and no routes entry
+      # it prints "No deploy targets", uploads a version, exits 0 — and the
+      # hostname carries on serving the previous one. This site sat on its first
+      # build for ten deploys that way. scripts/deploy.sh promotes the new
+      # version to 100% and then re-requests the site to prove it is live.
+      - name: Deploy
+        run: npm run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
