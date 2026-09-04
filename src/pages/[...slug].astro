@@ -65,7 +65,13 @@ const dateLabel = page.published
     </div>
   )}
 
-  <Blocks sections={page.sections} />
+  {/* A post's body copy is #444, a page's is #333. Both are ported through the
+      same rich-text renderer, so the distinction has to come from the page. */}
+  {page.kind === 'post' ? (
+    <div class="postbody"><Blocks sections={page.sections} /></div>
+  ) : (
+    <Blocks sections={page.sections} />
+  )}
 
   {page.kind === 'archive' && page.members && page.members.length > 0 && (
     <ArchiveList members={page.members} />
@@ -84,14 +90,23 @@ const dateLabel = page.published
 </Base>
 
 <style>
+  /* Measured on the live post against .elementor-post-info: 16px/24px in #444,
+     and the byline link is the same ink, unlined — not the site's green link
+     colour. The 13px/#767676 here was invented. */
   .postmeta {
     border-bottom: 1px solid #ececec;
     padding: 14px 0;
     font-family: 'Poppins', sans-serif;
-    font-size: 13px;
-    color: #767676;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #444444;
   }
   .postmeta .by { margin-left: 12px; }
+  .postmeta a { color: inherit; text-decoration: none; }
+  .postmeta a:hover { text-decoration: underline; }
+
+  /* theme-post-content sets its own ink, a shade darker than the body's. */
+  .postbody :global(.rt) { color: #444444; }
 
   .nothing-found {
     padding: 24px 0 48px;
