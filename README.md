@@ -136,10 +136,11 @@ have passed on a page with no working images on it:
   no response at all — DNS failure, refused connection — fires `requestfailed`
   and was invisible. It now listens for both.
 
-Until `img.vinylwraptoronto.com` resolves, `verify.mjs` reports one real
-failure: `net::ERR_TUNNEL_CONNECTION_FAILED` on every image. That is the check
-doing its job. Run it against `PUBLIC_IMAGE_BASE=/wp-content/uploads` to
-exercise the other 14 checks in the meantime.
+`verify.mjs`'s last check drives a real browser, so it needs an environment that
+can reach `img.vinylwraptoronto.com`. Where egress is filtered it fails with
+`ERR_CONNECTION_RESET` on every image — check that against a known-good host
+before reading it as a fault in the image host, and run
+`PUBLIC_IMAGE_BASE=/wp-content/uploads` to exercise the other 14 meanwhile.
 
 `/partial-trailer-wrap/` is linked from three pages but is a **301 to the
 homepage** on the live site, not a page. `public/_redirects` reproduces that
@@ -167,6 +168,28 @@ paths with the `/wp-content/uploads/` prefix stripped, so
 `/wp-content/uploads/2023/07/foo.webp` is the object `2023/07/foo.webp` — the
 same layout as the other migrated sites in the account.
 
+Two pieces of Cloudflare config carry that hostname, and **both** are load-bearing:
+
+```
+CNAME  img  ->  f005.backblazeb2.com   proxied
+```
+
+`f005…` is B2's native origin. `s3.us-east-005…` is the S3 endpoint, for keys
+and SDKs only — the two look alike, and using the S3 one as the CNAME target
+fails confusingly. Proxied is not cosmetic either: grey-cloud means the client
+pays Backblaze egress on every image view.
+
+```
+Transform Rule, http_request_transform phase
+  when     http.host eq "img.vinylwraptoronto.com"
+  rewrite  concat("/file/vinylwraptoronto-img", http.request.uri.path)
+```
+
+Without the rule the hostname maps to the whole shared B2 origin and anyone
+could pull another Backblaze customer's public bucket through this domain. With
+it, `/file/wrap-authority/…` — a real public bucket in the same account — 404s.
+Worth re-checking after any change to the rule.
+
 The page JSON keeps the live site's original paths. It is the extraction record,
 and rewriting 3,275 strings inside it to carry a hostname would destroy that.
 The prefix is translated at render time in `src/data/images.ts`, so the host is
@@ -185,9 +208,37 @@ from `public/` again — a bad cutover is one env var to undo:
 PUBLIC_IMAGE_BASE=/wp-content/uploads npm run build
 ```
 
-`public/wp-content/uploads/` is still in the repo. It is what `sweep.mjs` checks
-image references against, and it is the second copy while the bucket is new; it
-can be dropped once `img.vinylwraptoronto.com` has served the live site.
+### What is in the bucket
+
+**23,379 files, 1,329,675,216 bytes** — the whole of the live site's `uploads/`,
+not just what this site references. The port had only ever downloaded the images
+it displayed, at the sizes it displayed them: 943 files. The rest are the
+WordPress-generated size variants (`-300x169`, `-768x432`, `-1024x682`) that a
+`srcset` needs, plus 357 `.jpg.webp` / `.png.webp` conversions written by an
+optimisation plugin on the live site.
+
+No single source could list them, and each is short in a different way:
+
+| Source | Yield | Why it is not enough |
+|---|---|---|
+| REST `wp/v2/media` | 3,012 records → 22,920 files | reports 3,107 total and returns ~3,000 whatever the ordering or date slicing — the rest are withheld, not lost to paging |
+| Sitemap `<image:loc>` | 755 | featured images only; found 8 the API never returned |
+| Directory listing | — | nginx, autoindex off, 403 |
+| Crawl of all 676 pages | 7,118 | found 427 the others could not, including every plugin-written `.webp` |
+
+The target set is the union of all four. `imageUrl()` translates a path; it does
+not check that the object exists, so anything missed here is a broken image with
+no build error behind it.
+
+Four files under `uploads/` are deliberately excluded:
+`elementor/google-fonts/css/*.css`. They are stylesheets, and the site
+self-hosts its fonts from `public/fonts/`.
+
+`public/wp-content/uploads/` in this repo is **1,006 files — a subset, not a
+mirror.** It is what `sweep.mjs` resolves image references against, which works
+because every reference the site emits is inside that subset. Dropping it takes
+~98 MB out of every Workers build, but `sweep.mjs` has to check against the
+bucket first or the check silently stops meaning anything.
 
 **The site must never reference `*.backblazeb2.com` directly** — that address
 bypasses Cloudflare and bills the client for every image view. Only
