@@ -1,7 +1,7 @@
 /** The block model produced from each live page's Elementor markup. */
 export type Block =
-  | { type: 'heading'; level: number; text: string; href?: string | null }
-  | { type: 'text'; html: string }
+  | { type: 'heading'; level: number; text: string; href?: string | null; style?: string | null }
+  | { type: 'text'; html: string; style?: string | null }
   | {
       type: 'image';
       src: string;
@@ -9,8 +9,10 @@ export type Block =
       width?: string | null;
       height?: string | null;
       href?: string | null;
+      /** Sits in a zero-padding column on the live site, so it runs edge to edge. */
+      full?: boolean;
     }
-  | { type: 'button'; text: string; href: string }
+  | { type: 'button'; text: string; href: string; style?: string | null }
   | { type: 'list'; items: { text: string; href?: string | null }[] }
   | { type: 'feature'; title: string; text: string; image?: string | null; alt?: string }
   | { type: 'cards'; cards: { title: string; href: string; image: string | null }[] }
@@ -48,7 +50,14 @@ export type Block =
       }[];
     };
 
-export type Section = { id?: string | null; blocks: Block[] };
+/** Sections carry the live template's own padding and container width; the
+    homepage, for instance, is 35px/75px inside a 1400px container. */
+export type Section = {
+  id?: string | null;
+  blocks: Block[];
+  padding?: string | null;
+  maxWidth?: string | null;
+};
 
 /** page | post | archive | story — archives carry the slugs they list. */
 export type PageKind = 'page' | 'post' | 'archive' | 'story';

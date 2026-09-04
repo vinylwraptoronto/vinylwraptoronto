@@ -32,14 +32,20 @@ const tocEntries = sections
 ---
 
 {sections.map((section) => (
-  <section class="sec" data-eid={section.id ?? undefined}>
-    <div class="container stack">
-      {section.blocks.map((b) => {
+  <section
+    class="sec"
+    data-eid={section.id ?? undefined}
+    style={section.padding ? `padding:${section.padding}` : undefined}
+  >
+    <div class="container stack" style={section.maxWidth ? `max-width:${section.maxWidth}` : undefined}>
+      {section.blocks.map((b, i) => {
         if (b.type === 'heading') {
           const Tag = `h${Math.min(Math.max(b.level, 1), 6)}` as 'h1';
           const id = b.level === 2 || b.level === 3 ? slugify(b.text) : undefined;
           return (
-            <Tag id={id}>{b.href ? <a class="hlink" href={b.href}>{b.text}</a> : b.text}</Tag>
+            <Tag id={id} style={b.style ?? undefined}>
+              {b.href ? <a class="hlink" href={b.href}>{b.text}</a> : b.text}
+            </Tag>
           );
         }
 
@@ -73,7 +79,7 @@ const tocEntries = sections
           );
         }
 
-        if (b.type === 'text') return <div class="rt" set:html={b.html} />;
+        if (b.type === 'text') return <div class="rt" style={b.style ?? undefined} set:html={b.html} />;
 
         if (b.type === 'image') {
           const img = (
@@ -86,10 +92,32 @@ const tocEntries = sections
               decoding="async"
             />
           );
-          return <figure class="fig">{b.href ? <a href={b.href}>{img}</a> : img}</figure>;
+          return (
+            <figure class={b.full ? 'fig fig--full' : 'fig'}>
+              {b.href ? <a href={b.href}>{img}</a> : img}
+            </figure>
+          );
         }
 
-        if (b.type === 'button') return <p><a class="btn" href={b.href}>{b.text}</a></p>;
+        if (b.type === 'button') {
+          // The live buttons are 50%-width siblings, so a run of them sits on
+          // one centred row rather than stacking.
+          const prev = section.blocks[i - 1];
+          if (prev && prev.type === 'button') return null;
+          const run = [];
+          for (let k = i; k < section.blocks.length; k++) {
+            const nb = section.blocks[k];
+            if (nb.type !== 'button') break;
+            run.push(nb);
+          }
+          return (
+            <p class="btnrow" style={b.style ?? undefined}>
+              {run.map((rb) => (
+                <a class="btn" href={rb.href} style={rb.style ?? undefined}>{rb.text}</a>
+              ))}
+            </p>
+          );
+        }
 
         if (b.type === 'list') {
           return (
@@ -285,6 +313,26 @@ const tocEntries = sections
 
   .fig { margin: 0; }
   .fig img { display: block; border-radius: 4px; }
+
+  /* Zero-padding column on the live site: the image runs edge to edge, so it
+     breaks out of the centred content container. */
+  .fig--full {
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: 50%;
+    transform: translateX(-50%);
+  }
+  .fig--full img { border-radius: 0; width: 100%; }
+
+  .btnrow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    justify-content: inherit;
+    margin: 30px 0 0;
+  }
+  .btnrow[style*='center'] { justify-content: center; }
+  .btnrow[style*='right'] { justify-content: flex-end; }
 
   /* Button styling follows the header CTA: navy, green on hover, square. */
   .btn {
