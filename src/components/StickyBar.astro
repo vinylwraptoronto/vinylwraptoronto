@@ -1,0 +1,74 @@
+---
+/**
+ * Floating bottom CTA bar — the `sticky: "bottom"` element in footer template
+ * 18407. It fades up 1000ms after load on the live site and carries two
+ * actions: call for an estimate, and open the Request a Quote popup.
+ */
+import { site } from '../data/site';
+---
+
+<div class="stickybar" data-sticky-bar>
+  <a class="sb-btn sb-btn--call" href={site.phoneHref}>
+    <span class="sb-lead">Get an Estimate</span>
+    <span class="sb-num">{site.phone}</span>
+  </a>
+  <button class="sb-btn sb-btn--msg" type="button" data-popup="popup-quote">Send a Message</button>
+</div>
+
+<style>
+  .stickybar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 900;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: linear-gradient(180deg, rgba(21, 51, 76, 0.92), rgba(21, 51, 76, 0.98));
+    /* fadeInUp, 1000ms delay — matches the live animation */
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+    pointer-events: none;
+  }
+  .stickybar[data-shown] { opacity: 1; transform: none; pointer-events: auto; }
+
+  .sb-btn {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 15px;
+    line-height: 1.2;
+    text-decoration: none;
+    text-align: center;
+    padding: 10px 20px;
+    border: 1px solid var(--e-global-color-a8178e9);
+    cursor: pointer;
+  }
+  .sb-btn--call {
+    background: var(--e-global-color-d077a13);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .sb-lead { font-size: 12px; opacity: 0.85; }
+  .sb-num { white-space: nowrap; }
+  .sb-btn--msg { background: transparent; color: #fff; }
+  .sb-btn:hover { background: var(--e-global-color-a8178e9); color: #fff; }
+
+  @media (max-width: 767px) {
+    .stickybar { padding: 8px 10px; }
+    .sb-btn { flex: 1; padding: 9px 12px; font-size: 14px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stickybar { transition: none; }
+  }
+</style>
+
+<script>
+  const bar = document.querySelector<HTMLElement>('[data-sticky-bar]');
+  if (bar) window.setTimeout(() => bar.setAttribute('data-shown', ''), 1000);
+</script>

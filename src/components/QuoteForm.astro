@@ -1,0 +1,184 @@
+---
+/**
+ * Quote form — port of the Elementor Pro form used on the live site.
+ *
+ * Field set, labels, placeholders and required flags are taken from the live
+ * markup verbatim: name, email, phone, a Business/Personal pair, a vehicle-type
+ * select, a multi-file photo upload and a message.
+ *
+ * The live form posts to WordPress admin-ajax (Elementor Pro Forms). There is no
+ * WordPress here, so it posts to /api/quote instead — see that route for how
+ * delivery is wired.
+ */
+export interface Props {
+  /** `popup` is the compact variant used inside the Request a Quote popup. */
+  variant?: 'inline' | 'popup';
+  id?: string;
+}
+const { variant = 'inline', id = 'quote' } = Astro.props;
+const vehicleTypes = ['Van', 'Truck', 'Car', 'SUV', 'Trailer', 'Boat', 'Motorcycle'];
+---
+
+<form class={`qform qform--${variant}`} method="post" action="/api/quote" enctype="multipart/form-data" novalidate>
+  <div class="row">
+    <label class="sr-only" for={`${id}-name`}>Name</label>
+    <input id={`${id}-name`} name="name" type="text" placeholder="Name*" required autocomplete="name" />
+  </div>
+
+  <div class="row">
+    <label class="sr-only" for={`${id}-email`}>Email</label>
+    <input id={`${id}-email`} name="email" type="email" placeholder="Email*" required autocomplete="email" />
+  </div>
+
+  <div class="row">
+    <label class="sr-only" for={`${id}-phone`}>Phone</label>
+    <input id={`${id}-phone`} name="phone" type="tel" placeholder="Phone*" required autocomplete="tel" />
+  </div>
+
+  <fieldset class="row checks">
+    <legend class="sr-only">Wrap type</legend>
+    <label><input type="checkbox" name="wrap_type" value="Business (Commercial)" /> Business (Commercial)</label>
+    <label><input type="checkbox" name="wrap_type" value="Personal" /> Personal</label>
+  </fieldset>
+
+  <div class="row">
+    <label class="sr-only" for={`${id}-vehicle`}>Vehicle Type</label>
+    <select id={`${id}-vehicle`} name="vehicle_type">
+      <option value="">Select Vehicle Type</option>
+      {vehicleTypes.map((v) => <option value={v}>{v}</option>)}
+    </select>
+  </div>
+
+  <div class="row">
+    <label class="filelabel" for={`${id}-photos`}>Photos</label>
+    <input id={`${id}-photos`} name="photos" type="file" multiple accept="image/*" />
+  </div>
+
+  <div class="row">
+    <label class="sr-only" for={`${id}-message`}>Message</label>
+    <textarea id={`${id}-message`} name="message" rows="4" placeholder="Message"></textarea>
+  </div>
+
+  <button type="submit" class="qbtn">Send Message</button>
+  <p class="qstatus" role="status" aria-live="polite"></p>
+</form>
+
+<style>
+  .qform { display: flex; flex-direction: column; gap: 10px; font-family: 'Poppins', sans-serif; }
+  .row { display: flex; flex-direction: column; }
+
+  .qform input[type='text'],
+  .qform input[type='email'],
+  .qform input[type='tel'],
+  .qform select,
+  .qform textarea {
+    width: 100%;
+    padding: 11px 14px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 15px;
+    color: var(--ink-strong);
+    background: #fff;
+    border: 1px solid #d8d8d8;
+    border-radius: 4px;
+  }
+  .qform input:focus-visible,
+  .qform select:focus-visible,
+  .qform textarea:focus-visible {
+    outline: 2px solid var(--e-global-color-a8178e9);
+    outline-offset: 1px;
+  }
+  .qform input[aria-invalid='true'],
+  .qform textarea[aria-invalid='true'] { border-color: #d33; }
+
+  .checks {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 16px;
+    border: 0;
+    margin: 0;
+    padding: 2px 0;
+  }
+  .checks label { display: flex; align-items: center; gap: 7px; font-size: 15px; }
+
+  .filelabel { font-size: 14px; margin-bottom: 4px; color: var(--ink); }
+  .qform input[type='file'] { font-size: 14px; }
+
+  .qbtn {
+    align-self: flex-start;
+    background-color: var(--e-global-color-d077a13);
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 15px;
+    line-height: 15px;
+    padding: 13px 26px;
+    border: 0;
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .qbtn:hover { background-color: var(--e-global-color-a8178e9); }
+  .qbtn[disabled] { opacity: 0.6; cursor: default; }
+
+  .qstatus { margin: 0; font-size: 14px; min-height: 1.2em; }
+  .qstatus[data-state='ok'] { color: var(--brand-green); }
+  .qstatus[data-state='err'] { color: #d33; }
+
+  .qform--popup .qbtn { align-self: stretch; text-align: center; }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+</style>
+
+<script>
+  // Progressive enhancement: the form is a real POST target, so it still works
+  // without JS. With JS it submits in place and reports status inline, which is
+  // how the Elementor form behaves.
+  document.querySelectorAll<HTMLFormElement>('form.qform').forEach((form) => {
+    const status = form.querySelector<HTMLParagraphElement>('.qstatus')!;
+    const button = form.querySelector<HTMLButtonElement>('.qbtn')!;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Native validation, but reported without the browser's default bubbles
+      // so required fields flag consistently across browsers.
+      let firstBad: HTMLElement | null = null;
+      form.querySelectorAll<HTMLInputElement>('[required]').forEach((el) => {
+        const bad = !el.checkValidity();
+        el.setAttribute('aria-invalid', String(bad));
+        if (bad && !firstBad) firstBad = el;
+      });
+      if (firstBad) {
+        status.dataset.state = 'err';
+        status.textContent = 'Please complete the required fields.';
+        (firstBad as HTMLElement).focus();
+        return;
+      }
+
+      button.disabled = true;
+      status.dataset.state = '';
+      status.textContent = 'Sending…';
+      try {
+        const res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+        const data = await res.json().catch(() => ({}) as Record<string, unknown>);
+        if (res.ok) {
+          status.dataset.state = 'ok';
+          status.textContent = 'Thanks — your message has been sent. We will be in touch shortly.';
+          form.reset();
+        } else {
+          status.dataset.state = 'err';
+          status.textContent =
+            (data as { error?: string }).error ||
+            'Sorry, that did not send. Please call 416-746-1381 instead.';
+        }
+      } catch {
+        status.dataset.state = 'err';
+        status.textContent = 'Sorry, that did not send. Please call 416-746-1381 instead.';
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+</script>

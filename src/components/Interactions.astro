@@ -1,0 +1,255 @@
+---
+/**
+ * Interactive behaviours the live site gets from Elementor Pro and JetElements,
+ * rebuilt without those runtimes:
+ *
+ *  - Lightbox on gallery and content images (Elementor lightbox).
+ *  - Draggable before/after comparison sliders (jet-image-comparison
+ *    "juxtapose"), progressively enhanced from the static side-by-side pair so
+ *    the images still both show with JS off.
+ *
+ * Both are delegated from the document, so they apply to any matching markup on
+ * any page without per-page wiring.
+ */
+---
+
+<div class="lb" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Image viewer">
+  <button class="lb-x" type="button" data-lb-close aria-label="Close">&times;</button>
+  <button class="lb-prev" type="button" data-lb-prev aria-label="Previous image">&#8249;</button>
+  <img class="lb-img" alt="" />
+  <button class="lb-next" type="button" data-lb-next aria-label="Next image">&#8250;</button>
+  <p class="lb-cap"></p>
+</div>
+
+<style>
+  .lb {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    background: rgba(0, 0, 0, 0.92);
+    display: grid;
+    grid-template-columns: 60px 1fr 60px;
+    grid-template-rows: 1fr auto;
+    align-items: center;
+    justify-items: center;
+  }
+  .lb[hidden] { display: none; }
+
+  .lb-img {
+    grid-column: 2;
+    grid-row: 1;
+    max-width: min(1400px, 94vw);
+    max-height: 84vh;
+    object-fit: contain;
+  }
+  .lb-cap {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    color: #ddd;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    margin: 10px 16px 18px;
+    text-align: center;
+  }
+
+  .lb button {
+    background: none;
+    border: 0;
+    color: #fff;
+    cursor: pointer;
+    font-size: 44px;
+    line-height: 1;
+    padding: 10px;
+    opacity: 0.75;
+  }
+  .lb button:hover { opacity: 1; }
+  .lb-prev { grid-column: 1; grid-row: 1; }
+  .lb-next { grid-column: 3; grid-row: 1; }
+  .lb-x {
+    position: absolute;
+    top: 6px;
+    right: 14px;
+    font-size: 38px;
+  }
+
+  @media (max-width: 767px) {
+    .lb { grid-template-columns: 40px 1fr 40px; }
+    .lb button { font-size: 32px; }
+  }
+
+  /* --- before/after comparison slider -------------------------------------
+     Enhanced from .compare-pair. The static two-up layout stays as the no-JS
+     fallback; with JS the pair becomes one overlaid, draggable image. */
+  :global(.compare-pair[data-juxtapose]) {
+    position: relative;
+    display: block;
+    grid-template-columns: none;
+    user-select: none;
+    touch-action: pan-y;
+    overflow: hidden;
+    border-radius: 4px;
+    cursor: ew-resize;
+  }
+  :global(.compare-pair[data-juxtapose] figure) { margin: 0; }
+  :global(.compare-pair[data-juxtapose] figure:first-child) { position: relative; }
+  :global(.compare-pair[data-juxtapose] figure:last-child) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    /* clipped to the handle position */
+    clip-path: inset(0 0 0 var(--split, 50%));
+  }
+  :global(.compare-pair[data-juxtapose] img) { display: block; width: 100%; }
+  :global(.compare-pair[data-juxtapose] figcaption) {
+    position: absolute;
+    bottom: 10px;
+    padding: 4px 9px;
+    background: rgba(0, 0, 0, 0.62);
+    color: #fff;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    border-radius: 3px;
+    margin: 0;
+    pointer-events: none;
+  }
+  :global(.compare-pair[data-juxtapose] figure:first-child figcaption) { left: 10px; }
+  :global(.compare-pair[data-juxtapose] figure:last-child figcaption) { right: 10px; }
+
+  :global(.jx-handle) {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--split, 50%);
+    width: 3px;
+    margin-left: -1.5px;
+    background: #fff;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+  }
+  :global(.jx-handle::after) {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 38px;
+    height: 38px;
+    margin: -19px 0 0 -19px;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.35);
+  }
+</style>
+
+<script>
+  (() => {
+    // ---------- lightbox ---------------------------------------------------
+    const box = document.getElementById('lightbox') as HTMLElement | null;
+    if (!box) return;
+    const img = box.querySelector('.lb-img') as HTMLImageElement;
+    const cap = box.querySelector('.lb-cap') as HTMLElement;
+
+    // Elementor opens its lightbox on gallery and content images.
+    const SEL = '.gallery img, .fig img, .rt img, .compare-pair img, .cards img';
+    let group: HTMLImageElement[] = [];
+    let index = 0;
+
+    const show = (i: number) => {
+      if (!group.length) return;
+      index = (i + group.length) % group.length;
+      const el = group[index];
+      img.src = el.currentSrc || el.src;
+      img.alt = el.alt || '';
+      cap.textContent = el.alt || '';
+    };
+
+    const open = (el: HTMLImageElement) => {
+      // Group by the closest container so prev/next walks that gallery only.
+      const scope = el.closest('.gallery, .compare, section, main') || document;
+      group = [...scope.querySelectorAll<HTMLImageElement>(SEL)];
+      if (!group.includes(el)) group = [el];
+      show(group.indexOf(el));
+      box.hidden = false;
+      document.body.style.overflow = 'hidden';
+    };
+
+    const close = () => {
+      box.hidden = true;
+      img.removeAttribute('src');
+      document.body.style.overflow = '';
+    };
+
+    document.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      if (t.closest('[data-lb-close]')) return close();
+      if (t.closest('[data-lb-prev]')) return show(index - 1);
+      if (t.closest('[data-lb-next]')) return show(index + 1);
+      if (t === box) return close();
+
+      const hit = t.closest<HTMLImageElement>(SEL);
+      // A linked image keeps its link; only unlinked images open the viewer.
+      if (hit && hit.tagName === 'IMG' && !hit.closest('a')) {
+        e.preventDefault();
+        open(hit);
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (box.hidden) return;
+      if (e.key === 'Escape') close();
+      if (e.key === 'ArrowLeft') show(index - 1);
+      if (e.key === 'ArrowRight') show(index + 1);
+    });
+
+    // ---------- filterable gallery -----------------------------------------
+    document.querySelectorAll<HTMLElement>('[data-filtergallery]').forEach((gal) => {
+      const tabs = [...gal.querySelectorAll<HTMLButtonElement>('.fgal-tab')];
+      const items = [...gal.querySelectorAll<HTMLElement>('.fgal-item')];
+
+      const apply = (index: string) => {
+        items.forEach((it) => {
+          it.hidden = index !== 'all' && it.dataset.tag !== index;
+        });
+      };
+
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          tabs.forEach((t) => t.setAttribute('aria-selected', String(t === tab)));
+          apply(tab.dataset.index || 'all');
+        });
+      });
+    });
+
+    // ---------- before/after sliders ---------------------------------------
+    document.querySelectorAll<HTMLElement>('.compare-pair').forEach((pair) => {
+      const figs = pair.querySelectorAll('figure');
+      if (figs.length !== 2) return;
+
+      pair.dataset.juxtapose = '';
+      const handle = document.createElement('span');
+      handle.className = 'jx-handle';
+      pair.appendChild(handle);
+
+      const setSplit = (clientX: number) => {
+        const r = pair.getBoundingClientRect();
+        const pct = Math.min(100, Math.max(0, ((clientX - r.left) / r.width) * 100));
+        pair.style.setProperty('--split', `${pct}%`);
+      };
+
+      let dragging = false;
+      const start = (e: PointerEvent) => {
+        dragging = true;
+        pair.setPointerCapture(e.pointerId);
+        setSplit(e.clientX);
+      };
+      const move = (e: PointerEvent) => {
+        if (dragging) setSplit(e.clientX);
+      };
+      const end = () => { dragging = false; };
+
+      pair.addEventListener('pointerdown', start);
+      pair.addEventListener('pointermove', move);
+      pair.addEventListener('pointerup', end);
+      pair.addEventListener('pointercancel', end);
+    });
+  })();
+</script>

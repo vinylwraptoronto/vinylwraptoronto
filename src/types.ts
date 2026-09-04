@@ -18,6 +18,17 @@ export type Block =
      render time rather than ported as markup that would arrive empty. */
   | { type: 'toc'; title: string }
   | { type: 'categories'; title: string }
+  /* The Elementor Pro quote form; fields are fixed site-wide, so only its
+     position on the page is recorded. */
+  | { type: 'form' }
+  | { type: 'map'; src: string }
+  /* Elementor's filterable gallery. It ships no <img>; the picture URLs are the
+     lightbox anchor hrefs and `tag` indexes into `filters`. */
+  | {
+      type: 'filtergallery';
+      filters: { index: string; label: string }[];
+      items: { src: string; title: string; tag: string }[];
+    }
   | {
       type: 'postnav';
       prev?: { href: string; text: string };

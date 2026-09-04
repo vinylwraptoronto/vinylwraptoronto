@@ -52,6 +52,9 @@ const isCurrent = (href: string) => href !== '#' && href !== '/' && pathname.sta
       </ul>
     </nav>
 
+    <!-- "I want to" — opens popup 18856 on the live site -->
+    <button class="wantto" type="button" data-popup="popup-want-to">I want to</button>
+
     <!-- #6ebf65a — CTA column: navy, turns green on hover -->
     <div class="cta">
       <a class="cta-link" href={site.phoneHref}>
@@ -85,14 +88,17 @@ const isCurrent = (href: string) => href !== '#' && href !== '/' && pathname.sta
 </header>
 
 <style>
-  /* #9a5dc73 — the header bar */
+  /* #9a5dc73 — the header bar.
+     The live header is sticky:top on desktop, tablet and mobile with
+     sticky_offset 0, so it stays put on scroll. */
   .site-header {
     background-color: #ffffff;
     border-style: solid;
     border-width: 0 0 2px 0;
     border-color: var(--e-global-color-a8178e9); /* #99CC33 */
     box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
-    position: relative;
+    position: sticky;
+    top: 0;
     z-index: 100;
   }
 
@@ -240,6 +246,25 @@ const isCurrent = (href: string) => href !== '#' && href !== '/' && pathname.sta
   .sub > li:first-child > a { border-top-left-radius: 10px; border-top-right-radius: 10px; }
   .sub > li:last-child > a { border-bottom-right-radius: 10px; border-bottom-left-radius: 10px; }
 
+  .wantto {
+    flex: 0 0 auto;
+    margin-right: 12px;
+    background: transparent;
+    border: 1px solid var(--e-global-color-a8178e9);
+    color: var(--e-global-color-d077a13);
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    text-transform: uppercase;
+    padding: 9px 14px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .wantto:hover {
+    background: var(--e-global-color-a8178e9);
+    color: #fff;
+  }
+
   /* #6ebf65a / #76c5194 — CTA column and its button */
   .cta {
     width: 9.664%;
@@ -312,7 +337,7 @@ const isCurrent = (href: string) => href !== '#' && href !== '/' && pathname.sta
   @media (max-width: 900px) {
     .bar { padding: 8px 16px; }
     .brand { width: 75%; max-width: 260px; }
-    .nav, .cta { display: none; }
+    .nav, .cta, .wantto { display: none; }
     .toggle { display: block; }
     .mobile-nav { display: block; background: #fff; border-top: 1px solid #f2f2f2; }
     .mobile-nav[hidden] { display: none; }

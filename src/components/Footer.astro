@@ -55,7 +55,9 @@ import {
       <!-- #89ec862 — navy button, green border, green on hover -->
       <p class="btns">
         <a class="btn btn--solid" href={site.phoneHref}>Get an Estimate {site.phone}</a>
-        <a class="btn btn--ghost" href="/contact/">Send a Message</a>
+        <!-- Opens the Request a Quote popup, as on the live site, rather than
+             navigating away to /contact/. -->
+        <button class="btn btn--ghost" type="button" data-popup="popup-quote">Send a Message</button>
       </p>
 
       <ul class="social">
@@ -143,12 +145,15 @@ import {
 
   .btn {
     display: inline-block;
+    width: 100%;
+    font-family: 'Poppins', sans-serif;
     font-size: 16px;
     font-weight: 500;
     color: #ffffff;
     text-decoration: none;
     border: 1px solid var(--e-global-color-a8178e9); /* #99CC33 */
     text-align: center;
+    cursor: pointer;
   }
   /* #89ec862 */
   .btn--solid {

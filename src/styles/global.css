@@ -19,6 +19,8 @@ body {
   color: var(--body-text);
   background-color: #ffffff;
   overflow-x: hidden;
+  /* Clears the fixed bottom CTA bar so it never covers the last of the footer. */
+  padding-bottom: 72px;
 }
 
 img,

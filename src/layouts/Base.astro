@@ -1,6 +1,9 @@
 ---
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import Popups from '../components/Popups.astro';
+import StickyBar from '../components/StickyBar.astro';
+import Interactions from '../components/Interactions.astro';
 import { site } from '../data/site';
 import '../styles/tokens.css';
 import '../styles/global.css';
@@ -55,6 +58,9 @@ const ogImageUrl = ogImage ? new URL(ogImage, site.url).href : undefined;
       <slot />
     </main>
     <Footer />
+    <StickyBar />
+    <Popups />
+    <Interactions />
 
     <style is:global>
       .skip {

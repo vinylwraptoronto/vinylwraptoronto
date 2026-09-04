@@ -8,6 +8,7 @@
  */
 import type { Section } from '../types';
 import categories from '../data/categories.json';
+import QuoteForm from './QuoteForm.astro';
 
 export interface Props {
   sections: Section[];
@@ -186,6 +187,50 @@ const tocEntries = sections
           );
         }
 
+        if (b.type === 'filtergallery') {
+          return (
+            <div class="fgal" data-filtergallery>
+              {b.filters.length > 0 && (
+                <div class="fgal-tabs" role="tablist" aria-label="Gallery filter">
+                  {b.filters.map((f, i) => (
+                    <button
+                      type="button"
+                      role="tab"
+                      class="fgal-tab"
+                      data-index={f.index}
+                      aria-selected={i === 0 ? 'true' : 'false'}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div class="fgal-grid">
+                {b.items.map((it) => (
+                  <figure class="fgal-item" data-tag={it.tag}>
+                    <img src={it.src} alt={it.title} loading="lazy" decoding="async" />
+                  </figure>
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        if (b.type === 'form') return <QuoteForm id={`f-${section.id ?? 's'}`} />;
+
+        if (b.type === 'map') {
+          return (
+            <div class="mapembed">
+              <iframe
+                src={b.src}
+                title="Map"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+              ></iframe>
+            </div>
+          );
+        }
+
         if (b.type === 'video') {
           return (
             <div class="video">
@@ -351,6 +396,7 @@ const tocEntries = sections
   }
   .postnav .t { font-family: 'Poppins', sans-serif; font-weight: 500; font-size: 15px; }
 
+
   .gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -428,6 +474,58 @@ const tocEntries = sections
     .catlist ul { columns: 1; }
   }
 
+  /* Elementor filterable gallery */
+  .fgal-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 22px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 10px;
+  }
+  .fgal-tab {
+    background: none;
+    border: 0;
+    padding: 6px 0;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    color: var(--brand-navy);
+    border-bottom: 2px solid transparent;
+  }
+  .fgal-tab:hover { color: var(--brand-pink); }
+  .fgal-tab[aria-selected='true'] {
+    color: var(--brand-green);
+    border-bottom-color: var(--brand-green);
+  }
+
+  .fgal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+  .fgal-item { margin: 0; }
+  .fgal-item[hidden] { display: none; }
+  .fgal-item img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    display: block;
+    border-radius: 4px;
+    cursor: zoom-in;
+  }
+
+  @media (max-width: 767px) {
+    .fgal-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+    .fgal-tabs { gap: 4px 14px; }
+    .fgal-tab { font-size: 14px; }
+  }
+
+
+  .mapembed { position: relative; padding-top: 45%; }
+  .mapembed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
   .video { position: relative; padding-top: 56.25%; }
   .video iframe {
     position: absolute;
@@ -438,6 +536,7 @@ const tocEntries = sections
   }
 
   @media (max-width: 767px) {
+    .fgal-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
     .sec { padding: 24px 0; }
     .gallery { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
     .compare-pair { grid-template-columns: 1fr; }
