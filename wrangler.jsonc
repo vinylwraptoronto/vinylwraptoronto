@@ -1,16 +1,36 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "vinylwraptoronto",
-  "compatibility_date": "2025-09-01",
+  "compatibility_date": "2026-09-04",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "dist/_worker.js/index.js",
+
+  // The adapter's generated entry. Every content page still carries
+  // `export const prerender = true` and is served as a static file; this exists
+  // so a later gate can add the on-demand contact-form route.
+  "main": "./dist/_worker.js/index.js",
+
   "assets": {
-    "directory": "dist",
+    "directory": "./dist",
     "binding": "ASSETS",
-    // Workers does not infer 404 handling. This serves src/pages/404.astro
-    // for any address that does not match a prerendered page.
-    "not_found_handling": "404-page"
+    // Workers does not infer 404 handling the way Pages did. Without this an
+    // unknown path returns a bare 404 with no page around it.
+    "not_found_handling": "404-page",
+    // The default, set explicitly so nobody has to wonder.
+    "html_handling": "auto-trailing-slash"
   },
+
+  // Preview hostname only. The cutover hostnames (apex and www) are recorded
+  // but deliberately NOT attached here — attaching the apex would put the new
+  // site in front of the public before anyone has approved it.
+  "routes": [
+    { "pattern": "staging.vinylwraptoronto.com", "custom_domain": true }
+  ],
+
+  // A client's unapproved site must not also be reachable at
+  // <name>.<account>.workers.dev, which would be a second public copy of their
+  // business on the open internet.
+  "workers_dev": false,
+
   "observability": {
     "enabled": true
   }

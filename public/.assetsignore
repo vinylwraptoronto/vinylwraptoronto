@@ -1,0 +1,11 @@
+# Kept out of the public asset upload.
+#
+# Astro's Cloudflare adapter writes the server bundle to dist/_worker.js and its
+# routing hints to dist/_routes.json. Both are build output, not site content —
+# uploading _worker.js as a static asset would publish the server-side code to
+# the open internet. Wrangler refuses the deploy without this file.
+#
+# This lives in public/ so Astro copies it to dist/ on every build; a file
+# written directly into dist/ would be lost on the next build.
+_worker.js
+_routes.json
