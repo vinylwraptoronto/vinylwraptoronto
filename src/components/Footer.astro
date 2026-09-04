@@ -6,6 +6,7 @@
  * headings are 20px/500 uppercase white; icon-list text is 16px/400 white.
  * The bottom credit bar (#b853c7a) is white.
  */
+import QuoteForm from './QuoteForm.astro';
 import { site, social, legalLinks } from '../data/site';
 import {
   areasServed, areasIndex, workflow, fasterProcess, warranty, credit, hours, addressFull,
@@ -52,6 +53,11 @@ import {
       <ul class="list list--green"><li>{warranty}</li></ul>
 
       <h2>Get a Quote</h2>
+      <!-- The live footer template (18407) carries the quote form itself, which
+           is why a form appears on every page of the site. -->
+      <div class="footform">
+        <QuoteForm id="footer-quote" />
+      </div>
       <!-- #89ec862 — navy button, green border, green on hover -->
       <p class="btns">
         <a class="btn btn--solid" href={site.phoneHref}>Get an Estimate {site.phone}</a>
@@ -140,6 +146,20 @@ import {
 
   .list a { color: #ffffff; text-decoration: none; }
   .list a:hover { text-decoration: underline; }
+
+  /* The quote form sits on the navy column, so its own dark label and helper
+     text would be unreadable there. */
+  .footform { margin-bottom: 16px; }
+  .footform :global(.checks label),
+  .footform :global(.filelabel),
+  .footform :global(input[type='file']) { color: #ffffff; }
+  .footform :global(.qbtn) {
+    background-color: var(--e-global-color-a8178e9);
+    width: 100%;
+    text-align: center;
+  }
+  .footform :global(.qbtn:hover) { background-color: #ffffff; color: var(--brand-navy); }
+  .footform :global(.qstatus) { color: #ffffff; }
 
   .btns { display: flex; flex-direction: column; gap: 8px; margin: 0 0 16px; }
 

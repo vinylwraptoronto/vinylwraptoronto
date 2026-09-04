@@ -19,12 +19,15 @@
     "html_handling": "auto-trailing-slash"
   },
 
-  // Preview hostname only. The cutover hostnames (apex and www) are recorded
-  // but deliberately NOT attached here — attaching the apex would put the new
-  // site in front of the public before anyone has approved it.
-  "routes": [
-    { "pattern": "staging.vinylwraptoronto.com", "custom_domain": true }
-  ],
+  // Preview hostname: staging.vinylwraptoronto.com, attached to this Worker as
+  // a Custom Domain. That binding is held server-side and survives deploys, so
+  // it is deliberately NOT declared as a `routes` entry here — declaring it
+  // makes wrangler reconcile zone routes on every deploy, which needs a
+  // zone-level Workers Routes permission this token does not have, and the
+  // whole deploy then fails after the assets have already uploaded.
+  //
+  // The cutover hostnames (apex and www) are recorded but NOT attached —
+  // attaching the apex belongs to the domain-cutover gate, not here.
 
   // A client's unapproved site must not also be reachable at
   // <name>.<account>.workers.dev, which would be a second public copy of their
