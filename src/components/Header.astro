@@ -83,19 +83,16 @@ const branchCurrent = (item: NavItem): boolean =>
       </ul>
     </nav>
 
-    <!-- "I want to" — opens popup 18856 on the live site -->
-    <button class="wantto" type="button" data-popup="popup-want-to">I want to</button>
-
     <!-- #676171b1 .elementor-menu-toggle — pink, green on hover; becomes an X -->
-    <button class="toggle" type="button" aria-expanded="false" aria-controls="panel-nav" aria-label="Menu">
+    <button class="toggle" type="button" aria-expanded="false" aria-controls="panel-nav" aria-label="Menu Toggle">
       <span class="toggle-bars" aria-hidden="true"></span>
     </button>
 
-    <!-- #6ebf65a — CTA column: navy, turns green on hover -->
-    <div class="cta">
-      <a class="cta-link" href={site.phoneHref}>
-        Get an Estimate<span class="cta-phone">{site.phone}</span>
-      </a>
+    <!-- #6ebf65a — the third and last header column: navy, green on hover,
+         holding the #76c5194 button that opens popup 18856. This column is the
+         "I want to" control; the live header carries no phone CTA at all. -->
+    <div class="wantto-col">
+      <button class="wantto" type="button" data-popup="popup-want-to">I want to</button>
     </div>
   </div>
 
@@ -268,37 +265,33 @@ const branchCurrent = (item: NavItem): boolean =>
   .sub > li:first-child > a { border-top-left-radius: 10px; border-top-right-radius: 10px; }
   .sub > li:last-child > a { border-bottom-right-radius: 10px; border-bottom-left-radius: 10px; }
 
-  .wantto {
-    flex: 0 0 auto;
-    margin-right: 12px;
-    background: transparent;
-    border: 1px solid var(--e-global-color-a8178e9);
-    color: var(--e-global-color-d077a13);
-    font-family: 'Poppins', sans-serif;
-    font-weight: 500;
-    font-size: 14px;
-    text-transform: uppercase;
-    padding: 9px 14px;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .wantto:hover { background: var(--e-global-color-a8178e9); color: #fff; }
-
-  .cta {
+  /* #6ebf65a — navy column, green on hover, padding 0 */
+  .wantto-col {
     width: 9.664%;
-    background-color: var(--e-global-color-d077a13);
+    background-color: var(--e-global-color-d077a13); /* #15334C */
     align-self: stretch;
     display: flex;
     padding: 0;
   }
-  .cta:hover { background-color: var(--e-global-color-a8178e9); }
-  .cta-link {
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    gap: 2px; width: 100%; padding: 12px 10px;
-    font-family: 'Poppins', sans-serif; font-weight: 500; font-size: 13px;
-    line-height: 1.2; text-align: center; text-decoration: none; color: #fff;
+  .wantto-col:hover { background-color: var(--e-global-color-a8178e9); /* #99CC33 */ }
+
+  /* #76c5194 — transparent button so the column colour shows through */
+  .wantto {
+    width: 100%;
+    background-color: #ff009900;
+    border: 0;
+    border-radius: 0;
+    color: var(--e-global-color-accent);
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 1.3;
+    padding: 12px 10px;
+    text-align: center;
+    cursor: pointer;
+    white-space: nowrap;
   }
-  .cta-phone { font-size: 15px; white-space: nowrap; }
+  .wantto:hover { background-color: #99cc3300; }
 
   /* burger toggle — pink, green on hover, becomes an X when open */
   .toggle {
@@ -312,7 +305,11 @@ const branchCurrent = (item: NavItem): boolean =>
     height: 56px;
     position: relative;
   }
-  .toggle:hover { background-color: var(--e-global-color-a8178e9); }
+  /* Pink at rest, green on hover AND focus. Clicking to open the panel leaves
+     focus on the button, which is why the original shows a green burger for as
+     long as the menu is open. */
+  .toggle:hover,
+  .toggle:focus { background-color: var(--e-global-color-a8178e9); }
   .toggle-bars,
   .toggle-bars::before,
   .toggle-bars::after {
@@ -402,18 +399,23 @@ const branchCurrent = (item: NavItem): boolean =>
 
   /* Elementor's tablet breakpoint: the widget is dropdown-tablet, so the panel
      takes over from 1024px down. */
+  /* Column widths at the tablet breakpoint come from the live template:
+     logo 30%, nav 50%, "I want to" 20%. The burger takes the nav column's
+     place and sits at its right edge, which is where the original puts it. */
   @media (max-width: 1024px) {
-    .nav, .cta { display: none; }
-    .toggle { display: block; }
-    .brand { width: auto; max-width: 230px; flex: 0 0 auto; padding: 6px 0 6px 14px; }
-    .wantto { margin-left: auto; margin-right: 0; border: 0; border-left: 1px solid #f2f2f2; padding: 19px 18px; }
+    .nav { display: none; }
+    .toggle { display: block; margin-left: auto; }
+    .brand { width: 30%; max-width: 260px; padding: 6px 0 6px 14px; }
+    .wantto-col { width: 20%; }
     .panel { display: block; background: #fff; }
     .panel[hidden] { display: none; }
   }
 
   @media (max-width: 480px) {
-    .brand { max-width: 170px; }
-    .wantto { padding: 19px 10px; font-size: 12px; }
+    .brand { width: auto; max-width: 150px; padding-left: 10px; }
+    .toggle { width: 48px; height: 48px; }
+    .wantto-col { width: auto; }
+    .wantto { font-size: 13px; padding: 12px 12px; }
   }
 </style>
 
