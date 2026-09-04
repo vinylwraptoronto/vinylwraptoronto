@@ -402,6 +402,27 @@ const tocEntries = (sections ?? [])
     .cols > .col { flex-basis: 100%; max-width: 100%; }
   }
 
+  /* Ported post bodies are a different type scale from the page chrome: 17px
+     on 25.5px, not the 16/24 the body inherits. Headings inside them are
+     smaller than the standalone heading blocks and navy rather than body ink —
+     and the h3 weight is 700, which is what makes <strong> inside one resolve
+     to 900 as it does on the live site. */
+  .rt {
+    font-size: 17px;
+    line-height: 25.5px;
+  }
+  .rt :global(h2) {
+    font-size: 28px;
+    line-height: 33.6px;
+    color: var(--ink);
+  }
+  .rt :global(h3) {
+    font-size: 22px;
+    line-height: 26.4px;
+    font-weight: 700;
+    color: var(--brand-navy);
+  }
+
   .rt :global(p) { margin: 0 0 16px; }
   .rt :global(p:last-child) { margin-bottom: 0; }
   .rt :global(ul),
@@ -450,7 +471,11 @@ const tocEntries = (sections ?? [])
     color: #767676;
     text-align: center;
   }
-  .rt :global(a) { color: var(--brand-green); }
+  /* Measured pink and unlined on the live site, not green. Corrected here
+     rather than by adding a second rule: the two had equal specificity and the
+     later one simply won. */
+  .rt :global(a) { color: var(--brand-pink); text-decoration: none; }
+  .rt :global(a:hover) { text-decoration: underline; }
   .rt :global(a:hover) { color: var(--brand-pink); }
   .rt :global(h2),
   .rt :global(h3),
@@ -489,8 +514,9 @@ const tocEntries = (sections ?? [])
     color: var(--e-global-color-accent);
     font-family: 'Poppins', sans-serif;
     font-weight: 500;
+    /* measured 18px leading on the live button widget */
     font-size: 15px;
-    line-height: 15px;
+    line-height: 18px;
     padding: 12px 24px;
     border-radius: 0;
     text-decoration: none;
@@ -516,9 +542,24 @@ const tocEntries = (sections ?? [])
   .ilist a { color: inherit; text-decoration: none; }
   .ilist a:hover { color: var(--brand-pink); }
 
-  .feature { padding: 16px; background: var(--panel); border-radius: 4px; }
-  .feature h3 { margin-bottom: 8px; }
-  .feature p { margin: 0; }
+  /* Elementor icon-box. Measured on the live render: the title is 17px/20.4px
+     weight 600 in brand green, the text 14px/21px in body ink, and the whole
+     box is centred — not the page's default left-aligned h3 + p. */
+  .feature { padding: 16px; background: var(--panel); border-radius: 4px; text-align: center; }
+  .feature h3 {
+    margin-bottom: 8px;
+    font-size: 17px;
+    line-height: 20.4px;
+    font-weight: 600;
+    color: var(--brand-green);
+    text-transform: none;
+  }
+  .feature p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 21px;
+    color: var(--ink);
+  }
   .feature img {
     display: block;
     width: 100%;

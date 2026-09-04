@@ -36,7 +36,9 @@ h1, h2, h3, h4, h5, h6 {
 /* measured h2: 45px / 58.5px, weight 600, #14A278, capitalize */
 h2 {
   font-size: 45px;
-  line-height: 58.5px;
+  /* Measured 35px on the live render, not the 1.3 ratio the rest of the scale
+     uses — section titles set a tight leading against a large size. */
+  line-height: 35px;
   font-weight: 600;
   color: var(--brand-green);
   text-transform: capitalize;

@@ -98,7 +98,8 @@ const vehicleTypes = ['Van', 'Truck', 'Car', 'SUV', 'Trailer', 'Boat', 'Motorcyc
     margin: 0;
     padding: 2px 0;
   }
-  .checks label { display: flex; align-items: center; gap: 7px; font-size: 15px; }
+  /* measured 14px/14px on the live form, not 15px on the inherited 24px */
+  .checks label { display: flex; align-items: center; gap: 7px; font-size: 14px; line-height: 14px; }
 
   .filelabel { font-size: 14px; margin-bottom: 4px; color: var(--ink); }
   .qform input[type='file'] { font-size: 14px; }
@@ -109,8 +110,10 @@ const vehicleTypes = ['Van', 'Truck', 'Car', 'SUV', 'Trailer', 'Boat', 'Motorcyc
     color: #fff;
     font-family: 'Poppins', sans-serif;
     font-weight: 500;
-    font-size: 15px;
-    line-height: 15px;
+    /* measured 18px/18px uppercase on the live submit button */
+    font-size: 18px;
+    line-height: 18px;
+    text-transform: uppercase;
     padding: 13px 26px;
     border: 0;
     border-radius: 0;
