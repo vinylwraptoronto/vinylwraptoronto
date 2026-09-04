@@ -200,6 +200,75 @@
       if (e.key === 'ArrowRight') show(index + 1);
     });
 
+    // ---------- carousels --------------------------------------------------
+    // Elementor's image carousel. Slides-per-view, timing and pause-on-hover
+    // all come from the widget's own settings, carried on data attributes.
+    document.querySelectorAll<HTMLElement>('[data-carousel]').forEach((el) => {
+      const track = el.querySelector<HTMLElement>('.carou-track');
+      const dots = el.querySelector<HTMLElement>('.carou-dots');
+      if (!track) return;
+
+      const slides = [...track.querySelectorAll<HTMLElement>('.carou-slide')];
+      const perDesktop = Number(el.dataset.per || 3);
+      const perMobile = Number(el.dataset.perMobile || 2);
+      const delay = Number(el.dataset.delay || 5000);
+      const speed = Number(el.dataset.speed || 500);
+      const infinite = el.dataset.infinite === 'yes';
+      const autoplay = el.dataset.autoplay === 'yes';
+      const pauseOnHover = el.dataset.pause === 'yes';
+
+      const per = () => (window.matchMedia('(max-width: 767px)').matches ? perMobile : perDesktop);
+      const pages = () => Math.max(1, Math.ceil(slides.length / per()));
+
+      let page = 0;
+      const applyPer = () => el.style.setProperty('--per', String(per()));
+
+      const go = (p: number) => {
+        const total = pages();
+        page = infinite ? (p + total) % total : Math.min(Math.max(p, 0), total - 1);
+        track.style.transition = `transform ${speed}ms ease`;
+        track.scrollTo({ left: page * track.clientWidth, behavior: 'smooth' });
+        dots?.querySelectorAll('button').forEach((d, i) =>
+          d.setAttribute('aria-selected', String(i === page)));
+      };
+
+      applyPer();
+      window.addEventListener('resize', () => { applyPer(); buildDots(); go(0); });
+
+      function buildDots() {
+        if (!dots) return;
+        dots.innerHTML = '';
+        const total = pages();
+        // A carousel that shows every slide at once has nothing to page through.
+        if (total < 2) return;
+        for (let i = 0; i < total; i++) {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.setAttribute('role', 'tab');
+          b.setAttribute('aria-label', `Slide ${i + 1}`);
+          b.setAttribute('aria-selected', String(i === page));
+          b.addEventListener('click', () => { stop(); go(i); });
+          dots.appendChild(b);
+        }
+      }
+
+      let timer = 0;
+      const start = () => {
+        if (!autoplay || pages() < 2) return;
+        stop();
+        timer = window.setInterval(() => go(page + 1), delay);
+      };
+      const stop = () => { if (timer) { window.clearInterval(timer); timer = 0; } };
+
+      if (pauseOnHover) {
+        el.addEventListener('mouseenter', stop);
+        el.addEventListener('mouseleave', start);
+      }
+
+      buildDots();
+      start();
+    });
+
     // ---------- filterable gallery -----------------------------------------
     document.querySelectorAll<HTMLElement>('[data-filtergallery]').forEach((gal) => {
       const tabs = [...gal.querySelectorAll<HTMLButtonElement>('.fgal-tab')];

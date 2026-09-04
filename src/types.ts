@@ -37,6 +37,21 @@ export type Block =
       next?: { href: string; text: string };
     }
   | { type: 'gallery'; images: { src: string; alt: string }[] }
+  /* A real carousel. Timing and slides-per-view come from the widget's own
+     data-settings, not from CSS. */
+  | {
+      type: 'carousel';
+      images: { src: string; alt: string }[];
+      perView: number;
+      perViewMobile: number;
+      gap: number;
+      autoplay: boolean;
+      delay: number;
+      speed: number;
+      pauseOnHover: boolean;
+      infinite: boolean;
+      dots: boolean;
+    }
   | { type: 'faq'; items: { q: string; a: string }[] }
   | { type: 'video'; src: string }
   | {

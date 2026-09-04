@@ -173,6 +173,32 @@ const tocEntries = sections
           );
         }
 
+        if (b.type === 'carousel') {
+          return (
+            <div
+              class="carou"
+              data-carousel
+              data-per={b.perView}
+              data-per-mobile={b.perViewMobile}
+              data-autoplay={b.autoplay ? 'yes' : 'no'}
+              data-delay={b.delay}
+              data-speed={b.speed}
+              data-pause={b.pauseOnHover ? 'yes' : 'no'}
+              data-infinite={b.infinite ? 'yes' : 'no'}
+              style={`--carou-gap:${b.gap}px`}
+            >
+              <div class="carou-track">
+                {b.images.map((i) => (
+                  <figure class="carou-slide">
+                    <img src={i.src} alt={i.alt} loading="lazy" decoding="async" />
+                  </figure>
+                ))}
+              </div>
+              {b.dots && <div class="carou-dots" role="tablist" aria-label="Slide"></div>}
+            </div>
+          );
+        }
+
         if (b.type === 'gallery') {
           return (
             <div class="gallery">
@@ -444,6 +470,35 @@ const tocEntries = sections
   }
   .postnav .t { font-family: 'Poppins', sans-serif; font-weight: 500; font-size: 15px; }
 
+
+  /* Carousel: slides-per-view and gap come from the widget's own settings. */
+  .carou { position: relative; }
+  .carou-track {
+    display: flex;
+    gap: var(--carou-gap, 5px);
+    overflow: hidden;
+    scroll-behavior: smooth;
+  }
+  .carou-slide {
+    margin: 0;
+    flex: 0 0 calc((100% - (var(--per, 3) - 1) * var(--carou-gap, 5px)) / var(--per, 3));
+  }
+  .carou-slide img { width: 100%; display: block; }
+
+  .carou-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .carou-dots button {
+    width: 10px; height: 10px; padding: 0;
+    border-radius: 50%;
+    border: 0;
+    background: var(--rule);
+    cursor: pointer;
+  }
+  .carou-dots button[aria-selected='true'] { background: var(--brand-green); }
 
   .gallery {
     display: grid;
