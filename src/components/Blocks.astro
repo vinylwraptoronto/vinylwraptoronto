@@ -147,7 +147,14 @@ const tocEntries = sections
               {b.cards.map((c) => (
                 <li>
                   <a href={c.href}>
-                    {c.image && <img src={img(c.image)} alt={c.title} loading="lazy" decoding="async" />}
+                    {c.image && (
+                      <img
+                        src={img(c.image)}
+                        alt={c.alt ?? c.title}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    )}
                     <span>{c.title}</span>
                   </a>
                 </li>
@@ -264,7 +271,7 @@ const tocEntries = sections
               <div class="fgal-grid">
                 {b.items.map((it) => (
                   <figure class="fgal-item" data-tag={it.tag}>
-                    <img src={img(it.src)} alt={it.title} loading="lazy" decoding="async" />
+                    <img src={img(it.src)} alt={it.alt ?? it.title} loading="lazy" decoding="async" />
                   </figure>
                 ))}
               </div>

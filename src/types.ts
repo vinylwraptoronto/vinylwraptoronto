@@ -15,7 +15,13 @@ export type Block =
   | { type: 'button'; text: string; href: string; style?: string | null }
   | { type: 'list'; items: { text: string; href?: string | null }[] }
   | { type: 'feature'; title: string; text: string; image?: string | null; alt?: string }
-  | { type: 'cards'; cards: { title: string; href: string; image: string | null }[] }
+  /* `alt` is the original's own alt text, which is not the card title: the port
+     used the title and lost the description on 960 pages. An empty string is
+     meaningful — the original marks decorative images that way. */
+  | {
+      type: 'cards';
+      cards: { title: string; href: string; image: string | null; alt?: string }[];
+    }
   /* Both are built client-side on the live site, so they are regenerated at
      render time rather than ported as markup that would arrive empty. */
   | { type: 'toc'; title: string }
@@ -29,7 +35,7 @@ export type Block =
   | {
       type: 'filtergallery';
       filters: { index: string; label: string }[];
-      items: { src: string; title: string; tag: string }[];
+      items: { src: string; title: string; tag: string; alt?: string }[];
     }
   | {
       type: 'postnav';
@@ -109,6 +115,8 @@ export type Summary = {
   title: string;
   description: string;
   image: string | null;
+  /** The original's alt text for `image`; the title is not a description. */
+  alt?: string;
   published: string | null;
   kind: PageKind;
 };

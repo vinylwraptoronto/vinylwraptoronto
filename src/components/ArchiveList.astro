@@ -34,7 +34,7 @@ const fmt = (d: string | null) =>
           <li class="card">
             <a href={`/${it.slug}/`}>
               {it.image ? (
-                <img src={img(it.image)} alt={it.title} loading="lazy" decoding="async" />
+                <img src={img(it.image)} alt={it.alt ?? it.title} loading="lazy" decoding="async" />
               ) : (
                 <span class="noimg" aria-hidden="true"></span>
               )}
