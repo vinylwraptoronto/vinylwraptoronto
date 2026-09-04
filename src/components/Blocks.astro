@@ -232,7 +232,9 @@ const tocEntries = sections
           return (
             <div class="gallery">
               {b.images.map((i) => (
-                <img src={img(i.src)} alt={i.alt} loading="lazy" decoding="async" />
+                <a class="lb-link" href={img(i.src)}>
+                  <img src={img(i.src)} alt={i.alt} loading="lazy" decoding="async" />
+                </a>
               ))}
             </div>
           );
@@ -291,7 +293,12 @@ const tocEntries = sections
               <div class="fgal-grid">
                 {b.items.map((it) => (
                   <figure class="fgal-item" data-tag={it.tag}>
-                    <img src={img(it.src)} alt={it.alt ?? it.title} loading="lazy" decoding="async" />
+                    {/* The original wraps every gallery item in a link to the
+                        full-size file and opens its lightbox from there. The
+                        link is what makes the picture reachable with JS off. */}
+                    <a class="lb-link" href={img(it.src)} title={it.title}>
+                      <img src={img(it.src)} alt={it.alt ?? it.title} loading="lazy" decoding="async" />
+                    </a>
                   </figure>
                 ))}
               </div>

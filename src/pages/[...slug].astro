@@ -26,6 +26,15 @@ export async function getStaticPaths() {
 
 const { page } = Astro.props as { page: PageData };
 
+/* Every post byline on the original links to that author's archive. Only these
+   two archives exist and are linked there; a third author value, "Paolo Leone",
+   appears on three pages but /author/paolo* redirects, so it stays plain text. */
+const AUTHOR_ARCHIVES: Record<string, string> = {
+  'Harjit Singh': '/author/harjitbrandingcentres-com/',
+  masoud: '/author/masoud/',
+};
+const authorHref = page.author ? AUTHOR_ARCHIVES[page.author] : undefined;
+
 const dateLabel = page.published
   ? new Date(page.published).toLocaleDateString('en-CA', {
       year: 'numeric',
@@ -47,7 +56,11 @@ const dateLabel = page.published
     <div class="postmeta">
       <div class="container">
         <time datetime={page.published!}>{dateLabel}</time>
-        {page.author && <span class="by">by {page.author}</span>}
+        {page.author && (
+          <span class="by">
+            by {authorHref ? <a href={authorHref}>{page.author}</a> : page.author}
+          </span>
+        )}
       </div>
     </div>
   )}

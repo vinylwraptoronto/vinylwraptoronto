@@ -115,6 +115,12 @@
   :global(.compare-pair[data-juxtapose] figure:first-child figcaption) { left: 10px; }
   :global(.compare-pair[data-juxtapose] figure:last-child figcaption) { right: 10px; }
 
+  /* The gallery link must not change how the grid lays out. */
+  :global(a.lb-link) {
+    display: block;
+    line-height: 0;
+  }
+
   :global(.jx-handle) {
     position: absolute;
     top: 0;
@@ -189,8 +195,22 @@
       if (t.closest('[data-lb-next]')) return show(index + 1);
       if (t === box) return close();
 
+      // Gallery items are links to the full-size file, exactly as on the live
+      // site, so the picture is still reachable with JS off. With JS the link
+      // is intercepted and opens the viewer instead of navigating.
+      const lbLink = t.closest<HTMLAnchorElement>('a.lb-link');
+      if (lbLink) {
+        const inner = lbLink.querySelector('img');
+        if (inner) {
+          e.preventDefault();
+          open(inner);
+          return;
+        }
+      }
+
       const hit = t.closest<HTMLImageElement>(SEL);
-      // A linked image keeps its link; only unlinked images open the viewer.
+      // Any other linked image keeps its link; only unlinked images open the
+      // viewer.
       if (hit && hit.tagName === 'IMG' && !hit.closest('a')) {
         e.preventDefault();
         open(hit);
