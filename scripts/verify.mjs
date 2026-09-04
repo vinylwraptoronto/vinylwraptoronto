@@ -118,7 +118,11 @@ ok('header border is 2px #99CC33', header.borderBottom === 'rgb(153, 204, 51) 2p
 ok('header background white', header.bg === 'rgb(255, 255, 255)', header.bg);
 ok('CTA column is navy #15334C', header.ctaBg === 'rgb(21, 51, 76)', String(header.ctaBg));
 ok('9 top-level nav links', header.navLinks === 9, String(header.navLinks));
-ok('51 sub links survived', header.subLinks === 51, String(header.subLinks));
+// 44, not the 51 this once asserted: the earlier flat nav data counted a
+// phantom sub-entry for each of Home, PPF, Projects and Contact, which have no
+// children on the live site, and double-counted a few branch parents. The live
+// menu is 9 top items and 44 descendants — 53 links, three levels deep.
+ok('44 sub links survived', header.subLinks === 44, String(header.subLinks));
 
 // --- no reference to the old server ---------------------------------------
 let oldRefs = 0;

@@ -39,8 +39,9 @@ export const legalLinks = [
   { text: 'Sitemap', href: '/sitemap/' },
 ] as const;
 
+/** The live menu is three levels deep (Vehicle Wraps > Car Wraps > Full Wrap). */
 export type NavItem = {
   text: string;
   href: string;
-  sub: { text: string; href: string }[];
+  children: NavItem[];
 };

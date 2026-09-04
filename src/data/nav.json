@@ -2,259 +2,276 @@
  {
   "text": "Home",
   "href": "/",
-  "sub": [
-   {
-    "text": "Home",
-    "href": "/"
-   }
-  ]
+  "children": []
  },
  {
   "text": "About",
   "href": "#",
-  "sub": [
+  "children": [
    {
     "text": "Company",
-    "href": "/car-wrap-about-vinyl-wrap-toronto/"
+    "href": "/car-wrap-about-vinyl-wrap-toronto/",
+    "children": []
    },
    {
     "text": "What We Use",
-    "href": "/car-wrap-colours-avery-dennison-3m/"
+    "href": "/car-wrap-colours-avery-dennison-3m/",
+    "children": []
    },
    {
     "text": "FAQs",
-    "href": "/car-wrap-faqs/"
+    "href": "/car-wrap-faqs/",
+    "children": []
    },
    {
     "text": "Blog",
-    "href": "/blog/"
+    "href": "/blog/",
+    "children": []
    }
   ]
  },
  {
   "text": "Vehicle Wraps",
   "href": "#",
-  "sub": [
+  "children": [
    {
     "text": "Car Wraps",
-    "href": "/car-wraps/"
-   },
-   {
-    "text": "Full Wrap",
-    "href": "/full-car-wrap-toronto/"
-   },
-   {
-    "text": "Partial Wrap",
-    "href": "/partial-car-wrap-gta/"
-   },
-   {
-    "text": "Lettering & Decals",
-    "href": "/car-lettering-and-decals-gta/"
+    "href": "/car-wraps/",
+    "children": [
+     {
+      "text": "Full Wrap",
+      "href": "/full-car-wrap-toronto/",
+      "children": []
+     },
+     {
+      "text": "Partial Wrap",
+      "href": "/partial-car-wrap-gta/",
+      "children": []
+     },
+     {
+      "text": "Lettering & Decals",
+      "href": "/car-lettering-and-decals-gta/",
+      "children": []
+     }
+    ]
    },
    {
     "text": "Van Wraps",
-    "href": "/van-wraps/"
-   },
-   {
-    "text": "Full Wrap",
-    "href": "/full-van-wrap-toronto/"
-   },
-   {
-    "text": "Partial Wrap",
-    "href": "/partial-van-wrap-toronto/"
-   },
-   {
-    "text": "Lettering and Decal",
-    "href": "/van-lettering-and-decals-toronto/"
+    "href": "/van-wraps/",
+    "children": [
+     {
+      "text": "Full Wrap",
+      "href": "/full-van-wrap-toronto/",
+      "children": []
+     },
+     {
+      "text": "Partial Wrap",
+      "href": "/partial-van-wrap-toronto/",
+      "children": []
+     },
+     {
+      "text": "Lettering and Decal",
+      "href": "/van-lettering-and-decals-toronto/",
+      "children": []
+     }
+    ]
    },
    {
     "text": "Truck Wraps",
-    "href": "/truck-wraps/"
-   },
-   {
-    "text": "Full Wrap",
-    "href": "/full-truck-wrap-gta-toronto/"
-   },
-   {
-    "text": "Partial Wrap",
-    "href": "/partial-truck-wrap-toronto-2/"
-   },
-   {
-    "text": "Lettering and Decal",
-    "href": "/truck-lettering-and-decals-toronto/"
-   },
-   {
-    "text": "Box Truck Wrap",
-    "href": "/box-truck-wrap/"
+    "href": "/truck-wraps/",
+    "children": [
+     {
+      "text": "Full Wrap",
+      "href": "/full-truck-wrap-gta-toronto/",
+      "children": []
+     },
+     {
+      "text": "Partial Wrap",
+      "href": "/partial-truck-wrap-toronto-2/",
+      "children": []
+     },
+     {
+      "text": "Lettering and Decal",
+      "href": "/truck-lettering-and-decals-toronto/",
+      "children": []
+     },
+     {
+      "text": "Box Truck Wrap",
+      "href": "/box-truck-wrap/",
+      "children": []
+     }
+    ]
    },
    {
     "text": "Jeep & SUV Wraps",
-    "href": "/jeep-suv-wraps/"
-   },
-   {
-    "text": "Full Wraps",
-    "href": "/jeep-suv-full-wraps/"
-   },
-   {
-    "text": "Partial Wraps",
-    "href": "/jeep-and-suv-partial-wraps-in-toronto/"
-   },
-   {
-    "text": "Lettering and Decals",
-    "href": "/jeep-suv-lettering-and-decals-in-toronto/"
+    "href": "/jeep-suv-wraps/",
+    "children": [
+     {
+      "text": "Full Wraps",
+      "href": "/jeep-suv-full-wraps/",
+      "children": []
+     },
+     {
+      "text": "Partial Wraps",
+      "href": "/jeep-and-suv-partial-wraps-in-toronto/",
+      "children": []
+     },
+     {
+      "text": "Lettering and Decals",
+      "href": "/jeep-suv-lettering-and-decals-in-toronto/",
+      "children": []
+     }
+    ]
    },
    {
     "text": "Trailer Wraps",
-    "href": "/trailer-wrap-toronto/"
-   },
-   {
-    "text": "Full Trailer Wrap",
-    "href": "/full-trailer-wrap/"
-   },
-   {
-    "text": "Trailer Decals & Lettering",
-    "href": "/trailer-decals-lettering/"
+    "href": "/trailer-wrap-toronto/",
+    "children": [
+     {
+      "text": "Full Trailer Wrap",
+      "href": "/full-trailer-wrap/",
+      "children": []
+     },
+     {
+      "text": "Trailer Decals & Lettering",
+      "href": "/trailer-decals-lettering/",
+      "children": []
+     }
+    ]
    },
    {
     "text": "Anime Car Wraps",
-    "href": "/custom-anime-car-wraps-gta/"
+    "href": "/custom-anime-car-wraps-gta/",
+    "children": []
    },
    {
     "text": "Motorcycle Wraps",
-    "href": "/motorcycle-wrap-toronto/"
+    "href": "/motorcycle-wrap-toronto/",
+    "children": []
    },
    {
     "text": "Racing Stripes",
-    "href": "/racing-stripes/"
+    "href": "/racing-stripes/",
+    "children": []
    },
    {
     "text": "Boat Wraps",
-    "href": "/boat-wrap-toronto/"
+    "href": "/boat-wrap-toronto/",
+    "children": []
    },
    {
     "text": "Motorhome (RV) Wraps",
-    "href": "/rv-custom-full-wrap-vinyl-wrap-toronto/"
+    "href": "/rv-custom-full-wrap-vinyl-wrap-toronto/",
+    "children": []
    },
    {
     "text": "Ford Wraps",
-    "href": "/ford-mustang-wraps-pickup-truck-wraps/"
+    "href": "/ford-mustang-wraps-pickup-truck-wraps/",
+    "children": []
    },
    {
     "text": "Equipment Wraps",
-    "href": "/object-and-equipment-wrap-toronto/"
+    "href": "/object-and-equipment-wrap-toronto/",
+    "children": []
    },
    {
     "text": "Food Truck Wraps",
-    "href": "/custom-food-truck-wraps-in-toronto/"
+    "href": "/custom-food-truck-wraps-in-toronto/",
+    "children": []
    },
    {
     "text": "Carbon Fibre Wraps",
-    "href": "/carbon-fibre-wraps-vinyl-wrap-toronto/"
+    "href": "/carbon-fibre-wraps-vinyl-wrap-toronto/",
+    "children": []
    },
    {
     "text": "Recreational Wrap Toronto",
-    "href": "/recreational-wrap-toronto-2/"
+    "href": "/recreational-wrap-toronto-2/",
+    "children": []
    },
    {
     "text": "Commercial Vehicle Wraps",
-    "href": "/commercial-vehicle-wraps/"
+    "href": "/commercial-vehicle-wraps/",
+    "children": []
    },
    {
     "text": "Personal Vehicle Wraps",
-    "href": "/personal-vehicle-wraps/"
+    "href": "/personal-vehicle-wraps/",
+    "children": []
    }
   ]
  },
  {
   "text": "Signage",
   "href": "/signage/",
-  "sub": [
-   {
-    "text": "Signage",
-    "href": "/signage/"
-   },
+  "children": [
    {
     "text": "Storefront Signs",
-    "href": "/storefront-signs-toronto/"
+    "href": "/storefront-signs-toronto/",
+    "children": []
    },
    {
     "text": "Window Graphics",
-    "href": "/custom-window-graphics-gta/"
+    "href": "/custom-window-graphics-gta/",
+    "children": []
    },
    {
     "text": "Wall Graphics",
-    "href": "/wall-graphics-toronto/"
+    "href": "/wall-graphics-toronto/",
+    "children": []
    }
   ]
  },
  {
   "text": "Tesla Wraps",
   "href": "/tesla-vinyl-wraps/",
-  "sub": [
-   {
-    "text": "Tesla Wraps",
-    "href": "/tesla-vinyl-wraps/"
-   },
+  "children": [
    {
     "text": "Tesla Model 3 Wraps",
-    "href": "/tesla-model-3-wraps/"
+    "href": "/tesla-model-3-wraps/",
+    "children": []
    },
    {
     "text": "Tesla Model S Wraps",
-    "href": "/tesla-model-s-wraps/"
+    "href": "/tesla-model-s-wraps/",
+    "children": []
    },
    {
     "text": "Cybertruck Wraps",
-    "href": "/cybertruck-wraps/"
+    "href": "/cybertruck-wraps/",
+    "children": []
    }
   ]
  },
  {
   "text": "PPF",
   "href": "/vehicle-paint-protection-film-toronto/",
-  "sub": [
-   {
-    "text": "PPF",
-    "href": "/vehicle-paint-protection-film-toronto/"
-   }
-  ]
+  "children": []
  },
  {
   "text": "Our Work",
   "href": "/our-work/",
-  "sub": [
+  "children": [
    {
     "text": "Our Work",
-    "href": "/our-work/"
-   },
-   {
-    "text": "Our Work",
-    "href": "/our-work/"
+    "href": "/our-work/",
+    "children": []
    },
    {
     "text": "Wrap Gallery",
-    "href": "/vinyl-car-wrap-our-portfolio/"
+    "href": "/vinyl-car-wrap-our-portfolio/",
+    "children": []
    }
   ]
  },
  {
   "text": "Projects",
   "href": "/blogs/wrap-projects/",
-  "sub": [
-   {
-    "text": "Projects",
-    "href": "/blogs/wrap-projects/"
-   }
-  ]
+  "children": []
  },
  {
   "text": "Contact",
   "href": "/contact/",
-  "sub": [
-   {
-    "text": "Contact",
-    "href": "/contact/"
-   }
-  ]
+  "children": []
  }
 ]

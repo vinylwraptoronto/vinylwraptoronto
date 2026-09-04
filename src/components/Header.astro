@@ -2,15 +2,34 @@
 /**
  * Header — port of Elementor template 18399.
  *
- * Every rule below is traceable to an element id in that template; the ids are
- * cited in comments so a re-port after a redesign is a diff, not a rediscovery.
+ * Two distinct layouts, as on the live site:
+ *
+ *  > 1024px  horizontal bar with hover dropdowns
+ *  <= 1024px burger toggle opening a full-width vertical panel whose
+ *            sub-levels expand inline
+ *
+ * The breakpoint is not a guess: the live nav widget carries
+ * `elementor-nav-menu--dropdown-tablet`, which is Elementor for "use the
+ * dropdown from the tablet breakpoint down" — 1024px. Getting this wrong is
+ * what left the staging header showing a wrapped horizontal bar at widths
+ * where the original shows the panel.
+ *
+ * The menu is three levels deep (Vehicle Wraps > Car Wraps > Full Wrap), so
+ * both layouts render it recursively rather than flattening it.
  */
 import navData from '../data/nav.json';
 import { site, type NavItem } from '../data/site';
 
 const nav = navData as NavItem[];
 const { pathname } = Astro.url;
-const isCurrent = (href: string) => href !== '#' && href !== '/' && pathname.startsWith(href);
+const isCurrent = (href: string) =>
+  href !== '#' &&
+  // "/" must match only the homepage itself, never every page by prefix — but
+  // it does have to match it, or Home never shows as the current row.
+  (href === '/' ? pathname === '/' : pathname.startsWith(href));
+/** A branch counts as current when it or anything beneath it is the page. */
+const branchCurrent = (item: NavItem): boolean =>
+  isCurrent(item.href) || item.children.some(branchCurrent);
 ---
 
 <header class="site-header">
@@ -27,22 +46,34 @@ const isCurrent = (href: string) => href !== '#' && href !== '/' && pathname.sta
     <nav class="nav" aria-label="Primary">
       <ul>
         {nav.map((item) => (
-          <li class={item.sub.length > 0 ? 'has-sub' : ''}>
+          <li class={item.children.length > 0 ? 'has-sub' : ''}>
             <a
               href={item.href}
               aria-current={isCurrent(item.href) ? 'page' : undefined}
-              aria-haspopup={item.sub.length > 0 ? 'true' : undefined}
+              aria-haspopup={item.children.length > 0 ? 'true' : undefined}
             >
               {item.text}
-              {item.sub.length > 0 && <span class="caret" aria-hidden="true"></span>}
+              {item.children.length > 0 && <span class="caret" aria-hidden="true"></span>}
             </a>
-            {item.sub.length > 0 && (
-              <ul class={`sub${item.sub.length > 12 ? ' sub--wide' : ''}`}>
-                {item.sub.map((s) => (
-                  <li>
-                    <a href={s.href} aria-current={isCurrent(s.href) ? 'page' : undefined}>
-                      {s.text}
+            {item.children.length > 0 && (
+              <ul class={`sub${item.children.length > 12 ? ' sub--wide' : ''}`}>
+                {item.children.map((c) => (
+                  <li class={c.children.length > 0 ? 'has-sub2' : ''}>
+                    <a href={c.href} aria-current={isCurrent(c.href) ? 'page' : undefined}>
+                      {c.text}
+                      {c.children.length > 0 && <span class="caret caret--right" aria-hidden="true"></span>}
                     </a>
+                    {c.children.length > 0 && (
+                      <ul class="sub2">
+                        {c.children.map((g) => (
+                          <li>
+                            <a href={g.href} aria-current={isCurrent(g.href) ? 'page' : undefined}>
+                              {g.text}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -55,29 +86,52 @@ const isCurrent = (href: string) => href !== '#' && href !== '/' && pathname.sta
     <!-- "I want to" — opens popup 18856 on the live site -->
     <button class="wantto" type="button" data-popup="popup-want-to">I want to</button>
 
+    <!-- #676171b1 .elementor-menu-toggle — pink, green on hover; becomes an X -->
+    <button class="toggle" type="button" aria-expanded="false" aria-controls="panel-nav" aria-label="Menu">
+      <span class="toggle-bars" aria-hidden="true"></span>
+    </button>
+
     <!-- #6ebf65a — CTA column: navy, turns green on hover -->
     <div class="cta">
       <a class="cta-link" href={site.phoneHref}>
         Get an Estimate<span class="cta-phone">{site.phone}</span>
       </a>
     </div>
-
-    <!-- #676171b1 .elementor-menu-toggle — pink, green on hover -->
-    <button class="toggle" type="button" aria-expanded="false" aria-controls="mobile-nav">
-      <span class="toggle-bars" aria-hidden="true"></span>
-      <span class="sr-only">Menu</span>
-    </button>
   </div>
 
-  <nav id="mobile-nav" class="mobile-nav" hidden aria-label="Mobile">
+  <!-- The panel menu: full-width rows, sub-levels expand inline. -->
+  <nav id="panel-nav" class="panel" hidden aria-label="Menu">
     <ul>
       {nav.map((item) => (
-        <li>
-          <a href={item.href}>{item.text}</a>
-          {item.sub.length > 0 && (
-            <ul>
-              {item.sub.map((s) => (
-                <li><a href={s.href}>{s.text}</a></li>
+        <li class={branchCurrent(item) ? 'open' : ''}>
+          <div class="prow">
+            <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>{item.text}</a>
+            {item.children.length > 0 && (
+              <button class="pexp" type="button" aria-expanded={branchCurrent(item) ? 'true' : 'false'} aria-label={`Toggle ${item.text}`}></button>
+            )}
+          </div>
+          {item.children.length > 0 && (
+            <ul class="plevel2">
+              {item.children.map((c) => (
+                <li class={branchCurrent(c) ? 'open' : ''}>
+                  <div class="prow">
+                    <a href={c.href} aria-current={isCurrent(c.href) ? 'page' : undefined}>{c.text}</a>
+                    {c.children.length > 0 && (
+                      <button class="pexp" type="button" aria-expanded={branchCurrent(c) ? 'true' : 'false'} aria-label={`Toggle ${c.text}`}></button>
+                    )}
+                  </div>
+                  {c.children.length > 0 && (
+                    <ul class="plevel3">
+                      {c.children.map((g) => (
+                        <li>
+                          <div class="prow">
+                            <a href={g.href} aria-current={isCurrent(g.href) ? 'page' : undefined}>{g.text}</a>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
               ))}
             </ul>
           )}
@@ -88,9 +142,7 @@ const isCurrent = (href: string) => href !== '#' && href !== '/' && pathname.sta
 </header>
 
 <style>
-  /* #9a5dc73 — the header bar.
-     The live header is sticky:top on desktop, tablet and mobile with
-     sticky_offset 0, so it stays put on scroll. */
+  /* #9a5dc73 — the header bar, sticky:top at every breakpoint. */
   .site-header {
     background-color: #ffffff;
     border-style: solid;
@@ -102,42 +154,28 @@ const isCurrent = (href: string) => href !== '#' && href !== '/' && pathname.sta
     z-index: 100;
   }
 
-  /* The header section is stretched on the live site: measured 1440px wide at a
-     1440px viewport, not clamped to the 1200px content container. Clamping it
-     squeezes the nav below the 952px its nine items need and wraps "Contact"
-     onto a second row. */
-  .bar {
-    width: 100%;
-    display: flex;
-    align-items: center;   /* align-content:center; align-items:center */
-    gap: 0;
-    padding: 0;
-  }
+  /* Stretched full width on the live site, not clamped to the content column. */
+  .bar { width: 100%; display: flex; align-items: center; gap: 0; padding: 0; }
 
-  /* #5b7a0d2a — logo column: 12% desktop, 30% ≤1024, 75% ≤767 */
   .brand { width: 12%; display: block; text-align: start; }
-  /* #6f3f7a8f img{width:100%} */
   .brand img { width: 100%; height: auto; display: block; }
 
-  /* #3088a032 — nav column: 78% desktop, 50% ≤1024 */
   .nav { width: 78%; margin: 0 35px 0 0; }
 
-  /* Top-level rules use `>` throughout: a descendant selector such as
-     `.nav ul` would also match ul.sub inside it and out-specify the rule that
-     hides the submenu, so the dropdown would never close. */
+  /* Child combinators throughout: `.nav ul` would also match ul.sub inside it,
+     out-specify the rule that hides the submenu, and the dropdown would never
+     close. */
   .nav > ul {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     list-style: none;
     margin: 0;
     padding: 0;
   }
-
   .nav > ul > li { position: relative; }
 
-  /* #676171b1 .elementor-nav-menu--main .elementor-item */
   .nav > ul > li > a {
     display: inline-flex;
     align-items: center;
@@ -148,34 +186,31 @@ const isCurrent = (href: string) => href !== '#' && href !== '/' && pathname.sta
     line-height: 20px;
     text-transform: uppercase;
     text-decoration: none;
+    white-space: nowrap;
     color: var(--e-global-color-d077a13); /* #15334C */
-    fill: var(--e-global-color-d077a13);
-    padding: 13px 10px; /* measured on the live nav item */
+    padding: 13px 10px;
   }
-
   .nav > ul > li > a:hover,
-  .nav > ul > li > a[aria-current='page'] {
-    color: var(--e-global-color-f32bb28); /* #FF0099 */
-    fill: var(--e-global-color-f32bb28);
-  }
+  .nav > ul > li > a[aria-current='page'] { color: var(--e-global-color-f32bb28); }
 
   .caret {
-    width: 0;
-    height: 0;
+    width: 0; height: 0;
     border-left: 4px solid transparent;
     border-right: 4px solid transparent;
     border-top: 5px solid currentColor;
   }
+  .caret--right {
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 5px solid currentColor;
+    border-right: 0;
+    margin-left: auto;
+  }
 
-  /* --- dropdown ---------------------------------------------------------
-     The original sets margin-top:14px on the submenu, which leaves a gap the
-     pointer must cross. Without a bridge the menu closes on the way down, so
-     ::before spans the gap and keeps the hover chain intact. */
-  .sub {
+  /* The submenu sits 14px below its trigger; ::before bridges that gap so the
+     pointer does not leave the chain on the way down. */
+  .sub, .sub2 {
     position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 14px;
     display: none;
     min-width: 260px;
     list-style: none;
@@ -183,65 +218,52 @@ const isCurrent = (href: string) => href !== '#' && href !== '/' && pathname.sta
     background: #ffffff;
     border-style: solid;
     border-width: 0 0 2px 0;
-    border-color: var(--e-global-color-a8178e9); /* #99CC33 */
+    border-color: var(--e-global-color-a8178e9);
     border-radius: 10px;
     box-shadow: 5px 5px 5px 0 rgba(0, 0, 0, 0.36);
     z-index: 10;
   }
+  .sub { top: 100%; left: 0; margin-top: 14px; }
+  .sub::before { content: ''; position: absolute; top: -14px; left: 0; right: 0; height: 14px; }
+  .sub2 { top: 0; left: 100%; }
 
-  .sub::before {
-    content: '';
-    position: absolute;
-    top: -14px;
-    left: 0;
-    right: 0;
-    height: 14px;   /* bridges the 14px gap */
-  }
-
-  /* Opens on hover, and on keyboard focus. `:has(a:focus-visible)` rather than
-     `:focus-within`: :focus-within also matches a mouse click on the trigger,
-     which latches the menu open after the pointer has left. */
+  /* :has(a:focus-visible) rather than :focus-within — :focus-within also
+     matches a mouse click on the trigger and latches the menu open. */
   .nav > ul > li.has-sub:hover > .sub,
-  .nav > ul > li.has-sub:has(a:focus-visible) > .sub {
-    display: block;
-  }
+  .nav > ul > li.has-sub:has(a:focus-visible) > .sub { display: block; }
+  .sub > li.has-sub2:hover > .sub2,
+  .sub > li.has-sub2:has(a:focus-visible) > .sub2 { display: block; }
 
-  /* The 32-item Vehicle Wraps menu goes multi-column rather than off-screen. */
-  .sub--wide {
-    column-count: 3;
-    column-gap: 0;
-    min-width: 720px;
-  }
+  .sub--wide { column-count: 3; column-gap: 0; min-width: 720px; }
   .sub--wide > li { break-inside: avoid; }
-
-  .nav > ul > li > .sub > li:not(:last-child) {
-    border-style: solid;
-    border-color: #f2f2f2;
-    border-bottom-width: 1px;
-  }
-
-  /* Depth matched to the top-level rule so it is not out-specified. */
-  .nav > ul > li > .sub > li > a {
+  /* A flyout cannot be laid out inside a CSS column, so those rows open inline. */
+  .sub--wide > li.has-sub2 > .sub2 {
+    position: static;
     display: block;
+    box-shadow: none;
+    border: 0;
+    border-radius: 0;
+    min-width: 0;
+    padding-inline-start: 14px;
+  }
+  .sub--wide > li.has-sub2 > .sub2 > li > a { font-size: 14px; color: var(--ink); }
+  .sub--wide .caret--right { display: none; }
+
+  .nav > ul > li > .sub > li:not(:last-child) { border-bottom: 1px solid #f2f2f2; }
+
+  .sub li > a {
+    display: flex;
+    align-items: center;
     font-family: 'Poppins', sans-serif;
     font-size: 16px;
     font-weight: 400;
     text-transform: none;
     text-decoration: none;
     color: var(--e-global-color-f4d2693); /* #353535 */
-    fill: var(--e-global-color-f4d2693);
     padding: 10px 16px;
   }
-
-  .nav > ul > li > .sub > li > a:hover {
-    color: var(--e-global-color-accent);
-    background-color: var(--e-global-color-f32bb28); /* #FF0099 */
-  }
-
-  .nav > ul > li > .sub > li > a[aria-current='page'] {
-    color: var(--e-global-color-accent);
-    background-color: var(--e-global-color-8c22d81); /* #14A278 */
-  }
+  .sub li > a:hover { color: #fff; background-color: var(--e-global-color-f32bb28); }
+  .sub li > a[aria-current='page'] { color: #fff; background-color: var(--e-global-color-8c22d81); }
 
   .sub > li:first-child > a { border-top-left-radius: 10px; border-top-right-radius: 10px; }
   .sub > li:last-child > a { border-bottom-right-radius: 10px; border-bottom-left-radius: 10px; }
@@ -260,112 +282,158 @@ const isCurrent = (href: string) => href !== '#' && href !== '/' && pathname.sta
     cursor: pointer;
     white-space: nowrap;
   }
-  .wantto:hover {
-    background: var(--e-global-color-a8178e9);
-    color: #fff;
-  }
+  .wantto:hover { background: var(--e-global-color-a8178e9); color: #fff; }
 
-  /* #6ebf65a / #76c5194 — CTA column and its button */
   .cta {
     width: 9.664%;
-    background-color: var(--e-global-color-d077a13); /* #15334C */
+    background-color: var(--e-global-color-d077a13);
     align-self: stretch;
     display: flex;
     padding: 0;
   }
-  .cta:hover { background-color: var(--e-global-color-a8178e9); /* #99CC33 */ }
-
+  .cta:hover { background-color: var(--e-global-color-a8178e9); }
   .cta-link {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 2px;
-    width: 100%;
-    padding: 12px 10px;
-    font-family: 'Poppins', sans-serif;
-    font-weight: 500;
-    font-size: 13px;
-    line-height: 1.2;
-    text-align: center;
-    text-decoration: none;
-    color: var(--e-global-color-accent);
-    border-radius: 0;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    gap: 2px; width: 100%; padding: 12px 10px;
+    font-family: 'Poppins', sans-serif; font-weight: 500; font-size: 13px;
+    line-height: 1.2; text-align: center; text-decoration: none; color: #fff;
   }
   .cta-phone { font-size: 15px; white-space: nowrap; }
 
-  /* menu toggle — pink, green on hover */
+  /* burger toggle — pink, green on hover, becomes an X when open */
   .toggle {
     display: none;
     margin-left: auto;
     background-color: var(--e-global-color-f32bb28); /* #FF0099 */
-    color: var(--e-global-color-accent);
+    color: #fff;
     border: 0;
     cursor: pointer;
-    padding: 12px 14px;
+    width: 56px;
+    height: 56px;
+    position: relative;
   }
   .toggle:hover { background-color: var(--e-global-color-a8178e9); }
   .toggle-bars,
   .toggle-bars::before,
   .toggle-bars::after {
-    display: block;
-    width: 22px;
-    height: 2px;
+    position: absolute;
+    left: 50%;
+    width: 26px;
+    height: 3px;
+    margin-left: -13px;
     background: currentColor;
-    content: '';
+    transition: transform 0.18s ease, opacity 0.18s ease;
   }
-  .toggle-bars { position: relative; }
-  .toggle-bars::before { position: absolute; top: -7px; }
-  .toggle-bars::after { position: absolute; top: 7px; }
+  .toggle-bars { top: 50%; margin-top: -1.5px; }
+  .toggle-bars::before { content: ''; margin-top: -9px; }
+  .toggle-bars::after { content: ''; margin-top: 9px; }
+  .toggle[aria-expanded='true'] .toggle-bars { background: transparent; }
+  .toggle[aria-expanded='true'] .toggle-bars::before { margin-top: 0; transform: rotate(45deg); }
+  .toggle[aria-expanded='true'] .toggle-bars::after { margin-top: 0; transform: rotate(-45deg); }
 
-  .mobile-nav { display: none; }
+  /* --- panel menu ------------------------------------------------------- */
+  .panel { display: none; }
+  .panel ul { list-style: none; margin: 0; padding: 0; }
+
+  .prow {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid #f2f2f2;
+  }
+  .prow > a {
+    flex: 1;
+    padding: 13px 16px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+    text-decoration: none;
+    color: var(--e-global-color-f4d2693); /* #353535 */
+  }
+  .pexp {
+    width: 52px;
+    background: none;
+    border: 0;
+    border-left: 1px solid #f2f2f2;
+    cursor: pointer;
+    position: relative;
+    color: inherit;
+  }
+  .pexp::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 0; height: 0;
+    margin: -3px 0 0 -5px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid currentColor;
+    transition: transform 0.18s ease;
+  }
+  .pexp[aria-expanded='true']::after { transform: rotate(180deg); }
+
+  /* Current page reads green; an opened branch reads pink — as on the live
+     panel, where HOME sits green and an expanded VEHICLE WRAPS sits pink. */
+  .prow > a[aria-current='page'] {
+    background-color: var(--e-global-color-8c22d81); /* #14A278 */
+    color: #fff;
+  }
+  .panel li.open > .prow {
+    background-color: var(--e-global-color-f32bb28); /* #FF0099 */
+  }
+  .panel li.open > .prow > a,
+  .panel li.open > .prow > .pexp { color: #fff; }
+  .prow > a:hover { background-color: var(--e-global-color-f32bb28); color: #fff; }
+
+  /* Top-level panel rows are uppercase on the live site; the two nested levels
+     stay in title case. */
+  .panel > ul > li > .prow > a { text-transform: uppercase; }
+
+  .plevel2, .plevel3 { display: none; }
+  .panel li.open > .plevel2,
+  .panel li.open > .plevel3 { display: block; }
+  .plevel2 .prow > a { font-weight: 400; }
+  .plevel3 .prow > a { font-weight: 400; font-size: 15px; color: var(--ink); }
 
   .sr-only {
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
     overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
   }
 
-  /* Elementor's own two breakpoints, 1024 and 767. */
+  /* Elementor's tablet breakpoint: the widget is dropdown-tablet, so the panel
+     takes over from 1024px down. */
   @media (max-width: 1024px) {
-    .brand { width: 30%; }
-    .nav { width: 50%; }
-    .cta { width: 20%; }
-    .sub--wide { column-count: 2; min-width: 480px; }
-    .nav > ul > li > a { padding: 16px 6px; font-size: 14px; }
+    .nav, .cta { display: none; }
+    .toggle { display: block; }
+    .brand { width: auto; max-width: 230px; flex: 0 0 auto; padding: 6px 0 6px 14px; }
+    .wantto { margin-left: auto; margin-right: 0; border: 0; border-left: 1px solid #f2f2f2; padding: 19px 18px; }
+    .panel { display: block; background: #fff; }
+    .panel[hidden] { display: none; }
   }
 
-  @media (max-width: 900px) {
-    .bar { padding: 8px 16px; }
-    .brand { width: 75%; max-width: 260px; }
-    .nav, .cta, .wantto { display: none; }
-    .toggle { display: block; }
-    .mobile-nav { display: block; background: #fff; border-top: 1px solid #f2f2f2; }
-    .mobile-nav[hidden] { display: none; }
-    .mobile-nav ul { list-style: none; margin: 0; padding: 0; }
-    .mobile-nav a {
-      display: block;
-      padding: 12px 20px;
-      font-family: 'Poppins', sans-serif;
-      font-size: 15px;
-      text-decoration: none;
-      color: var(--e-global-color-d077a13);
-      border-bottom: 1px solid #f2f2f2;
-    }
-    .mobile-nav ul ul a {
-      padding-left: 38px;
-      font-weight: 400;
-      color: var(--e-global-color-f4d2693);
-      font-size: 14px;
-    }
+  @media (max-width: 480px) {
+    .brand { max-width: 170px; }
+    .wantto { padding: 19px 10px; font-size: 12px; }
   }
 </style>
 
 <script>
   const toggle = document.querySelector<HTMLButtonElement>('.toggle');
-  const panel = document.querySelector<HTMLElement>('#mobile-nav');
+  const panel = document.querySelector<HTMLElement>('#panel-nav');
+
   toggle?.addEventListener('click', () => {
     const open = toggle.getAttribute('aria-expanded') === 'true';
     toggle.setAttribute('aria-expanded', String(!open));
     if (panel) panel.hidden = open;
+  });
+
+  // Sub-levels expand in place, as on the live panel.
+  document.querySelectorAll<HTMLButtonElement>('.pexp').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const li = btn.closest('li');
+      if (!li) return;
+      const open = li.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(open));
+    });
   });
 </script>
