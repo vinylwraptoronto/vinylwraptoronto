@@ -6,6 +6,7 @@ import StickyBar from '../components/StickyBar.astro';
 import Interactions from '../components/Interactions.astro';
 import { site } from '../data/site';
 import { img, imgOrigin } from '../lib/img';
+import type { HeadData } from '../types';
 import '../styles/tokens.css';
 import '../styles/global.css';
 
@@ -16,21 +17,74 @@ export interface Props {
   ogImage?: string | null;
   /** Carried from the original: most taxonomy archives are noindex there. */
   robots?: string | null;
+  /** The original's own head tags and Yoast JSON-LD graph for this page. */
+  head?: HeadData;
 }
 
-const { title, description = '', canonical, ogImage, robots } = Astro.props;
+const { title, description = '', canonical, ogImage, robots, head } = Astro.props;
 const canonicalUrl = canonical ?? new URL(Astro.url.pathname, site.url).href;
 const ogImageUrl = ogImage ? new URL(img(ogImage), site.url).href : undefined;
+
+/*
+ * The head is taken from the original rather than hand-written. The port used
+ * to invent og:locale (en_CA against the original's en_US) and og:type
+ * (website against article on all but two pages), and omitted the Twitter card,
+ * the article dates, the image dimensions, the icons and the JSON-LD entirely.
+ *
+ * Tags arrive as an ordered [key, isProperty, value] list rather than a map,
+ * because the original repeats keys: 254 pages carry several article:tag tags
+ * (18 on one) and 77 carry two different description tags. Order and
+ * repetition are reproduced as-is.
+ */
+type MetaTag = [key: string, isProperty: boolean, value: string];
+
+const source = (head?.meta as MetaTag[] | undefined) ?? [];
+
+// The landing pages use viewport-fit=cover and the web stories minimum-scale=1,
+// where the port hardcoded one value for every page. It is emitted in its own
+// slot near the top of the head, so it is pulled out of the generic run.
+let viewport = 'width=device-width, initial-scale=1';
+const carriedTags: MetaTag[] = [];
+
+for (const [key, isProperty, value] of source) {
+  if (!value) continue;
+  if (key.toLowerCase() === 'viewport') {
+    viewport = value;
+    continue;
+  }
+  // Upload URLs were made root-relative upstream so they can be pointed at the
+  // image host, which is where the files actually live now.
+  carriedTags.push([
+    key,
+    isProperty,
+    value.startsWith('/wp-content/uploads/') ? new URL(img(value), site.url).href : value,
+  ]);
+}
+
+// 404 and anything else rendered without carried head data still needs a head.
+if (!source.length) {
+  if (description) carriedTags.push(['description', false, description]);
+  if (robots) carriedTags.push(['robots', false, robots]);
+  carriedTags.push(['og:title', true, title]);
+  if (description) carriedTags.push(['og:description', true, description]);
+  carriedTags.push(['og:url', true, canonicalUrl]);
+  carriedTags.push(['og:site_name', true, site.name]);
+  if (ogImageUrl) carriedTags.push(['og:image', true, ogImageUrl]);
+  carriedTags.push(['twitter:card', false, 'summary_large_image']);
+}
+
+// JSON.stringify does not escape "</script>", which would close the block early.
+const ld = head?.ld ? JSON.stringify(head.ld).replace(/</g, '\\u003c') : null;
+
+const iconHref = new URL(img(site.favicon), site.url).href;
 ---
 
 <!doctype html>
 <html lang="en-CA">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content={viewport} />
     <title>{title}</title>
-    {description && <meta name="description" content={description} />}
-    {robots && <meta name="robots" content={robots} />}
     <link rel="canonical" href={canonicalUrl} />
 
     {/* Every image on the page comes from the B2-backed image host, so open
@@ -38,19 +92,20 @@ const ogImageUrl = ogImage ? new URL(img(ogImage), site.url).href : undefined;
     {imgOrigin && <link rel="preconnect" href={imgOrigin} crossorigin="anonymous" />}
     {imgOrigin && <link rel="dns-prefetch" href={imgOrigin} />}
 
-    <meta property="og:locale" content="en_CA" />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content={title} />
-    {description && <meta property="og:description" content={description} />}
-    <meta property="og:url" content={canonicalUrl} />
-    <meta property="og:site_name" content={site.name} />
-    {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
-    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href={iconHref} sizes="32x32" />
+    <link rel="icon" href={iconHref} sizes="192x192" />
+    <link rel="apple-touch-icon" href={iconHref} />
+
+    {carriedTags.map(([key, isProperty, value]) =>
+      isProperty
+        ? <meta property={key} content={value} />
+        : <meta name={key} content={value} />)}
+
+    {ld && <script type="application/ld+json" set:html={ld} />}
 
     <!-- Self-hosted, exactly the faces the live site serves. "Roboto Slab" is
          declared in the Elementor kit but loads no face there, so it is not
          requested here either. -->
-    <link rel="preconnect" href="/" />
     <link rel="stylesheet" href="/fonts/poppins.css" />
     <link rel="stylesheet" href="/fonts/roboto.css" />
   </head>

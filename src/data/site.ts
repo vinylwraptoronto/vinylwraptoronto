@@ -14,6 +14,9 @@ export const site = {
   email: 'info@VinylWrapToronto.com',
   address: '24 Ronson Dr, Unit 1, Etobicoke ON',
   mapUrl: 'https://g.page/vinylwraptoronto?share',
+  /** The original's favicon, served from the image host like every other upload.
+      Used for rel=icon, apple-touch-icon and msapplication-TileImage. */
+  favicon: '/wp-content/uploads/2022/12/VWT-Favicon.webp',
   logo: {
     /* The uploads path the live site itself serves the logo from, so it
        resolves on the image host like every other upload. */

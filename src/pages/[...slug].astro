@@ -41,6 +41,7 @@ const dateLabel = page.published
   canonical={page.url || undefined}
   ogImage={page.ogImage}
   robots={page.robots}
+  head={page.head}
 >
   {page.kind === 'post' && dateLabel && (
     <div class="postmeta">

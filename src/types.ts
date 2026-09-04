@@ -77,6 +77,16 @@ export type Section = {
 /** page | post | archive | story — archives carry the slugs they list. */
 export type PageKind = 'page' | 'post' | 'archive' | 'story';
 
+/** The original's own head tags and Yoast JSON-LD graph, carried per page.
+    The port previously hand-wrote a subset of the head and invented two of the
+    values it did emit, so the head is taken from the source instead of guessed.
+    `generator` is deliberately absent: it names the WordPress and Yoast
+    versions, which an Astro build cannot truthfully claim. */
+export type HeadData = {
+  meta?: Record<string, string>;
+  ld?: unknown;
+};
+
 export type PageData = {
   slug: string;
   url: string;
@@ -84,6 +94,7 @@ export type PageData = {
   description: string;
   ogImage: string | null;
   robots?: string | null;
+  head?: HeadData;
   kind: PageKind;
   sections: Section[];
   published?: string | null;
