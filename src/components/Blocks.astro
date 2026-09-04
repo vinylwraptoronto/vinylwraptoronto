@@ -38,7 +38,9 @@ const slugify = (t: string) =>
 const tocEntries = (sections ?? [])
   .flatMap((s) => s.blocks)
   .filter((b): b is Extract<typeof b, { type: 'heading' }> =>
-    b.type === 'heading' && (b.level === 2 || b.level === 3))
+    // `tag` means the widget rendered as p or div, so it is not a heading and
+    // does not belong in a table of contents.
+    b.type === 'heading' && !b.tag && (b.level === 2 || b.level === 3))
   .map((b) => ({ text: b.text, level: b.level, id: slugify(b.text) }))
   .filter((e) => e.id);
 ---
@@ -48,8 +50,8 @@ const tocEntries = (sections ?? [])
   const blocksArr = group.blocks;
   const inner = blocksArr.map((b, i) => {
         if (b.type === 'heading') {
-          const Tag = `h${Math.min(Math.max(b.level, 1), 6)}` as 'h1';
-          const id = b.level === 2 || b.level === 3 ? slugify(b.text) : undefined;
+          const Tag = (b.tag ?? `h${Math.min(Math.max(b.level, 1), 6)}`) as 'h1';
+          const id = !b.tag && (b.level === 2 || b.level === 3) ? slugify(b.text) : undefined;
           return (
             <Tag id={id} style={b.style ?? undefined}>
               {b.href ? <a class="hlink" href={img(b.href)}>{b.text}</a> : b.text}
@@ -156,6 +158,7 @@ const tocEntries = (sections ?? [])
             <ul class="cards">
               {b.cards.map((c) => (
                 <li>
+                  {c.badge && <span class="card-badge" style={b.badgeStyle ?? undefined}>{c.badge}</span>}
                   {c.image && (
                     <a class="card-thumb" href={c.href} tabindex="-1">
                       <img
@@ -170,11 +173,12 @@ const tocEntries = (sections ?? [])
                     {/* The original titles each card with
                         <h3 class="elementor-post__title">; a span instead took
                         1,223 headings out of the document outline. */}
-                    <h3><a href={c.href}>{c.title}</a></h3>
-                    {c.desc && <p class="card-desc">{c.desc}</p>}
+                    <h3 style={b.titleStyle ?? undefined}><a href={c.href}>{c.title}</a></h3>
+                    {c.desc && <p class="card-desc" style={b.descStyle ?? undefined}>{c.desc}</p>}
                     {c.more && (
                       <a
                         class="card-more"
+                        style={b.moreStyle ?? undefined}
                         href={c.href}
                         aria-label={`Read more about ${c.title}`}
                         tabindex="-1"
@@ -182,7 +186,7 @@ const tocEntries = (sections ?? [])
                     )}
                   </div>
                   {(c.author || c.date) && (
-                    <div class="card-meta">
+                    <div class="card-meta" style={b.metaStyle ?? undefined}>
                       {c.author && <span class="card-author">{c.author}</span>}
                       {c.date && <span class="card-date">{c.date}</span>}
                     </div>
@@ -626,7 +630,8 @@ const tocEntries = (sections ?? [])
   }
   .feature p {
     margin: 0;
-    font-size: 14px;
+    /* the body's own type — 14px/21px here was invented */
+    font-size: 16px;
     line-height: 1.5;
     color: var(--ink);
   }
@@ -650,6 +655,8 @@ const tocEntries = (sections ?? [])
   /* The card is the list item, not a single wrapping link: the original has
      three separate links inside it (thumbnail, title, read-more). */
   .cards > li {
+    /* the term badge is absolutely placed against the card */
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -673,36 +680,55 @@ const tocEntries = (sections ?? [])
   .cards .card-text { padding: 12px 14px 14px; }
   .cards h3 {
     /* Same rendering as the span it replaced: the heading is for the document
-       outline, not a change of appearance. Measured on .elementor-post__title:
-       16px on a 1.4 ratio, and the global h3's capitalize does not apply here —
-       the original leaves entry titles in their own case. */
+       outline, not a change of appearance. These are the posts widget's own
+       defaults — 16px on a 1.2 ratio, no capitalize — and any instance that
+       sets its own arrives inline and wins. 1.4 here was one page's declared
+       value mistaken for the default. */
     margin: 0;
     font-family: 'Poppins', sans-serif;
     font-weight: 500;
     font-size: 16px;
-    line-height: 1.4;
+    line-height: 1.2;
     text-transform: none;
   }
+  /* .elementor-post__excerpt takes the body's own type; the 14px/1.55 in
+     #4a4a4a here was invented. */
   .card-desc {
     margin: 8px 0 0;
-    font-size: 14px;
-    line-height: 1.55;
-    color: #4a4a4a;
+    font-size: 16px;
+    line-height: 1.5;
   }
   /* `.cards a` above is 0,1,1 and beat the 0,1,0 this used to carry, so the
      pink never applied and every read-more link came out navy. Measured on
      .elementor-post__read-more: Roboto 14px, weight 500, uppercase, pink.
      The 1.4px leading is the original's own — its CSS says `1.4px` where it
      plainly meant `1.4` — and the port matches what the page renders. */
+  /* `.cards a` above is 0,1,1 and beat the 0,1,0 this used to carry, so the
+     read-more link never got its own colour. Everything else about it —
+     family, size, leading, weight, case — differs per posts-widget instance
+     and now arrives inline from the widget; only the layout is fixed here. */
   .cards a.card-more {
     display: inline-block;
     margin-top: 8px;
-    font-family: var(--font-text);
-    font-size: 14px;
-    line-height: 1.4px;
-    font-weight: 500;
+    /* The posts widget's own defaults; an instance that sets its own family,
+       size, leading, weight or colour arrives inline and wins. */
+    font-size: 12px;
     text-transform: uppercase;
     color: var(--brand-pink);
+  }
+
+  /* .elementor-post__badge — a pill, not a link. Its type and colours come
+     from the widget; only the pill shape is fixed here. */
+  .card-badge {
+    position: absolute;
+    top: 0;
+    inset-inline-start: 0;
+    z-index: 1;
+    padding: 6px 12px;
+    /* the widget's own defaults; an instance that sets its own arrives inline */
+    font-size: 12px;
+    line-height: 1;
+    text-transform: uppercase;
   }
   .cards a.card-more:hover { text-decoration: underline; }
   .card-meta {
@@ -836,12 +862,16 @@ const tocEntries = (sections ?? [])
   .toc a:hover { color: var(--brand-pink); text-decoration: underline; }
 
   .catlist { border-top: 1px solid var(--rule); padding-top: 14px; }
+  /* Measured on the live sidebar: 18px on a 1.2 ratio, centred, in #444 and
+     in its own case. The 17px uppercase navy here was invented. */
   .cat-title {
     font-family: 'Poppins', sans-serif;
-    font-size: 17px;
+    font-size: 18px;
+    line-height: 1.2;
     font-weight: 500;
-    text-transform: uppercase;
-    color: var(--brand-navy);
+    text-transform: none;
+    text-align: center;
+    color: #444444;
     margin: 0 0 10px;
   }
   .catlist ul { list-style: none; margin: 0; padding: 0; columns: 2; }

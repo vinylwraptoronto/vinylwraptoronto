@@ -1,6 +1,16 @@
 /** The block model produced from each live page's Elementor markup. */
 export type Block =
-  | { type: 'heading'; level: number; text: string; href?: string | null; style?: string | null }
+  | {
+      type: 'heading';
+      level: number;
+      text: string;
+      href?: string | null;
+      style?: string | null;
+      /** Elementor lets a heading widget render as `p` or `div`. Set only in
+          that case; forcing those to h2 gave them the kit's capitalize and put
+          them in the document outline, where the original never had them. */
+      tag?: string;
+    }
   | { type: 'text'; html: string; style?: string | null }
   | {
       type: 'image';
@@ -55,7 +65,19 @@ export type Block =
         /* Theme-rendered taxonomy archives give each entry a paragraph of copy
            that the Elementor-keyed extractor never saw. */
         desc?: string;
+        /** The card's term pill. Rendered as an ordinary link, it lost the
+            9px white-on-pink badge the original paints. */
+        badge?: string | null;
       }[];
+      /* Elementor styles every posts-widget instance separately — the same
+         "Read More" is Poppins 12px green on the blog index and Roboto 14px
+         pink on a post page — so these come from the widget rather than from
+         one hard-coded rule in the component. */
+      titleStyle?: string | null;
+      metaStyle?: string | null;
+      moreStyle?: string | null;
+      descStyle?: string | null;
+      badgeStyle?: string | null;
     }
   /* Both are built client-side on the live site, so they are regenerated at
      render time rather than ported as markup that would arrive empty. */

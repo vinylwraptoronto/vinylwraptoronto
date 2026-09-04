@@ -99,7 +99,12 @@ const vehicleTypes = ['Van', 'Truck', 'Car', 'SUV', 'Trailer', 'Boat', 'Motorcyc
     padding: 2px 0;
   }
   /* measured 14px/14px on the live form, not 15px on the inherited 24px */
-  .checks label { display: flex; align-items: center; gap: 7px; font-size: 14px; line-height: 14px; }
+  /* The live form's option labels are #000, not the body ink; the footer
+     instance overrides to white against its navy column. */
+  .checks label {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 14px; line-height: 1; color: #000000;
+  }
 
   .filelabel { font-size: 14px; margin-bottom: 4px; color: var(--ink); }
   .qform input[type='file'] { font-size: 14px; }
