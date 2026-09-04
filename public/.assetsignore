@@ -9,3 +9,10 @@
 # written directly into dist/ would be lost on the next build.
 _worker.js
 _routes.json
+
+# The WordPress uploads tree — 2,861 files, 367 MB — is served from the
+# Backblaze B2 bucket behind img.vinylwraptoronto.com, and every reference in
+# the built pages points there. The copies under public/ stay in the repo so
+# `astro dev` can serve them offline with PUBLIC_IMG_BASE="", but uploading
+# them into the Worker as well would just be a second copy nothing requests.
+wp-content/

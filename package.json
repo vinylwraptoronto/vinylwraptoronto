@@ -9,7 +9,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "deploy": "bash scripts/deploy.sh",
-    "check": "node scripts/verify.mjs && node scripts/sweep.mjs && node scripts/behaviour.mjs"
+    "check": "node scripts/verify.mjs && node scripts/sweep.mjs && node scripts/behaviour.mjs",
+    "check:images": "node scripts/sweep.mjs && node scripts/img-check.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.10",

@@ -9,6 +9,7 @@
 import type { Section } from '../types';
 import categories from '../data/categories.json';
 import QuoteForm from './QuoteForm.astro';
+import { img, imgHtml } from '../lib/img';
 
 export interface Props {
   sections: Section[];
@@ -79,12 +80,13 @@ const tocEntries = sections
           );
         }
 
-        if (b.type === 'text') return <div class="rt" style={b.style ?? undefined} set:html={b.html} />;
+        if (b.type === 'text')
+          return <div class="rt" style={b.style ?? undefined} set:html={imgHtml(b.html)} />;
 
         if (b.type === 'image') {
-          const img = (
+          const pic = (
             <img
-              src={b.src}
+              src={img(b.src)}
               alt={b.alt}
               width={num(b.width)}
               height={num(b.height)}
@@ -94,7 +96,7 @@ const tocEntries = sections
           );
           return (
             <figure class={b.full ? 'fig fig--full' : 'fig'}>
-              {b.href ? <a href={b.href}>{img}</a> : img}
+              {b.href ? <a href={img(b.href)}>{pic}</a> : pic}
             </figure>
           );
         }
@@ -132,7 +134,7 @@ const tocEntries = sections
         if (b.type === 'feature') {
           return (
             <div class="feature">
-              {b.image && <img src={b.image} alt={b.alt ?? ''} loading="lazy" decoding="async" />}
+              {b.image && <img src={img(b.image)} alt={b.alt ?? ''} loading="lazy" decoding="async" />}
               {b.title && <h3>{b.title}</h3>}
               {b.text && <p>{b.text}</p>}
             </div>
@@ -145,7 +147,7 @@ const tocEntries = sections
               {b.cards.map((c) => (
                 <li>
                   <a href={c.href}>
-                    {c.image && <img src={c.image} alt={c.title} loading="lazy" decoding="async" />}
+                    {c.image && <img src={img(c.image)} alt={c.title} loading="lazy" decoding="async" />}
                     <span>{c.title}</span>
                   </a>
                 </li>
@@ -190,7 +192,7 @@ const tocEntries = sections
               <div class="carou-track">
                 {b.images.map((i) => (
                   <figure class="carou-slide">
-                    <img src={i.src} alt={i.alt} loading="lazy" decoding="async" />
+                    <img src={img(i.src)} alt={i.alt} loading="lazy" decoding="async" />
                   </figure>
                 ))}
               </div>
@@ -203,7 +205,7 @@ const tocEntries = sections
           return (
             <div class="gallery">
               {b.images.map((i) => (
-                <img src={i.src} alt={i.alt} loading="lazy" decoding="async" />
+                <img src={img(i.src)} alt={i.alt} loading="lazy" decoding="async" />
               ))}
             </div>
           );
@@ -215,7 +217,7 @@ const tocEntries = sections
               {b.items.map((qa) => (
                 <details>
                   <summary>{qa.q}</summary>
-                  <div class="rt" set:html={qa.a} />
+                  <div class="rt" set:html={imgHtml(qa.a)} />
                 </details>
               ))}
             </div>
@@ -228,11 +230,11 @@ const tocEntries = sections
               {b.pairs.map((p) => (
                 <div class="compare-pair">
                   <figure>
-                    <img src={p.before.src} alt={p.before.alt} loading="lazy" decoding="async" />
+                    <img src={img(p.before.src)} alt={p.before.alt} loading="lazy" decoding="async" />
                     <figcaption>{p.beforeLabel}</figcaption>
                   </figure>
                   <figure>
-                    <img src={p.after.src} alt={p.after.alt} loading="lazy" decoding="async" />
+                    <img src={img(p.after.src)} alt={p.after.alt} loading="lazy" decoding="async" />
                     <figcaption>{p.afterLabel}</figcaption>
                   </figure>
                 </div>
@@ -262,7 +264,7 @@ const tocEntries = sections
               <div class="fgal-grid">
                 {b.items.map((it) => (
                   <figure class="fgal-item" data-tag={it.tag}>
-                    <img src={it.src} alt={it.title} loading="lazy" decoding="async" />
+                    <img src={img(it.src)} alt={it.title} loading="lazy" decoding="async" />
                   </figure>
                 ))}
               </div>

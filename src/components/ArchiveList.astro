@@ -9,6 +9,7 @@
  */
 import summaries from '../data/summaries.json';
 import type { Summary } from '../types';
+import { img } from '../lib/img';
 
 export interface Props {
   members: string[];
@@ -33,7 +34,7 @@ const fmt = (d: string | null) =>
           <li class="card">
             <a href={`/${it.slug}/`}>
               {it.image ? (
-                <img src={it.image} alt={it.title} loading="lazy" decoding="async" />
+                <img src={img(it.image)} alt={it.title} loading="lazy" decoding="async" />
               ) : (
                 <span class="noimg" aria-hidden="true"></span>
               )}

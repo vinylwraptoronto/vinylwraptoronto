@@ -5,6 +5,7 @@ import Popups from '../components/Popups.astro';
 import StickyBar from '../components/StickyBar.astro';
 import Interactions from '../components/Interactions.astro';
 import { site } from '../data/site';
+import { img, imgOrigin } from '../lib/img';
 import '../styles/tokens.css';
 import '../styles/global.css';
 
@@ -19,7 +20,7 @@ export interface Props {
 
 const { title, description = '', canonical, ogImage, robots } = Astro.props;
 const canonicalUrl = canonical ?? new URL(Astro.url.pathname, site.url).href;
-const ogImageUrl = ogImage ? new URL(ogImage, site.url).href : undefined;
+const ogImageUrl = ogImage ? new URL(img(ogImage), site.url).href : undefined;
 ---
 
 <!doctype html>
@@ -31,6 +32,11 @@ const ogImageUrl = ogImage ? new URL(ogImage, site.url).href : undefined;
     {description && <meta name="description" content={description} />}
     {robots && <meta name="robots" content={robots} />}
     <link rel="canonical" href={canonicalUrl} />
+
+    {/* Every image on the page comes from the B2-backed image host, so open
+        that connection alongside the document rather than on first <img>. */}
+    {imgOrigin && <link rel="preconnect" href={imgOrigin} crossorigin="anonymous" />}
+    {imgOrigin && <link rel="dns-prefetch" href={imgOrigin} />}
 
     <meta property="og:locale" content="en_CA" />
     <meta property="og:type" content="website" />

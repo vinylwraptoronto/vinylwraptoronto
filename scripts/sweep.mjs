@@ -43,7 +43,19 @@ if (fs.existsSync(redirectsFile)) {
 
 const deadLinks = new Map();
 const missingImages = new Map();
+const unrewritten = new Map();
+const offHost = new Map();
+const remoteKeys = new Set();
 const emptyPages = [];
+
+/** Keep the same value the build baked in, so this checks what actually shipped. */
+const IMG_BASE = (process.env.PUBLIC_IMG_BASE ?? 'https://img.vinylwraptoronto.com')
+  .replace(/\/+$/, '');
+
+const collect = (map, key, route) => {
+  if (!map.has(key)) map.set(key, []);
+  map.get(key).push(route);
+};
 let totalLinks = 0;
 let totalImages = 0;
 
@@ -72,19 +84,43 @@ for (const f of htmlFiles) {
 
   for (const m of html.matchAll(/<img[^>]+src="([^"]+)"/g)) {
     const src = m[1];
-    if (!src.startsWith('/')) continue;
     totalImages++;
-    if (!exists(src)) {
-      if (!missingImages.has(src)) missingImages.set(src, []);
-      missingImages.get(src).push(route);
+
+    // Uploads are served from the image host. A src still pointing at the
+    // local uploads path means the rewrite missed that emission point — the
+    // page would still render, because the files are also in public/, so
+    // nothing looks wrong until those copies are dropped. Catch it here.
+    if (src.startsWith('/wp-content/uploads/')) {
+      collect(unrewritten, src, route);
+      continue;
     }
+
+    if (src.startsWith(IMG_BASE + '/')) {
+      remoteKeys.add(src.slice(IMG_BASE.length + 1));
+      continue;
+    }
+
+    // Going straight to the bucket skips Cloudflare and is billed egress.
+    if (/backblazeb2\.com/.test(src)) {
+      collect(offHost, src, route);
+      continue;
+    }
+
+    if (!src.startsWith('/')) continue;
+    if (!exists(src)) collect(missingImages, src, route);
   }
 }
 
 console.log(`pages:        ${htmlFiles.length}`);
 console.log(`internal links checked: ${totalLinks}   dead: ${deadLinks.size}`);
 console.log(`image refs checked:     ${totalImages}   missing: ${missingImages.size}`);
+console.log(`  on image host:        ${remoteKeys.size} distinct keys`);
+console.log(`  not rewritten:        ${unrewritten.size}`);
+console.log(`  bypassing Cloudflare: ${offHost.size}`);
 console.log(`empty pages:  ${emptyPages.length}`);
+
+// The keys the built pages ask for, so img-check.mjs can request exactly those.
+fs.writeFileSync('dist-img-keys.json', JSON.stringify([...remoteKeys].sort(), null, 0));
 
 const show = (label, map, n = 15) => {
   if (map.size === 0) return;
@@ -98,6 +134,12 @@ const show = (label, map, n = 15) => {
 
 show('DEAD LINKS', deadLinks);
 show('MISSING IMAGES', missingImages);
+show('NOT REWRITTEN TO IMAGE HOST', unrewritten);
+show('BYPASSING CLOUDFLARE', offHost);
 if (emptyPages.length) console.log('\nEMPTY PAGES:\n  ' + emptyPages.slice(0, 15).join('\n  '));
 
-process.exit(deadLinks.size || missingImages.size || emptyPages.length ? 1 : 0);
+process.exit(
+  deadLinks.size || missingImages.size || unrewritten.size || offHost.size || emptyPages.length
+    ? 1
+    : 0,
+);

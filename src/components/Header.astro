@@ -19,6 +19,7 @@
  */
 import navData from '../data/nav.json';
 import { site, type NavItem } from '../data/site';
+import { img } from '../lib/img';
 
 const nav = navData as NavItem[];
 const { pathname } = Astro.url;
@@ -36,10 +37,11 @@ const branchCurrent = (item: NavItem): boolean =>
   <div class="bar">
     <a class="brand" href="/">
       <img
-        src={site.logo.src}
+        src={img(site.logo.src)}
         alt={site.logo.alt}
         width={site.logo.width}
         height={site.logo.height}
+        fetchpriority="high"
       />
     </a>
 

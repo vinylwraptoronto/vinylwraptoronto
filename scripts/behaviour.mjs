@@ -28,8 +28,18 @@ const U=`http://127.0.0.1:${PORT}`;
 const out=[];
 const ok=(n,v,d='')=>out.push(`${v?'PASS':'*** FAIL'}  ${n}${d?'  ('+d+')':''}`);
 
+// Images are served from img.vinylwraptoronto.com, so 'networkidle' never
+// settles here — the portfolio alone pulls 341 remote files. Every behaviour
+// below is DOM and script, not pixels, so wait for the document and then for
+// the specific element the check drives.
+const go=async(url,sel)=>{
+  await p.goto(url,{waitUntil:'domcontentloaded'});
+  if(sel) await p.waitForSelector(sel,{state:'attached',timeout:15000});
+  await p.waitForTimeout(250);
+};
+
 // popups
-await p.goto(`${U}/`,{waitUntil:'networkidle'});
+await go(`${U}/`,'.wantto');
 await p.click('.wantto');
 await p.waitForTimeout(300);
 ok('"I want to" popup opens', await p.isVisible('#popup-want-to'));
@@ -53,14 +63,14 @@ const stuck=await p.evaluate(()=>document.querySelector('.site-header').getBound
 ok('header stays stuck on scroll', Math.abs(stuck)<2, `top=${Math.round(stuck)}`);
 
 // form validation
-await p.goto(`${U}/contact/`,{waitUntil:'networkidle'});
+await go(`${U}/contact/`,'form.qform');
 const f=await p.$('form.qform');
 if(f){ await p.click('form.qform .qbtn'); await p.waitForTimeout(300);
   ok('form blocks empty submit', (await p.textContent('form.qform .qstatus')||'').toLowerCase().includes('required')); }
 else ok('contact form present', false);
 
 // gallery filter + lightbox
-await p.goto(`${U}/vinyl-car-wrap-our-portfolio/`,{waitUntil:'networkidle'});
+await go(`${U}/vinyl-car-wrap-our-portfolio/`,'.fgal-item');
 const all=(await p.$$('.fgal-item')).length;
 await p.click('.fgal-tab[data-index="2"]'); await p.waitForTimeout(300);
 const shown=await p.evaluate(()=>[...document.querySelectorAll('.fgal-item')].filter(e=>!e.hidden).length);
@@ -71,7 +81,7 @@ ok('lightbox opens on an image', await p.isVisible('#lightbox'));
 await p.keyboard.press('Escape');
 
 // before/after slider
-await p.goto(`${U}/wraps-before-after/audi-q5-full-colour-change/`,{waitUntil:'networkidle'});
+await go(`${U}/wraps-before-after/audi-q5-full-colour-change/`,'.compare-pair');
 ok('comparison slider enhanced', (await p.$$('.compare-pair[data-juxtapose]')).length>0);
 ok('  drag handle present', (await p.$$('.jx-handle')).length>0);
 
