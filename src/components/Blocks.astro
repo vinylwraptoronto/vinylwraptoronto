@@ -141,10 +141,11 @@ const tocEntries = (sections ?? [])
         }
 
         if (b.type === 'feature') {
+          const T = `h${Math.min(Math.max(b.level ?? 3, 1), 6)}` as 'h3';
           return (
             <div class="feature" style={b.style ?? undefined}>
               {b.image && <img src={img(b.image)} alt={b.alt ?? ''} loading="lazy" decoding="async" />}
-              {b.title && <h3 style={b.titleStyle ?? undefined}>{b.title}</h3>}
+              {b.title && <T style={b.titleStyle ?? undefined}>{b.title}</T>}
               {b.text && <p style={b.textStyle ?? undefined}>{b.text}</p>}
             </div>
           );
@@ -612,18 +613,21 @@ const tocEntries = (sections ?? [])
      weight 600 in brand green, the text 14px/21px in body ink, and the whole
      box is centred — not the page's default left-aligned h3 + p. */
   .feature { padding: 16px; background: var(--panel); border-radius: 4px; text-align: center; }
-  .feature h3 {
+  /* .elementor-icon-box-title / -description. The leading is 1.2 of whatever
+     size the widget declares — frozen at 20.4px it was right only for the
+     17px default and 6px too tall on the 12px variants. */
+  .feature h3,
+  .feature h4 {
     margin-bottom: 8px;
     font-size: 17px;
-    line-height: 20.4px;
+    line-height: 1.2;
     font-weight: 600;
     color: var(--brand-green);
-    text-transform: none;
   }
   .feature p {
     margin: 0;
     font-size: 14px;
-    line-height: 21px;
+    line-height: 1.5;
     color: var(--ink);
   }
   .feature img {
@@ -685,14 +689,22 @@ const tocEntries = (sections ?? [])
     line-height: 1.55;
     color: #4a4a4a;
   }
-  .card-more {
+  /* `.cards a` above is 0,1,1 and beat the 0,1,0 this used to carry, so the
+     pink never applied and every read-more link came out navy. Measured on
+     .elementor-post__read-more: Roboto 14px, weight 500, uppercase, pink.
+     The 1.4px leading is the original's own — its CSS says `1.4px` where it
+     plainly meant `1.4` — and the port matches what the page renders. */
+  .cards a.card-more {
     display: inline-block;
     margin-top: 8px;
-    font-family: 'Poppins', sans-serif;
-    font-size: 13px;
+    font-family: var(--font-text);
+    font-size: 14px;
+    line-height: 1.4px;
+    font-weight: 500;
+    text-transform: uppercase;
     color: var(--brand-pink);
   }
-  .card-more:hover { text-decoration: underline; }
+  .cards a.card-more:hover { text-decoration: underline; }
   .card-meta {
     margin-top: auto;
     padding: 8px 14px 12px;

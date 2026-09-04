@@ -27,6 +27,9 @@ export type Block =
       text: string;
       image?: string | null;
       alt?: string;
+      /** The heading tag the original chose for the title. It is visible: the
+          kit capitalizes h3 but not h4. */
+      level?: number;
       style?: string | null;
       /* Same again for an icon-box: title and description are styled
          separately, and these are the widgets that sit on the tinted panels —
