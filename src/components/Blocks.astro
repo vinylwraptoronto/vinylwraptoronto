@@ -351,6 +351,35 @@ const tocEntries = sections
     border-radius: 4px;
   }
   .rt :global(figure) { margin: 20px 0; }
+
+  /* Gutenberg comparison tables (figure.wp-block-table). The extractor used to
+     unwrap these into a run of loose words; they carry real content. */
+  .rt :global(figure.wp-block-table) { overflow-x: auto; }
+  .rt :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .rt :global(th),
+  .rt :global(td) {
+    border: 1px solid #e2e2e2;
+    padding: 9px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  .rt :global(thead th) {
+    background: #f6f7f8;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+  }
+  .rt :global(tbody tr:nth-child(even)) { background: #fafafa; }
+  .rt :global(caption) {
+    caption-side: bottom;
+    margin-top: 6px;
+    font-size: 13px;
+    color: #767676;
+  }
   .rt :global(figcaption) {
     margin-top: 6px;
     font-size: 13px;
