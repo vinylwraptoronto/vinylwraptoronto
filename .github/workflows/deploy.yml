@@ -45,8 +45,16 @@ jobs:
       # hostname carries on serving the previous one. This site sat on its first
       # build for ten deploys that way. scripts/deploy.sh promotes the new
       # version to 100% and then re-requests the site to prove it is live.
+      # Both token names are passed because the secret is stored under
+      # CF_API_TOKEN, while wrangler reads CLOUDFLARE_API_TOKEN.
+      # scripts/deploy.sh takes whichever is set and exports the name wrangler
+      # wants, so either secret name works and neither has to be renamed.
+      # A missing secret is the empty string here, not an error, which is how
+      # the first two runs of this workflow reached the deploy step and failed
+      # there with the build already green.
       - name: Deploy
         run: npm run deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

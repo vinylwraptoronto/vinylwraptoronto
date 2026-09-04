@@ -179,8 +179,18 @@ The workflow needs two repository secrets:
 
 | Secret | Value |
 |---|---|
-| `CLOUDFLARE_API_TOKEN` | token with **Workers Scripts: Edit** on the account |
+| `CF_API_TOKEN` *or* `CLOUDFLARE_API_TOKEN` | token with **Workers Scripts: Edit** on the account |
 | `CLOUDFLARE_ACCOUNT_ID` | `47a82355b575e264047206a36c2cd05c` |
+
+`Workers Scripts` is an **Account** permission, not a Zone one — the Workers
+entry under Zone is `Workers Routes`, which is a different thing and not needed
+here, because `staging.vinylwraptoronto.com` is attached as a Custom Domain
+rather than a route. Account Resources must include this account.
+
+Either token name works: the workflow passes both and `scripts/deploy.sh` takes
+whichever is set, then exports the name wrangler expects. A token scoped this
+narrowly cannot read `/memberships`, which is where wrangler normally resolves
+the account from, so the account id is set explicitly rather than discovered.
 
 The deploy is gated on `scripts/sweep.mjs`, so a dead link, an image reference
 that resolves to nothing, an empty page, or any reference to
