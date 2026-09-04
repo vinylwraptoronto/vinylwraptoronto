@@ -12,10 +12,12 @@ html { -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;
-  /* measured: 16px / 24px, #333 on #fff */
+  /* measured: 16px / 24px, #333 on #fff — but the original expresses the
+     leading as the ratio 1.5, and frozen as a length it stops scaling: a 17px
+     text widget then rendered 24px where the original renders 25.5px. */
   font-family: var(--font-sans);
   font-size: 16px;
-  line-height: 24px;
+  line-height: 1.5;
   color: var(--body-text);
   background-color: #ffffff;
   overflow-x: hidden;
@@ -33,59 +35,34 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0 0 16px;
 }
 
-/* measured h2: 45px / 58.5px, weight 600, #14A278, capitalize */
-h2 {
-  font-size: 45px;
-  /* Measured 35px on the live render, not the 1.3 ratio the rest of the scale
-     uses — section titles set a tight leading against a large size. */
-  line-height: 35px;
-  font-weight: 600;
-  color: var(--brand-green);
-  text-transform: capitalize;
-}
+/* The Elementor kit's heading defaults, probed by injecting the widget's own
+   markup into three mirrored pages with no per-widget rule in front of it —
+   homepage, contact and a post all return the same values.
+   Earlier these were read off whichever homepage heading happened to be to
+   hand, but 7 of the homepage's 8 h2 widgets declare their own font-size, so
+   what got copied here was one widget's override rather than the default.
+   That made every page whose headings declare nothing render at the wrong
+   size: the contact page's h2 is 28px, not 45px.
+   Per-widget declarations still win — the extractor carries them inline. */
+h1 { font-size: 40px; }
+h2 { font-size: 28px; text-transform: capitalize; }
+h3 { font-size: 22px; text-transform: capitalize; }
+h4, h5, h6 { font-size: 18px; }
 
-/* measured h3: 21px / 21px, weight 400, capitalize.
-   The measured colour was #fff because the first h3 on the homepage sits on a
-   dark panel; the default here is the body ink and sections that need white
-   set it themselves. */
-/* Measured against the live render: h3 sets line-height equal to its font size,
-   not a ratio. 1.3 made every h3 6.3px taller than the original's. */
-h3 {
-  font-size: 21px;
-  line-height: 21px;
-  font-weight: 400;
-  text-transform: capitalize;
-  color: var(--ink-strong);
-}
-
-h1 {
-  font-size: 40px;
-  line-height: 1.25;
-  font-weight: 600;
-  color: var(--brand-navy);
-}
-
-/* measured h4: 18px / 21.6px, weight 600, navy — not 500 and not body ink.
-   The weight matters twice over: <strong> inside a heading computes
-   `bolder` against its parent, so a 500 parent yielded 700 where the
-   original yields 900. */
-h4 {
-  font-size: 18px;
-  line-height: 21.6px;
-  font-weight: 600;
-  color: var(--brand-navy);
-}
-
-/* measured h5: 12px / 18px, weight 300, navy. The clone had no h5 rule, so the
-   footer copyright line rendered 14px/400 in body ink. */
-h5 {
-  font-size: 12px;
-  line-height: 18px;
-  font-weight: 300;
-  color: var(--brand-navy);
+h1, h2, h3, h4, h5, h6 {
+  /* Verified by overriding font-size in the mirror and re-reading: the leading
+     tracks the size exactly, so this is `1`, not any of the fixed pixel values
+     that were here before. A widget that sets 45px gets 45px of leading. */
+  line-height: 1;
+  font-weight: 500;
+  color: #000000;
 }
 
 p { margin: 0 0 16px; }
+
+/* hello-elementor's reset: label{display:inline-block;line-height:1;...}.
+   Never ported, so every form label inherited the body's 1.5. */
+label { display: inline-block; line-height: 1; vertical-align: middle; }
 
 .container {
   max-width: var(--container-max-width);
@@ -101,13 +78,9 @@ p { margin: 0 0 16px; }
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
 
-@media (max-width: 1024px) {
-  h1 { font-size: 34px; }
-  h2 { font-size: 34px; line-height: 1.3; }
-}
-
-@media (max-width: 767px) {
-  h1 { font-size: 28px; }
-  h2 { font-size: 26px; line-height: 1.3; }
-  h3 { font-size: 19px; }
-}
+/* There is deliberately no responsive heading step here. The kit was probed at
+   1440, 1024, 767 and 480 and returns the same size and leading at every one;
+   the step that used to be in this file was invented, and it contradicted the
+   measured `line-height: 1`. Where the original does shrink a heading on a
+   narrow screen it does so per widget, from the @media blocks in the page's
+   own stylesheet, which this port reads at desktop width only. */

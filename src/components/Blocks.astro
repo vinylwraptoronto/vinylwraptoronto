@@ -130,9 +130,11 @@ const tocEntries = (sections ?? [])
 
         if (b.type === 'list') {
           return (
-            <ul class="ilist">
+            <ul class="ilist" style={b.style ?? undefined}>
               {b.items.map((i) => (
-                <li>{i.href ? <a href={img(i.href)}>{i.text}</a> : i.text}</li>
+                <li style={b.itemStyle ?? undefined}>
+                  {i.href ? <a href={img(i.href)}>{i.text}</a> : i.text}
+                </li>
               ))}
             </ul>
           );
@@ -140,10 +142,10 @@ const tocEntries = (sections ?? [])
 
         if (b.type === 'feature') {
           return (
-            <div class="feature">
+            <div class="feature" style={b.style ?? undefined}>
               {b.image && <img src={img(b.image)} alt={b.alt ?? ''} loading="lazy" decoding="async" />}
-              {b.title && <h3>{b.title}</h3>}
-              {b.text && <p>{b.text}</p>}
+              {b.title && <h3 style={b.titleStyle ?? undefined}>{b.title}</h3>}
+              {b.text && <p style={b.textStyle ?? undefined}>{b.text}</p>}
             </div>
           );
         }
@@ -345,11 +347,21 @@ const tocEntries = (sections ?? [])
         if (b.type === 'columns') {
           return (
             <div class="cols">
-              {b.cols.map((c) => (
-                <div class="col" style={`--col-w:${c.width}%`}>
-                  <Astro.self blocks={c.blocks} />
-                </div>
-              ))}
+              {b.cols.map((c) => {
+                /* Only a column that sits on a colour of its own gets one; a
+                   declared #ffffff is the page background already. */
+                const tinted = c.background && c.background.toLowerCase() !== '#ffffff';
+                const style = [
+                  `--col-w:${c.width}%`,
+                  tinted ? `background-color:${c.background}` : '',
+                  tinted && c.padding ? `padding:${c.padding}` : '',
+                ].filter(Boolean).join(';');
+                return (
+                  <div class:list={['col', { 'col--tinted': tinted }]} style={style}>
+                    <Astro.self blocks={c.blocks} />
+                  </div>
+                );
+              })}
             </div>
           );
         }
@@ -357,11 +369,21 @@ const tocEntries = (sections ?? [])
         return null;
   });
 
+  /* #ffffff is the page's own background, so declaring it changes nothing;
+     skipping it keeps the emitted style attribute to the sections that
+     actually sit on a colour. */
+  const secStyle = [
+    section?.padding ? `padding:${section.padding}` : '',
+    section?.background && section.background.toLowerCase() !== '#ffffff'
+      ? `background-color:${section.background}`
+      : '',
+  ].filter(Boolean).join(';');
+
   return group.bare ? inner : (
     <section
       class="sec"
       data-eid={section?.id ?? undefined}
-      style={section?.padding ? `padding:${section.padding}` : undefined}
+      style={secStyle || undefined}
     >
       <div
         class="container stack"
@@ -407,20 +429,61 @@ const tocEntries = (sections ?? [])
      smaller than the standalone heading blocks and navy rather than body ink —
      and the h3 weight is 700, which is what makes <strong> inside one resolve
      to 900 as it does on the live site. */
+  /* Rich text is a second, separate type scale from the heading widgets in
+     global.css, and mixing the two was wrong in both directions. Probed by
+     injecting this markup into a mirrored page inside
+     .elementor-widget-text-editor: the leading here is 1.2x the size (not the
+     kit's 1.0), h2-h4 are weight 600 (not 500), and h3/h4 are navy while
+     h1/h2 stay body ink. A text widget that declares its own size still wins —
+     the extractor carries that inline. */
   .rt {
-    font-size: 17px;
-    line-height: 25.5px;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .rt :global(h1) {
+    font-size: 40px;
+    line-height: 1.2;
+    font-weight: 500;
+    color: var(--ink);
+    text-transform: none;
   }
   .rt :global(h2) {
     font-size: 28px;
-    line-height: 33.6px;
+    line-height: 1.2;
+    font-weight: 600;
     color: var(--ink);
+    text-transform: capitalize;
   }
   .rt :global(h3) {
     font-size: 22px;
-    line-height: 26.4px;
-    font-weight: 700;
+    line-height: 1.2;
+    font-weight: 600;
     color: var(--brand-navy);
+    text-transform: capitalize;
+  }
+  /* h4 had no rule at all, so it fell through to the heading-widget default and
+     took every <strong> inside it down with it: `bolder` resolves against the
+     parent, so a 500 parent yielded 700 where the original yields 900. */
+  .rt :global(h4) {
+    font-size: 18px;
+    line-height: 1.2;
+    font-weight: 600;
+    color: var(--brand-navy);
+    text-transform: none;
+  }
+  .rt :global(h5) {
+    font-size: 18px;
+    line-height: 1.2;
+    font-weight: 500;
+    color: #444444;
+    text-transform: none;
+  }
+  .rt :global(h6) {
+    font-size: 18px;
+    line-height: 1.2;
+    font-weight: 500;
+    color: var(--ink);
+    text-transform: none;
   }
 
   .rt :global(p) { margin: 0 0 16px; }
@@ -514,9 +577,10 @@ const tocEntries = (sections ?? [])
     color: var(--e-global-color-accent);
     font-family: 'Poppins', sans-serif;
     font-weight: 500;
-    /* measured 18px leading on the live button widget */
+    /* .elementor-button{line-height:1}: the leading tracks the size, and
+       these blocks carry their own font-size inline. */
     font-size: 15px;
-    line-height: 18px;
+    line-height: 1;
     padding: 12px 24px;
     border-radius: 0;
     text-decoration: none;

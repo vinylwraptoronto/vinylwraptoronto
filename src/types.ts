@@ -13,8 +13,27 @@ export type Block =
       full?: boolean;
     }
   | { type: 'button'; text: string; href: string; style?: string | null }
-  | { type: 'list'; items: { text: string; href?: string | null }[] }
-  | { type: 'feature'; title: string; text: string; image?: string | null; alt?: string }
+  | {
+      type: 'list';
+      items: { text: string; href?: string | null }[];
+      style?: string | null;
+      /** Elementor sets an icon-list's type and colour on the item text, not on
+          the widget, so it needs a key of its own. */
+      itemStyle?: string | null;
+    }
+  | {
+      type: 'feature';
+      title: string;
+      text: string;
+      image?: string | null;
+      alt?: string;
+      style?: string | null;
+      /* Same again for an icon-box: title and description are styled
+         separately, and these are the widgets that sit on the tinted panels —
+         without their own colour they came out body-ink on navy. */
+      titleStyle?: string | null;
+      textStyle?: string | null;
+    }
   /* `alt` is the original's own alt text, which is not the card title: the port
      used the title and lost the description on 960 pages. An empty string is
      meaningful — the original marks decorative images that way. */
@@ -90,7 +109,15 @@ export type Block =
     single stream of blocks, so every row rendered as a vertical stack. */
 export type ColumnsBlock = {
   type: 'columns';
-  cols: { width: number; blocks: Block[] }[];
+  /** `background` is set only where the column sits on its own colour, and
+      `padding` rides along with it — a navy panel needs the original's inset
+      or its widgets run into the edge. */
+  cols: {
+    width: number;
+    blocks: Block[];
+    background?: string | null;
+    padding?: string | null;
+  }[];
 };
 
 /** Sections carry the live template's own padding and container width; the
@@ -100,6 +127,10 @@ export type Section = {
   blocks: Block[];
   padding?: string | null;
   maxWidth?: string | null;
+  /** The section's own background. Most are #ffffff and match the default, but
+      ~7% are navy, near-black or a tint — and the widgets inside those already
+      carry the original's white text, so without this they were white on white. */
+  background?: string | null;
 };
 
 /** page | post | archive | story — archives carry the slugs they list. */
