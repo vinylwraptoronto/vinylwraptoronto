@@ -7,6 +7,7 @@
  * with the measured type scale and palette.
  */
 import type { Section } from '../types';
+import { imageUrl, rewriteUploads } from '../data/images';
 
 export interface Props {
   sections: Section[];
@@ -23,16 +24,16 @@ const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined
         if (b.type === 'heading') {
           const Tag = `h${Math.min(Math.max(b.level, 1), 6)}` as 'h1';
           return (
-            <Tag>{b.href ? <a class="hlink" href={b.href}>{b.text}</a> : b.text}</Tag>
+            <Tag>{b.href ? <a class="hlink" href={imageUrl(b.href)}>{b.text}</a> : b.text}</Tag>
           );
         }
 
-        if (b.type === 'text') return <div class="rt" set:html={b.html} />;
+        if (b.type === 'text') return <div class="rt" set:html={rewriteUploads(b.html)} />;
 
         if (b.type === 'image') {
           const img = (
             <img
-              src={b.src}
+              src={imageUrl(b.src)}
               alt={b.alt}
               width={num(b.width)}
               height={num(b.height)}
@@ -40,16 +41,16 @@ const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined
               decoding="async"
             />
           );
-          return <figure class="fig">{b.href ? <a href={b.href}>{img}</a> : img}</figure>;
+          return <figure class="fig">{b.href ? <a href={imageUrl(b.href)}>{img}</a> : img}</figure>;
         }
 
-        if (b.type === 'button') return <p><a class="btn" href={b.href}>{b.text}</a></p>;
+        if (b.type === 'button') return <p><a class="btn" href={imageUrl(b.href)}>{b.text}</a></p>;
 
         if (b.type === 'list') {
           return (
             <ul class="ilist">
               {b.items.map((i) => (
-                <li>{i.href ? <a href={i.href}>{i.text}</a> : i.text}</li>
+                <li>{i.href ? <a href={imageUrl(i.href)}>{i.text}</a> : i.text}</li>
               ))}
             </ul>
           );
@@ -68,7 +69,7 @@ const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined
           return (
             <div class="gallery">
               {b.images.map((i) => (
-                <img src={i.src} alt={i.alt} loading="lazy" decoding="async" />
+                <img src={imageUrl(i.src)} alt={i.alt} loading="lazy" decoding="async" />
               ))}
             </div>
           );
@@ -93,11 +94,11 @@ const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined
               {b.pairs.map((p) => (
                 <div class="compare-pair">
                   <figure>
-                    <img src={p.before.src} alt={p.before.alt} loading="lazy" decoding="async" />
+                    <img src={imageUrl(p.before.src)} alt={p.before.alt} loading="lazy" decoding="async" />
                     <figcaption>{p.beforeLabel}</figcaption>
                   </figure>
                   <figure>
-                    <img src={p.after.src} alt={p.after.alt} loading="lazy" decoding="async" />
+                    <img src={imageUrl(p.after.src)} alt={p.after.alt} loading="lazy" decoding="async" />
                     <figcaption>{p.afterLabel}</figcaption>
                   </figure>
                 </div>

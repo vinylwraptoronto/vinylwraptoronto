@@ -2,6 +2,7 @@
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { site } from '../data/site';
+import { imageUrl } from '../data/images';
 import '../styles/tokens.css';
 import '../styles/global.css';
 
@@ -14,7 +15,10 @@ export interface Props {
 
 const { title, description = '', canonical, ogImage } = Astro.props;
 const canonicalUrl = canonical ?? new URL(Astro.url.pathname, site.url).href;
-const ogImageUrl = ogImage ? new URL(ogImage, site.url).href : undefined;
+// og:image must be absolute. imageUrl() already returns an absolute address for
+// uploads once they are on the image host; new URL() is a no-op on those and
+// still absolutises anything served from this origin.
+const ogImageUrl = ogImage ? new URL(imageUrl(ogImage), site.url).href : undefined;
 ---
 
 <!doctype html>

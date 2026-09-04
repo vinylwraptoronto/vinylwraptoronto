@@ -7,6 +7,7 @@
  */
 import navData from '../data/nav.json';
 import { site, type NavItem } from '../data/site';
+import { imageUrl } from '../data/images';
 
 const nav = navData as NavItem[];
 const { pathname } = Astro.url;
@@ -17,7 +18,7 @@ const isCurrent = (href: string) => href !== '#' && href !== '/' && pathname.sta
   <div class="bar">
     <a class="brand" href="/">
       <img
-        src={site.logo.src}
+        src={imageUrl(site.logo.src)}
         alt={site.logo.alt}
         width={site.logo.width}
         height={site.logo.height}

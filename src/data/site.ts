@@ -15,7 +15,10 @@ export const site = {
   address: '24 Ronson Dr, Unit 1, Etobicoke ON',
   mapUrl: 'https://g.page/vinylwraptoronto?share',
   logo: {
-    src: '/images/Vinyl-Wrap-Toronto-Logo-Best-Avery-and-3M-Wraps-in-GTA.webp',
+    // The live site serves the header logo from the media library. public/images/
+    // held a byte-identical second copy of it; the upload path is the one the
+    // image host knows, so the duplicate is gone and this points at the original.
+    src: '/wp-content/uploads/2022/12/Vinyl-Wrap-Toronto-Logo-Best-Avery-and-3M-Wraps-in-GTA.webp',
     alt: 'Vinyl Wrap Toronto - Logo - Best Avery and 3M Wraps in GTA',
     width: 500,
     height: 108,

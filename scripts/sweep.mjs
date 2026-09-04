@@ -43,9 +43,28 @@ if (fs.existsSync(redirectsFile)) {
 
 const deadLinks = new Map();
 const missingImages = new Map();
+const directToB2 = new Map();
 const emptyPages = [];
 let totalLinks = 0;
 let totalImages = 0;
+let remoteImages = 0;
+
+// Images are served from the B2 bucket through img.[domain] (AD-9), so most
+// src values are now absolute and no longer resolve inside dist/. Recognise
+// that host and check the key behind it; PUBLIC_IMAGE_BASE keeps this honest
+// when the build was pointed somewhere else.
+const IMAGE_BASE = (process.env.PUBLIC_IMAGE_BASE || 'https://img.vinylwraptoronto.com')
+  .replace(/\/+$/, '');
+
+/** The uploads key a src refers to, or null if it is not an upload. */
+const uploadKey = (src) => {
+  if (IMAGE_BASE && src.startsWith(IMAGE_BASE + '/')) {
+    remoteImages++;
+    return src.slice(IMAGE_BASE.length + 1);
+  }
+  if (src.startsWith('/wp-content/uploads/')) return src.slice('/wp-content/uploads/'.length);
+  return null;
+};
 
 const exists = (p) => fs.existsSync(path.join(DIST, decodeURIComponent(p).replace(/^\//, '')));
 
@@ -72,18 +91,42 @@ for (const f of htmlFiles) {
 
   for (const m of html.matchAll(/<img[^>]+src="([^"]+)"/g)) {
     const src = m[1];
-    if (!src.startsWith('/')) continue;
-    totalImages++;
-    if (!exists(src)) {
-      if (!missingImages.has(src)) missingImages.set(src, []);
-      missingImages.get(src).push(route);
+    const key = uploadKey(src);
+
+    // An image on the host is still checkable offline: the bucket was proved
+    // byte-for-byte against public/wp-content/uploads at gate 5, so the local
+    // tree is a faithful index of what the bucket holds.
+    if (key !== null) {
+      totalImages++;
+      if (!exists(`/wp-content/uploads/${key}`)) {
+        if (!missingImages.has(src)) missingImages.set(src, []);
+        missingImages.get(src).push(route);
+      }
+      continue;
     }
+
+    if (src.startsWith('/')) {
+      totalImages++;
+      if (!exists(src)) {
+        if (!missingImages.has(src)) missingImages.set(src, []);
+        missingImages.get(src).push(route);
+      }
+    }
+  }
+
+  // The site must never name the bucket's own origin: that address bypasses
+  // Cloudflare and bills the client for every image view.
+  for (const m of html.matchAll(/["'(]([^"'()\s]*backblazeb2\.com[^"'()\s]*)/g)) {
+    if (!directToB2.has(m[1])) directToB2.set(m[1], []);
+    directToB2.get(m[1]).push(route);
   }
 }
 
 console.log(`pages:        ${htmlFiles.length}`);
 console.log(`internal links checked: ${totalLinks}   dead: ${deadLinks.size}`);
 console.log(`image refs checked:     ${totalImages}   missing: ${missingImages.size}`);
+console.log(`  on ${IMAGE_BASE}: ${remoteImages}   served from public/: ${totalImages - remoteImages}`);
+console.log(`direct *.backblazeb2.com refs: ${directToB2.size}   (must be 0)`);
 console.log(`empty pages:  ${emptyPages.length}`);
 
 const show = (label, map, n = 15) => {
@@ -98,6 +141,9 @@ const show = (label, map, n = 15) => {
 
 show('DEAD LINKS', deadLinks);
 show('MISSING IMAGES', missingImages);
+show('DIRECT TO BACKBLAZE — must go through Cloudflare', directToB2);
 if (emptyPages.length) console.log('\nEMPTY PAGES:\n  ' + emptyPages.slice(0, 15).join('\n  '));
 
-process.exit(deadLinks.size || missingImages.size || emptyPages.length ? 1 : 0);
+process.exit(
+  deadLinks.size || missingImages.size || directToB2.size || emptyPages.length ? 1 : 0,
+);

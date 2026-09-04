@@ -43,6 +43,13 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 
 const missing = [];
 page.on('response', (r) => { if (r.status() >= 400) missing.push(`${r.status()} ${r.url()}`); });
+// A request that never gets a response — DNS failure, refused connection —
+// fires requestfailed and no response event at all. Listening only for status
+// >= 400 was fine while every image was same-origin, but images now come from
+// img.vinylwraptoronto.com: if that host does not resolve, every one of them
+// fails silently and this check passes on a page with no images on it.
+page.on('requestfailed', (r) =>
+  missing.push(`${r.failure()?.errorText ?? 'FAILED'} ${r.url()}`));
 
 await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1200);

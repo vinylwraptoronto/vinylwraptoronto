@@ -126,6 +126,21 @@ present, correct, and still lose. `sweep.mjs` walks the built output: 91,133
 internal links, 3,275 image references, zero dead, zero missing, zero empty
 pages.
 
+Both were adjusted when images moved to the bucket, because both would otherwise
+have passed on a page with no working images on it:
+
+- `sweep.mjs` only validated `src="/…"`. Absolute URLs would have been skipped
+  and it would have reported *0 images checked, 0 missing*. It now resolves the
+  image host back to a key and checks that key on disk.
+- `verify.mjs` only recorded responses with `status >= 400`. A request that gets
+  no response at all — DNS failure, refused connection — fires `requestfailed`
+  and was invisible. It now listens for both.
+
+Until `img.vinylwraptoronto.com` resolves, `verify.mjs` reports one real
+failure: `net::ERR_TUNNEL_CONNECTION_FAILED` on every image. That is the check
+doing its job. Run it against `PUBLIC_IMAGE_BASE=/wp-content/uploads` to
+exercise the other 14 checks in the meantime.
+
 `/partial-trailer-wrap/` is linked from three pages but is a **301 to the
 homepage** on the live site, not a page. `public/_redirects` reproduces that
 redirect rather than inventing a page for it.
@@ -144,7 +159,37 @@ Not deployed by this repository. Hosting is Cloudflare Workers via Workers
 Builds (`wrangler.jsonc` is committed, with `not_found_handling: "404-page"` so
 unknown addresses reach `404.astro`).
 
-Images are currently served from `public/wp-content/uploads/...`, preserving the
-live site's paths — which also means existing image URLs keep resolving after a
-cutover. The house standard puts them on Backblaze B2 behind
-`img.vinylwraptoronto.com`; swapping to that is a path change only.
+## Images
+
+Images are served from Backblaze B2 at **`img.vinylwraptoronto.com`** (AD-9),
+out of the bucket `vinylwraptoronto-img`. Bucket keys are the WordPress upload
+paths with the `/wp-content/uploads/` prefix stripped, so
+`/wp-content/uploads/2023/07/foo.webp` is the object `2023/07/foo.webp` — the
+same layout as the other migrated sites in the account.
+
+The page JSON keeps the live site's original paths. It is the extraction record,
+and rewriting 3,275 strings inside it to carry a hostname would destroy that.
+The prefix is translated at render time in `src/data/images.ts`, so the host is
+**one value**, not a bulk edit:
+
+- `imageUrl(src)` — image `src`, `ogImage`, and any `href` that points at an
+  upload (the three PDF catalogues, and the full-size image behind a thumbnail).
+- `rewriteUploads(html)` — the same translation inside rich-text blocks, which
+  are emitted with `set:html` and so never pass through `imageUrl()`. 72
+  references across 20 pages live only there. No page uses `srcset`.
+
+`PUBLIC_IMAGE_BASE` overrides the host. Set it to `/wp-content/uploads` to serve
+from `public/` again — a bad cutover is one env var to undo:
+
+```bash
+PUBLIC_IMAGE_BASE=/wp-content/uploads npm run build
+```
+
+`public/wp-content/uploads/` is still in the repo. It is what `sweep.mjs` checks
+image references against, and it is the second copy while the bucket is new; it
+can be dropped once `img.vinylwraptoronto.com` has served the live site.
+
+**The site must never reference `*.backblazeb2.com` directly** — that address
+bypasses Cloudflare and bills the client for every image view. Only
+`src/data/images.ts` knows the host, and `sweep.mjs` fails the build on any such
+reference.

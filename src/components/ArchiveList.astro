@@ -8,6 +8,7 @@
  * is correct rather than guessed from titles.
  */
 import summaries from '../data/summaries.json';
+import { imageUrl } from '../data/images';
 import type { Summary } from '../types';
 
 export interface Props {
@@ -33,7 +34,7 @@ const fmt = (d: string | null) =>
           <li class="card">
             <a href={`/${it.slug}/`}>
               {it.image ? (
-                <img src={it.image} alt={it.title} loading="lazy" decoding="async" />
+                <img src={imageUrl(it.image)} alt={it.title} loading="lazy" decoding="async" />
               ) : (
                 <span class="noimg" aria-hidden="true"></span>
               )}
