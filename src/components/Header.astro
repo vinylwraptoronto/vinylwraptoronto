@@ -404,11 +404,20 @@ const branchCurrent = (item: NavItem): boolean =>
      place and sits at its right edge, which is where the original puts it. */
   @media (max-width: 1024px) {
     .nav { display: none; }
-    .toggle { display: block; margin-left: auto; }
+    /* The live nav widget keeps `margin: 0 35px 0 0` at this breakpoint, which
+       is the gap between the burger and the navy "I want to" column. Without it
+       the two sit flush against each other. */
+    .toggle { display: block; margin-left: auto; margin-right: 35px; }
     .brand { width: 30%; max-width: 260px; padding: 6px 0 6px 14px; }
     .wantto-col { width: 20%; }
     .panel { display: block; background: #fff; }
     .panel[hidden] { display: none; }
+  }
+
+  /* The live template drops that margin to 0 at the mobile breakpoint, where
+     the space is needed for the logo. */
+  @media (max-width: 767px) {
+    .toggle { margin-right: 0; }
   }
 
   @media (max-width: 480px) {
