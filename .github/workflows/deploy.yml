@@ -45,6 +45,27 @@ jobs:
       # hostname carries on serving the previous one. This site sat on its first
       # build for ten deploys that way. scripts/deploy.sh promotes the new
       # version to 100% and then re-requests the site to prove it is live.
+      # Reports whether GitHub can see each candidate secret, without printing
+      # any value: `!= ''` yields a boolean, and a populated secret is masked as
+      # *** in logs anyway. This runs before the deploy so "the secret is not
+      # visible" is reported as itself, rather than surfacing as an opaque
+      # one-second failure inside deploy.sh.
+      - name: Check the deploy secret is visible
+        run: |
+          echo "CF_API_TOKEN visible:          ${{ secrets.CF_API_TOKEN != '' }}"
+          echo "CLOUDFLARE_API_TOKEN visible:  ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}"
+          echo "CLOUDFLARE_ACCOUNT_ID visible: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}"
+          if [ "${{ secrets.CF_API_TOKEN != '' }}" != "true" ] \
+          && [ "${{ secrets.CLOUDFLARE_API_TOKEN != '' }}" != "true" ]; then
+            echo "::error::No Cloudflare API token is visible to this workflow. A secret \
+          added under the Dependabot or Codespaces tab, added as a Variable rather than a \
+          Secret, scoped to an Environment this job does not declare, or set at the \
+          organization level without granting this repository access, all read as empty here. \
+          It must be a repository Secret on the Actions tab: \
+          Settings > Secrets and variables > Actions > Repository secrets."
+            exit 1
+          fi
+
       # Both token names are passed because the secret is stored under
       # CF_API_TOKEN, while wrangler reads CLOUDFLARE_API_TOKEN.
       # scripts/deploy.sh takes whichever is set and exports the name wrangler
