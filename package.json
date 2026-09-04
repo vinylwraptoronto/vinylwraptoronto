@@ -8,7 +8,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "deploy": "bash scripts/deploy.sh"
+    "deploy": "bash scripts/deploy.sh",
+    "check": "node scripts/verify.mjs && node scripts/sweep.mjs && node scripts/behaviour.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.10",

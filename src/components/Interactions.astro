@@ -149,7 +149,11 @@
     const cap = box.querySelector('.lb-cap') as HTMLElement;
 
     // Elementor opens its lightbox on gallery and content images.
-    const SEL = '.gallery img, .fig img, .rt img, .compare-pair img, .cards img';
+    // .fgal-item is the filterable portfolio gallery — its 341 images are
+    // lightbox links on the live site, and omitting the class here meant
+    // clicking one did nothing at all.
+    const SEL =
+      '.gallery img, .fgal-item img, .fig img, .rt img, .compare-pair img, .cards img, .carou-slide img';
     let group: HTMLImageElement[] = [];
     let index = 0;
 
