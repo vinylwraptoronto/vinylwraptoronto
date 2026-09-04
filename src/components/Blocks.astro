@@ -620,13 +620,15 @@ const tocEntries = (sections ?? [])
   /* .elementor-icon-box-title / -description. The leading is 1.2 of whatever
      size the widget declares — frozen at 20.4px it was right only for the
      17px default and 6px too tall on the 12px variants. */
+  /* Only what the widget itself does not decide. The 17px in brand green that
+     used to be here was one page's declared value: pages whose boxes declare
+     nothing render at the kit's h3 — 22px in black — and got 17px green
+     instead. Size and colour now come from the kit or from the widget. */
   .feature h3,
   .feature h4 {
     margin-bottom: 8px;
-    font-size: 17px;
     line-height: 1.2;
     font-weight: 600;
-    color: var(--brand-green);
   }
   .feature p {
     margin: 0;
