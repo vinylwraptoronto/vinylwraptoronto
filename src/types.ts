@@ -82,7 +82,16 @@ export type Block =
         beforeLabel: string;
         afterLabel: string;
       }[];
-    };
+    }
+  | ColumnsBlock;
+
+/** An Elementor row: columns side by side, each with its own percentage width.
+    93% of pages have at least one. The extractor used to flatten them into a
+    single stream of blocks, so every row rendered as a vertical stack. */
+export type ColumnsBlock = {
+  type: 'columns';
+  cols: { width: number; blocks: Block[] }[];
+};
 
 /** Sections carry the live template's own padding and container width; the
     homepage, for instance, is 35px/75px inside a 1400px container. */

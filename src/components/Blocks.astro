@@ -6,16 +6,27 @@
  * design. Each page is reduced to ordered sections of typed blocks and drawn
  * with the measured type scale and palette.
  */
-import type { Section } from '../types';
+import type { Block, Section } from '../types';
 import categories from '../data/categories.json';
 import QuoteForm from './QuoteForm.astro';
 import { img, imgHtml } from '../lib/img';
 
 export interface Props {
-  sections: Section[];
+  /** Normal use: whole sections, each with its own padding and container. */
+  sections?: Section[];
+  /** Recursive use: the blocks of one column, rendered without a section
+      wrapper. Elementor rows put blocks side by side and a column can hold
+      almost any block type — including another row — so the renderer calls
+      itself through Astro.self rather than special-casing a subset. */
+  blocks?: Block[];
 }
 
-const { sections } = Astro.props;
+const { sections, blocks } = Astro.props;
+
+const groups: { section?: Section; blocks: Block[]; bare: boolean }[] = blocks
+  ? [{ blocks, bare: true }]
+  : (sections ?? []).map((s) => ({ section: s, blocks: s.blocks, bare: false }));
+
 const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined);
 
 /** Stable anchor id from heading text, so the table of contents can link to it. */
@@ -24,7 +35,7 @@ const slugify = (t: string) =>
 
 /* The live table of contents is built client-side from the page's own h2/h3s.
    Rebuilt here from the same source so it lists the same entries. */
-const tocEntries = sections
+const tocEntries = (sections ?? [])
   .flatMap((s) => s.blocks)
   .filter((b): b is Extract<typeof b, { type: 'heading' }> =>
     b.type === 'heading' && (b.level === 2 || b.level === 3))
@@ -32,14 +43,10 @@ const tocEntries = sections
   .filter((e) => e.id);
 ---
 
-{sections.map((section) => (
-  <section
-    class="sec"
-    data-eid={section.id ?? undefined}
-    style={section.padding ? `padding:${section.padding}` : undefined}
-  >
-    <div class="container stack" style={section.maxWidth ? `max-width:${section.maxWidth}` : undefined}>
-      {section.blocks.map((b, i) => {
+{groups.map((group) => {
+  const section = group.section;
+  const blocksArr = group.blocks;
+  const inner = blocksArr.map((b, i) => {
         if (b.type === 'heading') {
           const Tag = `h${Math.min(Math.max(b.level, 1), 6)}` as 'h1';
           const id = b.level === 2 || b.level === 3 ? slugify(b.text) : undefined;
@@ -104,11 +111,11 @@ const tocEntries = sections
         if (b.type === 'button') {
           // The live buttons are 50%-width siblings, so a run of them sits on
           // one centred row rather than stacking.
-          const prev = section.blocks[i - 1];
+          const prev = blocksArr[i - 1];
           if (prev && prev.type === 'button') return null;
           const run = [];
-          for (let k = i; k < section.blocks.length; k++) {
-            const nb = section.blocks[k];
+          for (let k = i; k < blocksArr.length; k++) {
+            const nb = blocksArr[k];
             if (nb.type !== 'button') break;
             run.push(nb);
           }
@@ -306,7 +313,7 @@ const tocEntries = sections
           );
         }
 
-        if (b.type === 'form') return <QuoteForm id={`f-${section.id ?? 's'}`} />;
+        if (b.type === 'form') return <QuoteForm id={`f-${section?.id ?? 's'}`} />;
 
         if (b.type === 'map') {
           return (
@@ -335,15 +342,65 @@ const tocEntries = sections
           );
         }
 
+        if (b.type === 'columns') {
+          return (
+            <div class="cols">
+              {b.cols.map((c) => (
+                <div class="col" style={`--col-w:${c.width}%`}>
+                  <Astro.self blocks={c.blocks} />
+                </div>
+              ))}
+            </div>
+          );
+        }
+
         return null;
-      })}
-    </div>
-  </section>
-))}
+  });
+
+  return group.bare ? inner : (
+    <section
+      class="sec"
+      data-eid={section?.id ?? undefined}
+      style={section?.padding ? `padding:${section.padding}` : undefined}
+    >
+      <div
+        class="container stack"
+        style={section?.maxWidth ? `max-width:${section.maxWidth}` : undefined}
+      >
+        {inner}
+      </div>
+    </section>
+  );
+})}
 
 <style>
   .sec { padding: 34px 0; }
   .sec:first-child { padding-top: 26px; }
+
+  /* Elementor rows. Columns carry their own percentage width, so the row is a
+     flex line rather than a fixed grid — 50+50, 33+33+33 and 25x4 all fall out
+     of the same rule. Without this the columns stacked, which made a section
+     that is 440px tall on the live site render at 1642px. */
+  .cols {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0 20px;
+    width: 100%;
+  }
+  .cols > .col {
+    flex: 1 1 calc(var(--col-w, 100%) - 20px);
+    max-width: calc(var(--col-w, 100%) - 20px);
+    min-width: 0;
+  }
+  /* Blocks inside a column stack normally and must not re-inherit the
+     section's own vertical rhythm. */
+  .cols > .col > :global(:first-child) { margin-top: 0; }
+
+  /* Elementor collapses rows to full width at its tablet breakpoint. */
+  @media (max-width: 1024px) {
+    .cols > .col { flex-basis: 100%; max-width: 100%; }
+  }
 
   .rt :global(p) { margin: 0 0 16px; }
   .rt :global(p:last-child) { margin-bottom: 0; }
