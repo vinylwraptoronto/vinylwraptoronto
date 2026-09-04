@@ -41,11 +41,30 @@ const browser = await chromium.launch({
 });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 
+/*
+ * Only same-origin requests are judged here. This container's Chromium has no
+ * external egress at all — example.com resets the same way — so every request
+ * to the image host fails locally regardless of whether the host is healthy,
+ * and counting those would make the check permanently red for a reason that
+ * has nothing to do with the site. The images are verified for real, over the
+ * network, by scripts/img-check.mjs.
+ *
+ * This listened only for responses with a 4xx/5xx status, which meant a
+ * connection that never produced a response at all — the actual failure mode
+ * when a host is unreachable — passed silently under the name "no failed
+ * requests". requestfailed is where that shows up, so it is watched too.
+ */
+const local = (u) => u.startsWith(`http://127.0.0.1:${PORT}`);
 const missing = [];
-page.on('response', (r) => { if (r.status() >= 400) missing.push(`${r.status()} ${r.url()}`); });
+page.on('response', (r) => {
+  if (local(r.url()) && r.status() >= 400) missing.push(`${r.status()} ${r.url()}`);
+});
+page.on('requestfailed', (r) => {
+  if (local(r.url())) missing.push(`${r.failure()?.errorText ?? 'failed'} ${r.url()}`);
+});
 
-await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'networkidle' });
-await page.waitForTimeout(1200);
+await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(1500);
 
 const checks = [];
 const ok = (name, pass, detail = '') => checks.push({ name, pass, detail });
@@ -155,7 +174,8 @@ const noPrerender = pageFiles.filter((f) => f.endsWith('.astro') &&
   !fs.readFileSync(path.join('src/pages', f), 'utf8').includes('prerender = true'));
 ok('every page declares prerender', noPrerender.length === 0, noPrerender.join(', '));
 
-ok('no failed requests on the homepage', missing.length === 0, missing.slice(0, 5).join(' | '));
+ok('no failed same-origin requests on the homepage',
+  missing.length === 0, missing.slice(0, 5).join(' | '));
 
 await browser.close();
 server.close();
