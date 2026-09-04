@@ -124,7 +124,10 @@ const tocEntries = (sections ?? [])
           return (
             <p class="btnrow" style={b.style ?? undefined}>
               {run.map((rb) => (
-                <a class="btn" href={img(rb.href)} style={rb.style ?? undefined}>{rb.text}</a>
+                <a class="btn" href={img(rb.href)} style={rb.style ?? undefined}>
+                  {rb.icon && <i class:list={['btn-ic', rb.icon]} aria-hidden="true"></i>}
+                  {rb.text}
+                </a>
               ))}
             </p>
           );
@@ -134,7 +137,8 @@ const tocEntries = (sections ?? [])
           return (
             <ul class="ilist" style={b.style ?? undefined}>
               {b.items.map((i) => (
-                <li style={b.itemStyle ?? undefined}>
+                <li class:list={{ 'has-ic': !!i.icon }} style={b.itemStyle ?? undefined}>
+                  {i.icon && <i class:list={['li-ic', i.icon]} aria-hidden="true"></i>}
                   {i.href ? <a href={img(i.href)}>{i.text}</a> : i.text}
                 </li>
               ))}
@@ -146,6 +150,11 @@ const tocEntries = (sections ?? [])
           const T = `h${Math.min(Math.max(b.level ?? 3, 1), 6)}` as 'h3';
           return (
             <div class="feature" style={b.style ?? undefined}>
+              {b.icon && (
+                b.iconHref
+                  ? <a class="feature-ic" href={img(b.iconHref)} tabindex="-1" aria-hidden="true"><i class={b.icon}></i></a>
+                  : <span class="feature-ic" aria-hidden="true"><i class={b.icon}></i></span>
+              )}
               {b.image && <img src={img(b.image)} alt={b.alt ?? ''} loading="lazy" decoding="async" />}
               {b.title && <T style={b.titleStyle ?? undefined}>{b.title}</T>}
               {b.text && <p style={b.textStyle ?? undefined}>{b.text}</p>}
@@ -425,7 +434,13 @@ const tocEntries = (sections ?? [])
   .cols > .col > :global(:first-child) { margin-top: 0; }
 
   /* Elementor collapses rows to full width at its tablet breakpoint. */
-  @media (max-width: 1024px) {
+  /* Elementor stacks columns at its mobile breakpoint, not its tablet one:
+     04-frontend.min.css puts `.elementor-column{width:100%}` inside
+     @media(max-width:767px). Collapsing at 1024 here meant every multi-column
+     row on the site stacked from 1024px down, where the original still shows
+     them side by side — a three-across row of truck photos became one column
+     of full-bleed images at 990px. */
+  @media (max-width: 767px) {
     .cols > .col { flex-basis: 100%; max-width: 100%; }
   }
 
@@ -599,6 +614,25 @@ const tocEntries = (sections ?? [])
     position: relative;
     padding-inline-start: 22px;
     padding-block-end: 5px;
+  }
+  /* A hand-made dot stood in for the icon the original actually draws. Now
+     that the real one is rendered, the dot is only for items without one. */
+  .ilist > li.has-ic::before { content: none; }
+  .ilist > li.has-ic { padding-inline-start: 0; }
+  .li-ic {
+    display: inline-block;
+    width: 22px;
+    margin-inline-end: 6px;
+    text-align: center;
+    color: var(--brand-green);
+  }
+  .btn-ic { margin-inline-end: 8px; }
+  .feature-ic {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 28px;
+    color: var(--brand-green);
+    text-decoration: none;
   }
   .ilist > li::before {
     content: '';

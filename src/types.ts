@@ -22,10 +22,17 @@ export type Block =
       /** Sits in a zero-padding column on the live site, so it runs edge to edge. */
       full?: boolean;
     }
-  | { type: 'button'; text: string; href: string; style?: string | null }
+  | {
+      type: 'button';
+      text: string;
+      href: string;
+      style?: string | null;
+      /** Font Awesome classes, e.g. "fas fa-phone-alt". */
+      icon?: string | null;
+    }
   | {
       type: 'list';
-      items: { text: string; href?: string | null }[];
+      items: { text: string; href?: string | null; icon?: string | null }[];
       style?: string | null;
       /** Elementor sets an icon-list's type and colour on the item text, not on
           the widget, so it needs a key of its own. */
@@ -37,6 +44,9 @@ export type Block =
       text: string;
       image?: string | null;
       alt?: string;
+      /** Font Awesome classes for the box's icon, and where it links. */
+      icon?: string | null;
+      iconHref?: string | null;
       /** The heading tag the original chose for the title. It is visible: the
           kit capitalizes h3 but not h4. */
       level?: number;

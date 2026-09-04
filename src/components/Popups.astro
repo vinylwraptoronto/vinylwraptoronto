@@ -41,7 +41,9 @@ import { img } from '../lib/img';
     <ul class="pop-contacts">
       {quotePopup.contacts.map((c) => (
         <li>
-          <a href={img(c.href)} rel={c.href.startsWith('http') ? 'noopener' : undefined}>{c.text}</a>
+          <a href={img(c.href)} rel={c.href.startsWith('http') ? 'noopener' : undefined}>
+            <i class="fas fa-chevron-circle-right" aria-hidden="true"></i>{c.text}
+          </a>
         </li>
       ))}
     </ul>

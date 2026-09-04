@@ -55,7 +55,7 @@ const branchCurrent = (item: NavItem): boolean =>
               aria-haspopup={item.children.length > 0 ? 'true' : undefined}
             >
               {item.text}
-              {item.children.length > 0 && <span class="caret" aria-hidden="true"></span>}
+              {item.children.length > 0 && <i class="caret fas fa-caret-down" aria-hidden="true"></i>}
             </a>
             {item.children.length > 0 && (
               <ul class={`sub${item.children.length > 12 ? ' sub--wide' : ''}`}>
@@ -63,7 +63,7 @@ const branchCurrent = (item: NavItem): boolean =>
                   <li class={c.children.length > 0 ? 'has-sub2' : ''}>
                     <a href={c.href} aria-current={isCurrent(c.href) ? 'page' : undefined}>
                       {c.text}
-                      {c.children.length > 0 && <span class="caret caret--right" aria-hidden="true"></span>}
+                      {c.children.length > 0 && <i class="caret caret--right fas fa-caret-down" aria-hidden="true"></i>}
                     </a>
                     {c.children.length > 0 && (
                       <ul class="sub2">
@@ -192,17 +192,10 @@ const branchCurrent = (item: NavItem): boolean =>
   .nav > ul > li > a:hover,
   .nav > ul > li > a[aria-current='page'] { color: var(--e-global-color-f32bb28); }
 
-  .caret {
-    width: 0; height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid currentColor;
-  }
+  /* Was a border-drawn triangle, because the port shipped no icon font. The
+     original uses fa-caret-down / fa-caret-right. */
+  .caret { font-size: 12px; line-height: 1; }
   .caret--right {
-    border-top: 4px solid transparent;
-    border-bottom: 4px solid transparent;
-    border-left: 5px solid currentColor;
-    border-right: 0;
     margin-left: auto;
   }
 

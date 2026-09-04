@@ -16,20 +16,33 @@ export const areasServed = [
 
 export const areasIndex = { text: 'and more...', href: '/locations-served/' };
 
-/** Column headings and list items as they appear on the live footer. */
+/** Column headings and list items as they appear on the live footer.
+    Each row carries the Font Awesome class the original draws beside it; the
+    port had replaced every one with a plain CSS dot. */
 export const workflow = [
-  'Initial design within 48 hours',
-  'Work directly with our designers',
-  'Review design and schedule installation',
-  'Installation time varies based on coverage',
+  { text: 'Initial design within 48 hours', icon: 'far fa-clock' },
+  { text: 'Work directly with our designers', icon: 'fas fa-palette' },
+  { text: 'Review design and schedule installation', icon: 'fas fa-thumbs-up' },
+  { text: 'Installation time varies based on coverage', icon: 'fas fa-hourglass-half' },
 ];
 
 export const fasterProcess = [
-  'High resolution Logo file (Vector File)',
-  'Photo(s) of the vehicle',
-  'Any concepts of ideas you may have',
-  'Any other info that you think we should know',
+  { text: 'High resolution Logo file (Vector File)', icon: 'far fa-image' },
+  { text: 'Photo(s) of the vehicle', icon: 'fas fa-car-alt' },
+  { text: 'Any concepts of ideas you may have', icon: 'fas fa-lightbulb' },
+  { text: 'Any other info that you think we should know', icon: 'fas fa-info' },
 ];
+
+/** The contact column's four rows, in the original's order. */
+export const contactIcons = {
+  phone: 'fas fa-phone',
+  email: 'fas fa-envelope',
+  address: 'fas fa-map-pin',
+  hours: 'far fa-clock',
+};
+
+export const warrantyIcon = 'fas fa-check';
+export const areaIcon = 'fas fa-chevron-circle-right';
 
 export const warranty =
   'We include a 3-year warranty against peeling, bubbling or fading.';

@@ -9,13 +9,18 @@ import { site } from '../data/site';
 
 <div class="stickybar" data-sticky-bar>
   <a class="sb-btn sb-btn--call" href={site.phoneHref}>
+    <i class="sb-ic fas fa-phone-alt" aria-hidden="true"></i>
     <span class="sb-lead">Get an Estimate</span>
     <span class="sb-num">{site.phone}</span>
   </a>
-  <button class="sb-btn sb-btn--msg" type="button" data-popup="popup-quote">Send a Message</button>
+  <button class="sb-btn sb-btn--msg" type="button" data-popup="popup-quote">
+    <i class="sb-ic far fa-paper-plane" aria-hidden="true"></i>Send a Message
+  </button>
 </div>
 
 <style>
+  /* The original draws an icon on each of these; the port had neither. */
+  .sb-ic { margin-inline-end: 8px; }
   .stickybar {
     position: fixed;
     left: 0;

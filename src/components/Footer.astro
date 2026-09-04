@@ -11,6 +11,7 @@ import { site, social, legalLinks } from '../data/site';
 import { img } from '../lib/img';
 import {
   areasServed, areasIndex, workflow, fasterProcess, warranty, credit, hours, addressFull,
+  contactIcons, warrantyIcon, areaIcon,
 } from '../data/footer';
 ---
 
@@ -19,11 +20,11 @@ import {
     <!-- #70aa3a51 — navy column -->
     <section class="col">
       <h4>Areas We Serve</h4>
-      <ul class="list list--green">
+      <ul class="list">
         {areasServed.map((a) => (
-          <li><a href={img(a.href)}>{a.text}</a></li>
+          <li><i class={areaIcon} aria-hidden="true"></i><a href={img(a.href)}>{a.text}</a></li>
         ))}
-        <li><a href={areasIndex.href}>{areasIndex.text}</a></li>
+        <li><i class={areaIcon} aria-hidden="true"></i><a href={areasIndex.href}>{areasIndex.text}</a></li>
       </ul>
     </section>
 
@@ -31,27 +32,27 @@ import {
     <section class="col">
       <h4>Contact Us</h4>
       <ul class="list list--pink">
-        <li><a href={site.phoneHref}>{site.phone}</a></li>
-        <li><a href={`mailto:${site.email}`}>{site.email}</a></li>
-        <li><a href={site.mapUrl} rel="noopener">{addressFull}</a></li>
-        <li>{hours}</li>
+        <li><i class={contactIcons.phone} aria-hidden="true"></i><a href={site.phoneHref}>{site.phone}</a></li>
+        <li><i class={contactIcons.email} aria-hidden="true"></i><a href={`mailto:${site.email}`}>{site.email}</a></li>
+        <li><i class={contactIcons.address} aria-hidden="true"></i><a href={site.mapUrl} rel="noopener">{addressFull}</a></li>
+        <li><i class={contactIcons.hours} aria-hidden="true"></i>{hours}</li>
       </ul>
     </section>
 
     <section class="col">
       <h4>Workflow</h4>
-      <ul class="list list--green">
-        {workflow.map((w) => <li>{w}</li>)}
+      <ul class="list">
+        {workflow.map((w) => <li><i class={w.icon} aria-hidden="true"></i>{w.text}</li>)}
       </ul>
       <h4>Things that make the process Faster</h4>
-      <ul class="list list--green">
-        {fasterProcess.map((w) => <li>{w}</li>)}
+      <ul class="list">
+        {fasterProcess.map((w) => <li><i class={w.icon} aria-hidden="true"></i>{w.text}</li>)}
       </ul>
     </section>
 
     <section class="col">
       <h4>Warranty</h4>
-      <ul class="list list--green"><li>{warranty}</li></ul>
+      <ul class="list"><li><i class={warrantyIcon} aria-hidden="true"></i>{warranty}</li></ul>
 
       <h4>Get a Quote</h4>
       <!-- The live footer template (18407) carries the quote form itself, which
@@ -69,7 +70,11 @@ import {
 
       <ul class="social">
         {social.map((s) => (
-          <li><a href={s.href} rel="noopener">{s.name}</a></li>
+          <li>
+            <a href={s.href} rel="noopener" aria-label={s.name}>
+              <i class={s.icon} aria-hidden="true"></i>
+            </a>
+          </li>
         ))}
       </ul>
     </section>
@@ -129,22 +134,20 @@ import {
   }
   .list > li {
     padding-block-end: calc(10px / 2);
-    padding-inline-start: 22px;
-    position: relative;
     color: #ffffff;
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
   }
-  .list > li::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0.55em;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+  /* These were CSS dots standing in for the icons the original actually
+     draws — a phone, an envelope, a map pin, a clock, and so on. */
+  .list > li > i {
+    flex: 0 0 auto;
+    width: 14px;
+    text-align: center;
+    color: var(--e-global-color-8c22d81); /* #14A278 */
   }
-  /* #441ba18 icons are green; #32151746 icons are pink */
-  .list--green > li::before { background: var(--e-global-color-8c22d81); /* #14A278 */ }
-  .list--pink > li::before { background: var(--e-global-color-f32bb28); /* #FF0099 */ }
+  .list--pink > li > i { color: var(--e-global-color-f32bb28); /* #FF0099 */ }
 
   .list a { color: #ffffff; text-decoration: none; }
   .list a:hover { text-decoration: underline; }
@@ -198,7 +201,7 @@ import {
     padding: 0;
     font-size: 14px;
   }
-  .social a { color: #ffffff; text-decoration: none; }
+  .social a { color: #ffffff; text-decoration: none; font-size: 20px; }
   .social a:hover { color: var(--e-global-color-f32bb28); }
 
   /* #b853c7a — white credit bar */

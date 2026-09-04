@@ -13,6 +13,13 @@ export default defineConfig({
   }),
   output: 'static',
   trailingSlash: 'always',
+  /* Addresses the original links to but no longer serves as a page. /vinyl/
+     is linked from the contact icon strip on three pages and 301s to the
+     homepage on the live site, so the clone reproduces the redirect rather
+     than rewriting the link and diverging from the original's markup. */
+  redirects: {
+    '/vinyl/': '/',
+  },
   build: {
     format: 'directory',
   },

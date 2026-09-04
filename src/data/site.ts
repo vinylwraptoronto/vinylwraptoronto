@@ -28,15 +28,17 @@ export const site = {
   },
 } as const;
 
+/* The original's footer renders these as Font Awesome brand icons, not as
+   text links; the icon class is part of the data. */
 export const social = [
-  { name: 'Instagram', href: 'https://www.instagram.com/vinylwraptoronto/' },
-  { name: 'Linkedin', href: 'https://www.linkedin.com/in/vinyl-wrap-toronto-469489186/' },
-  { name: 'Facebook', href: 'https://www.facebook.com/vinylwrapto' },
-  { name: 'Twitter', href: 'https://twitter.com/vinylwraptdot' },
-  { name: 'Youtube', href: 'https://www.youtube.com/channel/UCcPPpSNRNjujyW-kXTSAqpg' },
-  { name: 'Tumblr', href: 'https://officialvinylwraptoronto.tumblr.com/' },
-  { name: 'Pinterest', href: 'https://www.pinterest.ca/vinylwrapstoronto/_saved/' },
-  { name: 'Reddit', href: 'https://www.reddit.com/user/VinylWrapToronto' },
+  { name: 'Instagram', href: 'https://www.instagram.com/vinylwraptoronto/', icon: 'fab fa-instagram' },
+  { name: 'Linkedin', href: 'https://www.linkedin.com/in/vinyl-wrap-toronto-469489186/', icon: 'fab fa-linkedin' },
+  { name: 'Facebook', href: 'https://www.facebook.com/vinylwrapto', icon: 'fab fa-facebook' },
+  { name: 'Twitter', href: 'https://twitter.com/vinylwraptdot', icon: 'fab fa-twitter' },
+  { name: 'Youtube', href: 'https://www.youtube.com/channel/UCcPPpSNRNjujyW-kXTSAqpg', icon: 'fab fa-youtube' },
+  { name: 'Tumblr', href: 'https://officialvinylwraptoronto.tumblr.com/', icon: 'fab fa-tumblr' },
+  { name: 'Pinterest', href: 'https://www.pinterest.ca/vinylwrapstoronto/_saved/', icon: 'fab fa-pinterest' },
+  { name: 'Reddit', href: 'https://www.reddit.com/user/VinylWrapToronto', icon: 'fab fa-reddit' },
 ] as const;
 
 export const legalLinks = [
