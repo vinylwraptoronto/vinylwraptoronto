@@ -229,7 +229,16 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
 
         if (b.type === 'cards') {
           return (
-            <ul class="cards" data-eid={b.eid} data-hide={b.hide?.join(" ")}>
+            <ul
+              class="cards"
+              data-eid={b.eid}
+              data-hide={b.hide?.join(" ")}
+              style={[
+                b.cols ? `--cards-d:${b.cols}` : '',
+                b.colsTablet ? `--cards-t:${b.colsTablet}` : '',
+                b.colsMobile ? `--cards-m:${b.colsMobile}` : '',
+              ].filter(Boolean).join(';') || undefined}
+            >
               {b.cards.map((c) => (
                 <li>
                   {c.badge && <span class="card-badge" style={b.badgeStyle ?? undefined}>{c.badge}</span>}
@@ -760,13 +769,25 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
   }
 
   /* related / looped post grids */
+  /* The count comes from the widget; auto-fill gave three or more columns
+     where the original gives two, and never stacked to one on a phone. The
+     auto-fill remains the fallback for grids that declare nothing. */
   .cards {
     list-style: none;
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(var(--cards-d, auto-fill), minmax(0, 1fr));
     gap: 18px;
+  }
+  .cards:not([style*='--cards-d']) {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+  @media (max-width: 1024px) {
+    .cards { grid-template-columns: repeat(var(--cards-t, var(--cards-d, auto-fill)), minmax(0, 1fr)); }
+  }
+  @media (max-width: 767px) {
+    .cards { grid-template-columns: repeat(var(--cards-m, 1), minmax(0, 1fr)); }
   }
   /* The card is the list item, not a single wrapping link: the original has
      three separate links inside it (thumbnail, title, read-more). */

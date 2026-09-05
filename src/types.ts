@@ -83,6 +83,12 @@ export type Block = (
          "Read More" is Poppins 12px green on the blog index and Roboto 14px
          pink on a post page — so these come from the widget rather than from
          one hard-coded rule in the component. */
+      /** Elementor declares the grid's column count per breakpoint; the port
+          used a CSS auto-fill, which gave three or more where the original
+          gives two and never stacked to one on a phone. */
+      cols?: number | null;
+      colsTablet?: number | null;
+      colsMobile?: number | null;
       titleStyle?: string | null;
       metaStyle?: string | null;
       moreStyle?: string | null;
