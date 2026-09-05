@@ -148,6 +148,11 @@ export type Block = (
   /** The Elementor id of the widget this block came from. It is rendered as
       `data-eid` so the page's own responsive rules have something to select. */
   eid?: string;
+  /** The widget's own panel — background, padding, border, radius, shadow —
+      declared on Elementor's `.elementor-widget-container`. Never read before,
+      so the homepage's image captions lost their navy bar and green top border
+      and painted white text on white. */
+  box?: string | null;
   /** Breakpoints the original hides this widget at ("mobile", "tablet").
       Elementor expresses these as a class acted on by its global stylesheet,
       which the port never carried, so hidden widgets showed everywhere. */
