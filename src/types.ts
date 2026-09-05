@@ -171,6 +171,15 @@ export type Section = {
       ~7% are navy, near-black or a tint — and the widgets inside those already
       carry the original's white text, so without this they were white on white. */
   background?: string | null;
+  /** A section can carry a photograph rather than a colour. The
+      /locations-served/ banner sections hold no widgets at all, so the port
+      dropped them and the pages opened straight on the navy title block. */
+  bgImage?: string | null;
+  bgSize?: string | null;
+  bgPosition?: string | null;
+  bgRepeat?: string | null;
+  /** Declared on the inner container, so a restored banner has a height. */
+  minHeight?: string | null;
 };
 
 /** page | post | archive | story — archives carry the slugs they list. */

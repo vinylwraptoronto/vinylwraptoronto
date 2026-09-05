@@ -19,9 +19,15 @@ export interface Props {
       almost any block type — including another row — so the renderer calls
       itself through Astro.self rather than special-casing a subset. */
   blocks?: Block[];
+  /** The page's table-of-contents entries, threaded through the recursion.
+      The TOC widget almost always sits inside a column, so a renderer that
+      only looked at `sections` saw an empty list and drew nothing. */
+  toc?: TocEntry[];
 }
 
-const { sections, blocks } = Astro.props;
+type TocEntry = { eid?: string; text: string; level: number; id: string };
+
+const { sections, blocks, toc } = Astro.props;
 
 const groups: { section?: Section; blocks: Block[]; bare: boolean }[] = blocks
   ? [{ blocks, bare: true }]
@@ -33,16 +39,64 @@ const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined
 const slugify = (t: string) =>
   t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
 
-/* The live table of contents is built client-side from the page's own h2/h3s.
-   Rebuilt here from the same source so it lists the same entries. */
-const tocEntries = (sections ?? [])
-  .flatMap((s) => s.blocks)
-  .filter((b): b is Extract<typeof b, { type: 'heading' }> =>
-    // `tag` means the widget rendered as p or div, so it is not a heading and
-    // does not belong in a table of contents.
-    b.type === 'heading' && !b.tag && (b.level === 2 || b.level === 3))
-  .map((b) => ({ text: b.text, level: b.level, id: slugify(b.text) }))
-  .filter((e) => e.id);
+/* The live table of contents is built client-side from the page's own
+   headings (the widget is configured for h2-h6). Rebuilt here from the same
+   source so it lists the same entries.
+
+   It has to walk the whole section tree: headings live inside columns, and a
+   flat pass over the top-level blocks found none of them, so the panel came
+   out empty on all 402 posts that carry the widget. */
+function collectHeadings(node: unknown, into: TocEntry[]): void {
+  if (Array.isArray(node)) {
+    for (const v of node) collectHeadings(v, into);
+    return;
+  }
+  if (!node || typeof node !== 'object') return;
+  const b = node as Record<string, unknown>;
+  // `tag` means the widget rendered as p or div, so it is not a heading.
+  if (b.type === 'heading' && !b.tag && typeof b.level === 'number' &&
+      b.level >= 2 && b.level <= 6 && typeof b.text === 'string') {
+    into.push({ eid: b.eid as string | undefined, text: b.text, level: b.level, id: '' });
+  }
+  // Most of a post's headings are inside the rich-text body, not the block
+  // model, so a walk over blocks alone listed only the few standalone heading
+  // widgets. These are keyed `<eid>#<n>` so the renderer can inject the very
+  // same id into the same tag.
+  if (b.type === 'text' && typeof b.html === 'string') {
+    let n = 0;
+    for (const m of b.html.matchAll(/<h([2-6])\b[^>]*>([\s\S]*?)<\/h\1>/g)) {
+      const text = m[2].replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').trim();
+      if (text) {
+        into.push({ eid: `${b.eid ?? 'rt'}#${n}`, text, level: Number(m[1]), id: '' });
+      }
+      n++;
+    }
+  }
+  for (const v of Object.values(b)) collectHeadings(v, into);
+}
+
+const tocEntries: TocEntry[] =
+  toc ??
+  (() => {
+    const found: TocEntry[] = [];
+    collectHeadings(sections ?? [], found);
+    // Headings repeat — several posts carry the same price twice — so ids are
+    // suffixed on collision, and the heading uses the same id by eid lookup.
+    const used = new Map<string, number>();
+    return found
+      .map((e) => {
+        const base = slugify(e.text);
+        if (!base) return { ...e, id: '' };
+        const n = (used.get(base) ?? 0) + 1;
+        used.set(base, n);
+        return { ...e, id: n === 1 ? base : `${base}-${n}` };
+      })
+      .filter((e) => e.id);
+  })();
+
+/** eid -> anchor id, so a heading and its TOC entry always agree. */
+const tocIds = new Map<string, string>();
+for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
 ---
 
 {groups.map((group) => {
@@ -51,7 +105,7 @@ const tocEntries = (sections ?? [])
   const inner = blocksArr.map((b, i) => {
         if (b.type === 'heading') {
           const Tag = (b.tag ?? `h${Math.min(Math.max(b.level, 1), 6)}`) as 'h1';
-          const id = !b.tag && (b.level === 2 || b.level === 3) ? slugify(b.text) : undefined;
+          const id = b.eid ? tocIds.get(b.eid) : undefined;
           return (
             <Tag id={id} data-eid={b.eid} style={b.style ?? undefined}>
               {b.href ? <a class="hlink" href={img(b.href)}>{b.text}</a> : b.text}
@@ -89,8 +143,19 @@ const tocEntries = (sections ?? [])
           );
         }
 
-        if (b.type === 'text')
-          return <div class="rt" data-eid={b.eid} style={b.style ?? undefined} set:html={imgHtml(b.html)} />;
+        if (b.type === 'text') {
+          // Give each body heading the id its table-of-contents entry links to.
+          let n = 0;
+          const withIds = imgHtml(b.html).replace(
+            /<h([2-6])\b([^>]*)>/g,
+            (whole, lvl, attrs) => {
+              const key = `${b.eid ?? 'rt'}#${n++}`;
+              const id = tocIds.get(key);
+              return id && !/\bid=/.test(attrs) ? `<h${lvl}${attrs} id="${id}">` : whole;
+            },
+          );
+          return <div class="rt" data-eid={b.eid} style={b.style ?? undefined} set:html={withIds} />;
+        }
 
         if (b.type === 'image') {
           const pic = (
@@ -372,7 +437,7 @@ const tocEntries = (sections ?? [])
                 ].filter(Boolean).join(';');
                 return (
                   <div class:list={['col', { 'col--tinted': tinted }]} style={style}>
-                    <Astro.self blocks={c.blocks} />
+                    <Astro.self blocks={c.blocks} toc={tocEntries} />
                   </div>
                 );
               })}
@@ -391,6 +456,10 @@ const tocEntries = (sections ?? [])
     section?.background && section.background.toLowerCase() !== '#ffffff'
       ? `background-color:${section.background}`
       : '',
+    section?.bgImage ? `background-image:url(${img(section.bgImage)})` : '',
+    section?.bgImage ? `background-size:${section.bgSize ?? 'cover'}` : '',
+    section?.bgImage ? `background-position:${section.bgPosition ?? 'center center'}` : '',
+    section?.bgImage ? `background-repeat:${section.bgRepeat ?? 'no-repeat'}` : '',
   ].filter(Boolean).join(';');
 
   return group.bare ? inner : (
@@ -401,7 +470,10 @@ const tocEntries = (sections ?? [])
     >
       <div
         class="container stack"
-        style={section?.maxWidth ? `max-width:${section.maxWidth}` : undefined}
+        style={[
+          section?.maxWidth ? `max-width:${section.maxWidth}` : '',
+          section?.minHeight ? `min-height:${section.minHeight}` : '',
+        ].filter(Boolean).join(';') || undefined}
       >
         {inner}
       </div>
