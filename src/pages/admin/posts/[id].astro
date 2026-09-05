@@ -1,0 +1,491 @@
+---
+/**
+ * The post editor. `/admin/posts/new/` to write one, `/admin/posts/<id>/` to
+ * edit.
+ *
+ * Laid out the way WordPress lays it out, because that is what the people using
+ * this already know: title and body take the width, everything that is not the
+ * writing goes in a right-hand column, and the SEO panel sits underneath the
+ * body with a live score, exactly where Rank Math puts it.
+ *
+ * The analysis runs in two places on purpose. In the browser it updates as you
+ * type, which is the only version that is any use while writing. On save the
+ * server runs the same module again and stores *that* result, because a score
+ * posted by the client is a number the client chose.
+ */
+import Admin from '../../../layouts/Admin.astro';
+import { applyAdminHeaders } from '../../../lib/auth';
+import { guardPage } from '../../../lib/adminroute';
+
+export const prerender = false;
+
+applyAdminHeaders(Astro.response.headers);
+const guard = await guardPage(Astro.locals, Astro.cookies, Astro.url);
+if (!guard.ok) return guard.response;
+const { db, session } = guard.ctx;
+
+const rawId = Astro.params.id ?? '';
+const isNew = rawId === 'new';
+const id = isNew ? 0 : Number(rawId);
+if (!isNew && (!Number.isInteger(id) || id <= 0)) return Astro.redirect('/admin/posts/', 302);
+
+interface PostRow {
+  id: number; slug: string; title: string; seo_title: string | null; headline: string | null;
+  excerpt: string | null; body_html: string; status: string; origin: string;
+  featured_id: number | null; author_id: number | null;
+  published_at: string | null; canonical_url: string | null;
+  focus_keyword: string | null; seo_score: number | null;
+  og_title: string | null; og_description: string | null; og_image_id: number | null;
+  twitter_card: string | null; twitter_title: string | null; twitter_description: string | null;
+  schema_type: string | null; breadcrumb_title: string | null;
+  robots_index: number; robots_follow: number; robots_advanced: string | null;
+  featured_path: string | null; og_image_path: string | null;
+}
+
+let post: PostRow | null = null;
+if (!isNew) {
+  post = await db
+    .prepare(
+      `SELECT p.*, m.path AS featured_path, o.path AS og_image_path
+         FROM posts p
+         LEFT JOIN media m ON m.id = p.featured_id
+         LEFT JOIN media o ON o.id = p.og_image_id
+        WHERE p.id = ?`,
+    )
+    .bind(id)
+    .first<PostRow>();
+  if (!post) return Astro.redirect('/admin/posts/?e=gone', 302);
+}
+
+const [authors, categories, brands, chosen, revisions] = await Promise.all([
+  db.prepare('SELECT id, name FROM authors ORDER BY name').all<{ id: number; name: string }>(),
+  db.prepare("SELECT id, slug, name FROM terms WHERE taxonomy='category' ORDER BY name").all<
+    { id: number; slug: string; name: string }
+  >(),
+  db.prepare("SELECT id, name FROM terms WHERE taxonomy='brand' ORDER BY name").all<
+    { id: number; name: string }
+  >(),
+  isNew
+    ? Promise.resolve({ results: [] as { term_id: number }[] })
+    : db.prepare('SELECT term_id FROM post_terms WHERE post_id = ?').bind(id).all<{ term_id: number }>(),
+  isNew
+    ? Promise.resolve({ results: [] as { id: number; created_at: string; title: string | null; words: number | null }[] })
+    : db
+        .prepare('SELECT id, created_at, title, words FROM post_revisions WHERE post_id = ? ORDER BY created_at DESC LIMIT 10')
+        .bind(id)
+        .all<{ id: number; created_at: string; title: string | null; words: number | null }>(),
+]);
+
+const chosenIds = new Set(chosen.results.map((r) => r.term_id));
+const advanced: string[] = post?.robots_advanced ? JSON.parse(post.robots_advanced) : [];
+const saved = Astro.url.searchParams.get('saved') === '1';
+
+const v = {
+  title: post?.title ?? '',
+  slug: post?.slug ?? '',
+  headline: post?.headline ?? '',
+  seoTitle: post?.seo_title ?? '',
+  excerpt: post?.excerpt ?? '',
+  body: post?.body_html ?? '',
+  status: post?.status ?? 'draft',
+  authorId: post?.author_id ?? '',
+  published: (post?.published_at ?? '').slice(0, 10),
+  featured: post?.featured_path ?? '',
+  focus: post?.focus_keyword ?? '',
+  canonical: post?.canonical_url ?? '',
+  ogTitle: post?.og_title ?? '',
+  ogDescription: post?.og_description ?? '',
+  ogImage: post?.og_image_path ?? '',
+  twCard: post?.twitter_card ?? 'summary_large_image',
+  twTitle: post?.twitter_title ?? '',
+  twDescription: post?.twitter_description ?? '',
+  schema: post?.schema_type ?? 'BlogPosting',
+  breadcrumb: post?.breadcrumb_title ?? '',
+  index: post ? post.robots_index !== 0 : true,
+  follow: post ? post.robots_follow !== 0 : true,
+};
+---
+
+<Admin title={isNew ? 'New post' : 'Edit post'} user={{ username: session.username, csrfToken: session.csrfToken }}>
+  <div class="ed-head">
+    <div>
+      <h1>{isNew ? 'Add new post' : 'Edit post'}</h1>
+      <p class="lede">
+        {post?.origin === 'imported'
+          ? 'This post was imported from the old site. Its original head tags and Elementor layout are preserved; editing the body will rebuild the page from what you write here.'
+          : 'Written here. The page is generated from these fields when the site is built.'}
+      </p>
+    </div>
+    <a class="clear" href="/admin/posts/">← All posts</a>
+  </div>
+
+  {saved && <p class="alert alert--ok" role="status">Saved.</p>}
+  <p id="ed-flash" class="alert" role="status" hidden></p>
+
+  <form id="ed-form" method="post" action="/api/admin/posts/save/">
+    <input type="hidden" name="csrf" value={session.csrfToken} />
+    <input type="hidden" name="id" value={isNew ? '' : String(id)} />
+
+    <div class="ed-grid">
+      <div class="ed-main">
+        <div class="card">
+          <input class="ed-title" type="text" name="title" value={v.title} placeholder="Add title"
+                 required maxlength="200" autocomplete="off" data-autoslug />
+          <p class="permalink">
+            <span>Permalink:</span>
+            <code>https://vinylwraptoronto.com/</code>
+            <input type="text" name="slug" id="ed-slug" value={v.slug} maxlength="180"
+                   pattern="[a-z0-9\-\/]+" required autocomplete="off" />
+            <code>/</code>
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="toolbar" role="toolbar" aria-label="Formatting">
+            <button type="button" data-cmd="bold" title="Bold"><b>B</b></button>
+            <button type="button" data-cmd="italic" title="Italic"><i>I</i></button>
+            <button type="button" data-block="h2" title="Heading 2">H2</button>
+            <button type="button" data-block="h3" title="Heading 3">H3</button>
+            <button type="button" data-block="p" title="Paragraph">¶</button>
+            <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
+            <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+            <button type="button" data-block="blockquote" title="Quote">❝</button>
+            <button type="button" data-link title="Link">Link</button>
+            <button type="button" data-unlink title="Remove link">Unlink</button>
+            <button type="button" data-image title="Insert image">Image</button>
+            <span class="spacer"></span>
+            <button type="button" id="ed-source" title="Edit the HTML directly">HTML</button>
+          </div>
+          <div id="ed-body" class="ed-body rt" contenteditable="true" role="textbox" aria-multiline="true"
+               aria-label="Post body" set:html={v.body}></div>
+          <textarea id="ed-html" class="ed-html" hidden aria-label="Post HTML"></textarea>
+          <input type="hidden" name="body_html" id="ed-body-input" />
+          <p class="counts"><span id="ed-words">0</span> words · <span id="ed-read">0</span> min read</p>
+        </div>
+
+        <div class="card">
+          <h2>Excerpt</h2>
+          <textarea name="excerpt" id="ed-excerpt" rows="3" maxlength="320"
+                    placeholder="Left blank, the first sentences of the post are used.">{v.excerpt}</textarea>
+        </div>
+
+        <!-- The SEO panel, in Rank Math's shape: a score, a SERP preview, and
+             the checks grouped the way it groups them. -->
+        <div class="card seo" id="ed-seo">
+          <div class="seo-head">
+            <h2>Search engine optimisation</h2>
+            <div class="seo-score" id="ed-score" data-score="0">
+              <b>0</b><span>/100</span>
+            </div>
+          </div>
+
+          <div class="tabs" role="tablist">
+            <button type="button" role="tab" class="on" data-tab="general">General</button>
+            <button type="button" role="tab" data-tab="social">Social</button>
+            <button type="button" role="tab" data-tab="advanced">Advanced</button>
+          </div>
+
+          <div class="tab" data-panel="general">
+            <div class="field">
+              <label for="ed-focus">Focus keyword</label>
+              <input type="text" name="focus_keyword" id="ed-focus" value={v.focus} maxlength="120"
+                     placeholder="The phrase this post should rank for" autocomplete="off" />
+              <p class="hint">One phrase. Everything below is measured against it.</p>
+            </div>
+
+            <div class="serp" aria-label="Google preview">
+              <div class="serp-url">vinylwraptoronto.com › <span id="serp-slug"></span></div>
+              <div class="serp-title" id="serp-title"></div>
+              <div class="serp-desc" id="serp-desc"></div>
+            </div>
+
+            <div class="field">
+              <label for="ed-seotitle">SEO title <span class="count" id="c-seotitle"></span></label>
+              <input type="text" name="seo_title" id="ed-seotitle" value={v.seoTitle} maxlength="200"
+                     placeholder="Falls back to the post title" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="ed-metadesc">Meta description <span class="count" id="c-metadesc"></span></label>
+              <textarea name="meta_description" id="ed-metadesc" rows="2" maxlength="320"
+                        placeholder="Falls back to the excerpt">{v.excerpt}</textarea>
+            </div>
+
+            <ul class="checks" id="ed-checks"></ul>
+          </div>
+
+          <div class="tab" data-panel="social" hidden>
+            <p class="hint">Left blank, each falls back to the SEO title, the description and the featured image — which is what most posts want.</p>
+            <div class="field">
+              <label for="ed-ogtitle">Facebook / OpenGraph title</label>
+              <input type="text" name="og_title" id="ed-ogtitle" value={v.ogTitle} maxlength="200" />
+            </div>
+            <div class="field">
+              <label for="ed-ogdesc">Facebook / OpenGraph description</label>
+              <textarea name="og_description" id="ed-ogdesc" rows="2" maxlength="320">{v.ogDescription}</textarea>
+            </div>
+            <div class="field">
+              <label for="ed-ogimage">Social image path</label>
+              <input type="text" name="og_image" id="ed-ogimage" value={v.ogImage}
+                     placeholder="/wp-content/uploads/… — blank uses the featured image" />
+            </div>
+            <div class="field">
+              <label for="ed-twcard">Twitter card</label>
+              <select name="twitter_card" id="ed-twcard">
+                <option value="summary_large_image" selected={v.twCard === 'summary_large_image'}>Large image</option>
+                <option value="summary" selected={v.twCard === 'summary'}>Summary</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="ed-twtitle">Twitter title</label>
+              <input type="text" name="twitter_title" id="ed-twtitle" value={v.twTitle} maxlength="200" />
+            </div>
+            <div class="field">
+              <label for="ed-twdesc">Twitter description</label>
+              <textarea name="twitter_description" id="ed-twdesc" rows="2" maxlength="320">{v.twDescription}</textarea>
+            </div>
+          </div>
+
+          <div class="tab" data-panel="advanced" hidden>
+            <div class="field">
+              <label>Search engines</label>
+              <label class="check"><input type="checkbox" name="robots_index" value="1" checked={v.index} /> Allow this post to be indexed</label>
+              <label class="check"><input type="checkbox" name="robots_follow" value="1" checked={v.follow} /> Follow the links on it</label>
+              <label class="check"><input type="checkbox" name="robots_advanced" value="noarchive" checked={advanced.includes('noarchive')} /> No cached copy (noarchive)</label>
+              <label class="check"><input type="checkbox" name="robots_advanced" value="nosnippet" checked={advanced.includes('nosnippet')} /> No snippet in results</label>
+              <label class="check"><input type="checkbox" name="robots_advanced" value="noimageindex" checked={advanced.includes('noimageindex')} /> Do not index its images</label>
+            </div>
+            <div class="field">
+              <label for="ed-canonical">Canonical URL</label>
+              <input type="text" name="canonical_url" id="ed-canonical" value={v.canonical}
+                     placeholder="Blank means this post is the canonical version" />
+              <p class="hint">Set this only when the same content lives at another address that should rank instead.</p>
+            </div>
+            <div class="field">
+              <label for="ed-schema">Structured data type</label>
+              <select name="schema_type" id="ed-schema">
+                {['BlogPosting', 'Article', 'NewsArticle'].map((s) => (
+                  <option value={s} selected={v.schema === s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            <div class="field">
+              <label for="ed-breadcrumb">Breadcrumb title</label>
+              <input type="text" name="breadcrumb_title" id="ed-breadcrumb" value={v.breadcrumb} maxlength="200"
+                     placeholder="Falls back to the post title" />
+            </div>
+            <div class="field">
+              <label for="ed-h1">On-page headline (H1)</label>
+              <input type="text" name="headline" id="ed-h1" value={v.headline} maxlength="200"
+                     placeholder="Falls back to the post title" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="ed-side">
+        <div class="card">
+          <h2>Publish</h2>
+          <div class="field">
+            <label for="ed-status">Status</label>
+            <select name="status" id="ed-status">
+              {['draft', 'published', 'scheduled', 'archived'].map((s) => (
+                <option value={s} selected={v.status === s}>{s}</option>
+              ))}
+            </select>
+          </div>
+          <div class="field">
+            <label for="ed-date">Publish date</label>
+            <input type="date" name="published_at" id="ed-date" value={v.published} />
+          </div>
+          <div class="field">
+            <label for="ed-author">Author</label>
+            <select name="author_id" id="ed-author">
+              <option value="">—</option>
+              {authors.results.map((a) => (
+                <option value={String(a.id)} selected={String(v.authorId) === String(a.id)}>{a.name}</option>
+              ))}
+            </select>
+          </div>
+          <div class="actions">
+            <button type="submit" class="primary" name="intent" value="save">Save</button>
+            {!isNew && (
+              <a class="clear" href={`/admin/posts/${id}/preview/`} target="_blank" rel="noreferrer">Preview</a>
+            )}
+          </div>
+          <p class="hint">
+            Saving stores the post in the database. It appears on the public site
+            after the next build — <a href="/admin/deploy/">deploy the site</a>.
+          </p>
+        </div>
+
+        <div class="card">
+          <h2>Featured image</h2>
+          <div class="thumb" id="ed-thumb" data-empty={v.featured ? 'no' : 'yes'}>
+            {v.featured && <img src={`https://img.vinylwraptoronto.com${v.featured.replace('/wp-content/uploads', '')}`} alt="" />}
+          </div>
+          <input type="hidden" name="featured" id="ed-featured" value={v.featured} />
+          <input type="file" id="ed-featured-file" accept="image/*" hidden />
+          <div class="actions">
+            <button type="button" class="ghost" id="ed-featured-pick">Choose image</button>
+            {v.featured && <button type="button" class="clear" id="ed-featured-clear">Remove</button>}
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Categories</h2>
+          <div class="termlist">
+            {categories.results.map((c) => (
+              <label class="check">
+                <input type="checkbox" name="term" value={String(c.id)} checked={chosenIds.has(c.id)} />
+                {c.name}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Vehicle brand</h2>
+          <input type="text" id="ed-brand-input" list="ed-brands" placeholder="Type to find a brand" autocomplete="off" />
+          <datalist id="ed-brands">
+            {brands.results.map((b) => <option value={b.name} data-id={String(b.id)}></option>)}
+          </datalist>
+          <div class="chips" id="ed-chips">
+            {brands.results.filter((b) => chosenIds.has(b.id)).map((b) => (
+              <span class="chip">{b.name}<input type="hidden" name="term" value={String(b.id)} /><button type="button" aria-label="Remove">×</button></span>
+            ))}
+          </div>
+        </div>
+
+        {!isNew && revisions.results.length > 0 && (
+          <div class="card">
+            <h2>Revisions</h2>
+            <ul class="revs">
+              {revisions.results.map((r) => (
+                <li><span>{r.created_at}</span> <em>{r.words ?? 0} words</em></li>
+              ))}
+            </ul>
+            <p class="hint">Every save keeps the previous version. The last 10 are listed.</p>
+          </div>
+        )}
+
+        {!isNew && (
+          <div class="card danger">
+            <h2>Delete</h2>
+            <p class="hint" style="margin-top:0">This cannot be undone from here.</p>
+            <button type="button" class="clear danger-link" id="ed-delete">Delete this post</button>
+          </div>
+        )}
+      </aside>
+    </div>
+  </form>
+
+  {!isNew && (
+    <form id="ed-delete-form" method="post" action="/api/admin/posts/delete/" hidden>
+      <input type="hidden" name="csrf" value={session.csrfToken} />
+      <input type="hidden" name="id" value={String(id)} />
+    </form>
+  )}
+</Admin>
+
+<script>
+  import '../../../scripts/admin-editor';
+</script>
+
+<style is:global>
+  .ed-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+  .ed-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+  @media (max-width: 900px) { .ed-grid { grid-template-columns: minmax(0, 1fr); } }
+
+  .ed-title {
+    width: 100%; font: 600 24px/1.3 inherit; padding: 10px 12px;
+    border: 1px solid #c6ccd4; border-radius: 7px; letter-spacing: -0.01em;
+  }
+  .permalink { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+  .permalink code { font-size: 12px; }
+  .permalink input { flex: 1; min-width: 160px; padding: 4px 8px; font: inherit; font-size: 13px; border: 1px solid #c6ccd4; border-radius: 5px; }
+
+  .toolbar { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+  .toolbar button {
+    padding: 5px 9px; font: inherit; font-size: 13px; background: #fff; color: var(--ink);
+    border: 1px solid #d3d9e0; border-radius: 6px; cursor: pointer; min-width: 32px;
+  }
+  .toolbar button:hover { background: #eef1f4; }
+  .toolbar button[aria-pressed='true'] { background: #e6f4ee; border-color: var(--accent); }
+  .toolbar .spacer { flex: 1; }
+
+  .ed-body {
+    min-height: 380px; max-height: 70vh; overflow-y: auto; padding: 4px 2px;
+    font: 16px/1.65 Georgia, 'Times New Roman', serif; outline: none;
+  }
+  .ed-body:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+  .ed-body h2 { font: 600 22px/1.3 system-ui, sans-serif; text-transform: none; letter-spacing: 0; color: var(--ink); margin: 26px 0 10px; }
+  .ed-body h3 { font: 600 18px/1.35 system-ui, sans-serif; margin: 22px 0 8px; }
+  .ed-body p { margin: 0 0 16px; }
+  .ed-body img { max-width: 100%; height: auto; border-radius: 6px; }
+  .ed-body blockquote { margin: 0 0 16px; padding-left: 16px; border-left: 3px solid var(--accent); color: var(--muted); }
+  .ed-body a { color: var(--accent); }
+  .ed-html { width: 100%; min-height: 380px; font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 10px; border: 1px solid #c6ccd4; border-radius: 7px; }
+  .counts { font-size: 13px; color: var(--muted); margin: 12px 0 0; }
+
+  textarea, select {
+    width: 100%; padding: 9px 11px; font: inherit; color: var(--ink);
+    background: #fff; border: 1px solid #c6ccd4; border-radius: 7px;
+  }
+  textarea { resize: vertical; }
+  input[type='date'], input[type='search'] { font: inherit; }
+
+  .seo-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .seo-head h2 { margin: 0; }
+  .seo-score { display: flex; align-items: baseline; gap: 2px; font-variant-numeric: tabular-nums; }
+  .seo-score b { font-size: 26px; font-weight: 700; }
+  .seo-score span { font-size: 13px; color: var(--muted); }
+  .seo-score[data-band='good'] b { color: #14603f; }
+  .seo-score[data-band='ok'] b { color: #8a5a00; }
+  .seo-score[data-band='bad'] b { color: var(--danger); }
+
+  .tabs { display: flex; gap: 4px; margin: 14px 0 16px; border-bottom: 1px solid var(--line); }
+  .tabs button {
+    padding: 8px 14px; font: inherit; font-size: 14px; background: none; border: 0;
+    border-bottom: 2px solid transparent; cursor: pointer; color: var(--muted);
+  }
+  .tabs button.on { color: var(--ink); border-bottom-color: var(--accent); font-weight: 500; }
+
+  .serp { border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin: 0 0 18px; background: #fff; }
+  .serp-url { font-size: 13px; color: #4d5156; }
+  .serp-title { font-size: 19px; line-height: 1.3; color: #1a0dab; margin: 3px 0; overflow-wrap: anywhere; }
+  .serp-desc { font-size: 13px; line-height: 1.55; color: #4d5156; }
+
+  .checks { list-style: none; margin: 6px 0 0; padding: 0; }
+  .checks li { display: flex; gap: 9px; align-items: flex-start; padding: 6px 0; font-size: 14px; border-top: 1px solid var(--line); }
+  .checks li:first-child { border-top: 0; }
+  .checks .dot { flex: none; width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; }
+  .checks .good .dot { background: #2f9e6e; }
+  .checks .warn .dot { background: #d9a441; }
+  .checks .bad .dot { background: #d0473d; }
+  .checks .grouphead { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding-top: 14px; border-top: 1px solid var(--line); }
+  .checks .grouphead .dot { display: none; }
+  .count { float: right; font-weight: 400; font-size: 12px; color: var(--muted); }
+  .count.over { color: var(--danger); }
+
+  .check { display: flex; align-items: center; gap: 8px; font-weight: 400; margin: 0 0 6px; }
+  .check input { width: auto; }
+
+  .termlist { max-height: 220px; overflow-y: auto; padding-right: 4px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; background: #eef1f4; border-radius: 20px; font-size: 13px; }
+  .chip button { background: none; border: 0; cursor: pointer; font-size: 15px; line-height: 1; color: var(--muted); padding: 0; }
+
+  .thumb { border: 1px dashed #c6ccd4; border-radius: 8px; min-height: 90px; display: grid; place-items: center; overflow: hidden; }
+  .thumb[data-empty='yes']::after { content: 'No image'; color: var(--muted); font-size: 13px; }
+  .thumb img { width: 100%; display: block; }
+
+  .actions { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+  button.ghost { padding: 8px 14px; font: inherit; background: #fff; border: 1px solid #c6ccd4; border-radius: 7px; cursor: pointer; }
+  .clear { background: none; border: 0; padding: 0; font: inherit; font-size: 13px; color: var(--accent); cursor: pointer; text-decoration: none; }
+  .danger-link { color: var(--danger); text-decoration: underline; }
+  .card.danger { border-color: #f0c8c5; }
+
+  .revs { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+  .revs li { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
+  .revs li:last-child { border-bottom: 0; }
+</style>

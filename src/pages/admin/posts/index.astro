@@ -1,0 +1,207 @@
+---
+/**
+ * All posts.
+ *
+ * 478 imported posts sit alongside anything written here, so this list has to
+ * be searchable and filterable to be usable at all — an unpaged list of 478
+ * rows is not a screen anyone can work in.
+ */
+import Admin from '../../../layouts/Admin.astro';
+import { applyAdminHeaders } from '../../../lib/auth';
+import { guardPage } from '../../../lib/adminroute';
+
+export const prerender = false;
+
+applyAdminHeaders(Astro.response.headers);
+const guard = await guardPage(Astro.locals, Astro.cookies, Astro.url);
+if (!guard.ok) return guard.response;
+const { db, session } = guard.ctx;
+
+const PER_PAGE = 25;
+const q = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 100);
+const status = Astro.url.searchParams.get('status') ?? '';
+const origin = Astro.url.searchParams.get('origin') ?? '';
+const page = Math.max(1, Number(Astro.url.searchParams.get('p') ?? '1') || 1);
+
+/* Built as a list of conditions with their own bound values, so a filter can
+   be added without the WHERE clause and the bind order drifting apart. */
+const where: string[] = [];
+const binds: unknown[] = [];
+if (q) {
+  where.push('(p.title LIKE ? OR p.slug LIKE ?)');
+  binds.push(`%${q}%`, `%${q}%`);
+}
+if (status === 'draft' || status === 'published' || status === 'scheduled' || status === 'archived') {
+  where.push('p.status = ?');
+  binds.push(status);
+}
+if (origin === 'authored' || origin === 'imported') {
+  where.push('p.origin = ?');
+  binds.push(origin);
+}
+const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+const totalRow = await db
+  .prepare(`SELECT COUNT(*) AS n FROM posts p ${clause}`)
+  .bind(...binds)
+  .first<{ n: number }>();
+const total = totalRow?.n ?? 0;
+const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+const offset = (Math.min(page, pages) - 1) * PER_PAGE;
+
+const rows = await db
+  .prepare(
+    `SELECT p.id, p.slug, p.title, p.status, p.origin, p.seo_score, p.published_at,
+            p.updated_at, a.name AS author
+       FROM posts p
+       LEFT JOIN authors a ON a.id = p.author_id
+       ${clause}
+      ORDER BY COALESCE(p.published_at, p.created_at) DESC
+      LIMIT ? OFFSET ?`,
+  )
+  .bind(...binds, PER_PAGE, offset)
+  .all<{
+    id: number;
+    slug: string;
+    title: string;
+    status: string;
+    origin: string;
+    seo_score: number | null;
+    published_at: string | null;
+    updated_at: string;
+    author: string | null;
+  }>();
+
+const counts = await db
+  .prepare(
+    `SELECT
+       COUNT(*) AS all_n,
+       SUM(CASE WHEN status = 'published' THEN 1 ELSE 0 END) AS published,
+       SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END)     AS drafts,
+       SUM(CASE WHEN origin = 'authored' THEN 1 ELSE 0 END)  AS authored
+     FROM posts`,
+  )
+  .first<Record<string, number>>();
+
+const link = (over: Record<string, string>) => {
+  const u = new URL(Astro.url.pathname, Astro.url.origin);
+  const base: Record<string, string> = { q, status, origin, p: String(page) };
+  for (const [k, v] of Object.entries({ ...base, ...over })) if (v && v !== '1') u.searchParams.set(k, v);
+  return u.pathname + (u.search || '');
+};
+
+const scoreBand = (n: number | null) => (n === null ? '' : n >= 80 ? 'good' : n >= 50 ? 'ok' : 'bad');
+---
+
+<Admin title="Posts" user={{ username: session.username, csrfToken: session.csrfToken }}>
+  <div class="head">
+    <div>
+      <h1>Posts</h1>
+      <p class="lede">
+        {counts?.all_n ?? 0} in the database — {counts?.published ?? 0} published,
+        {counts?.drafts ?? 0} draft, {counts?.authored ?? 0} written here.
+      </p>
+    </div>
+    <a class="btn" href="/admin/posts/new/">Add new post</a>
+  </div>
+
+  <form class="filters" method="get" action="/admin/posts/">
+    <input type="search" name="q" value={q} placeholder="Search title or slug" aria-label="Search posts" />
+    <select name="status" aria-label="Status">
+      <option value="">Any status</option>
+      {['published', 'draft', 'scheduled', 'archived'].map((s) => (
+        <option value={s} selected={status === s}>{s}</option>
+      ))}
+    </select>
+    <select name="origin" aria-label="Origin">
+      <option value="">Any origin</option>
+      <option value="authored" selected={origin === 'authored'}>Written here</option>
+      <option value="imported" selected={origin === 'imported'}>Imported</option>
+    </select>
+    <button type="submit" class="primary">Filter</button>
+    {(q || status || origin) && <a class="clear" href="/admin/posts/">Clear</a>}
+  </form>
+
+  <div class="card">
+    {rows.results.length === 0 ? (
+      <p class="empty">Nothing matches that.</p>
+    ) : (
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th><th>Status</th><th>SEO</th><th>Author</th><th>Published</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.results.map((p) => (
+            <tr>
+              <td>
+                <a class="title" href={`/admin/posts/${p.id}/`}>{p.title}</a>
+                <span class="slug">/{p.slug}/</span>
+              </td>
+              <td><span class={`pill pill--${p.status}`}>{p.status}</span></td>
+              <td>
+                {p.seo_score === null
+                  ? <span class="score score--none">—</span>
+                  : <span class={`score score--${scoreBand(p.seo_score)}`}>{p.seo_score}</span>}
+              </td>
+              <td>{p.author ?? '—'}</td>
+              <td>{p.published_at ? p.published_at.slice(0, 10) : '—'}</td>
+              <td class="row-actions">
+                <a href={`/admin/posts/${p.id}/`}>Edit</a>
+                <a href={`/${p.slug}/`} target="_blank" rel="noreferrer">View</a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+
+  {pages > 1 && (
+    <nav class="pager" aria-label="Pages">
+      {page > 1 && <a href={link({ p: String(page - 1) })}>← Newer</a>}
+      <span>Page {Math.min(page, pages)} of {pages}</span>
+      {page < pages && <a href={link({ p: String(page + 1) })}>Older →</a>}
+    </nav>
+  )}
+</Admin>
+
+<style is:global>
+  .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .btn {
+    display: inline-block; padding: 9px 16px; border-radius: 7px; font-weight: 500;
+    background: var(--accent); color: #fff; text-decoration: none; white-space: nowrap;
+  }
+  .btn:hover { background: #15694a; }
+
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 16px; align-items: center; }
+  .filters input[type='search'], .filters select {
+    padding: 8px 10px; font: inherit; border: 1px solid #c6ccd4; border-radius: 7px; background: #fff;
+  }
+  .filters input[type='search'] { min-width: 220px; flex: 1; }
+  .filters .clear { font-size: 13px; color: var(--muted); }
+
+  .title { font-weight: 500; display: block; }
+  .slug { font-size: 12px; color: var(--muted); }
+  .empty { color: var(--muted); margin: 0; }
+
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 12px;
+    background: #eef0f3; color: var(--muted); text-transform: capitalize;
+  }
+  .pill--published { background: #e6f4ee; color: #14603f; }
+  .pill--draft { background: #fdf3e4; color: #8a5a00; }
+
+  .score { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .score--good { color: #14603f; }
+  .score--ok { color: #8a5a00; }
+  .score--bad { color: var(--danger); }
+  .score--none { color: var(--muted); font-weight: 400; }
+
+  .row-actions { white-space: nowrap; }
+  .row-actions a { margin-right: 10px; font-size: 13px; }
+
+  .pager { display: flex; gap: 16px; align-items: center; justify-content: center; font-size: 14px; color: var(--muted); }
+  .pager a { color: var(--accent); }
+</style>

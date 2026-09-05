@@ -1,0 +1,103 @@
+---
+/**
+ * Publish to the public site.
+ *
+ * Kept as its own page rather than a button in the corner of the editor,
+ * because it is the one action here that changes what the public sees, and it
+ * deserves a screen that says what it does and what is waiting to go out.
+ */
+import Admin from '../../layouts/Admin.astro';
+import { applyAdminHeaders } from '../../lib/auth';
+import { guardPage } from '../../lib/adminroute';
+
+export const prerender = false;
+
+applyAdminHeaders(Astro.response.headers);
+const guard = await guardPage(Astro.locals, Astro.cookies, Astro.url);
+if (!guard.ok) return guard.response;
+const { db, session } = guard.ctx;
+
+const recent = await db
+  .prepare(
+    `SELECT slug, title, status, updated_at FROM posts
+      WHERE origin = 'authored' ORDER BY updated_at DESC LIMIT 8`,
+  )
+  .all<{ slug: string; title: string; status: string; updated_at: string }>();
+---
+
+<Admin title="Publish" user={{ username: session.username, csrfToken: session.csrfToken }}>
+  <h1>Publish to the site</h1>
+  <p class="lede">
+    vinylwraptoronto.com is 1,620 pages built ahead of time, not a site that
+    renders each request. A post saved here is in the database straight away,
+    and appears on the public site after the next build.
+  </p>
+
+  <p id="dep-flash" class="alert" role="status" hidden></p>
+
+  <div class="card">
+    <h2>What happens</h2>
+    <ol class="steps">
+      <li>Every post is pulled out of the database.</li>
+      <li>The whole site is rebuilt from it.</li>
+      <li>Dead links, missing images and empty pages fail the build before anything ships.</li>
+      <li>The new version is uploaded and made live.</li>
+    </ol>
+    <p class="hint">Usually a few minutes. It is safe to run whenever; nothing is lost if you run it twice.</p>
+    <div class="actions">
+      <button type="button" class="primary" id="dep-go" data-csrf={session.csrfToken}>Build and publish</button>
+    </div>
+  </div>
+
+  {recent.results.length > 0 && (
+    <div class="card">
+      <h2>Posts written here</h2>
+      <table>
+        <thead><tr><th>Title</th><th>Status</th><th>Last saved</th></tr></thead>
+        <tbody>
+          {recent.results.map((p) => (
+            <tr>
+              <td><a href={`/${p.slug}/`} target="_blank" rel="noreferrer">{p.title}</a></td>
+              <td>{p.status}</td>
+              <td>{p.updated_at}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p class="hint">A draft stays out of the build until you set it to published.</p>
+    </div>
+  )}
+</Admin>
+
+<script>
+  const button = document.getElementById('dep-go') as HTMLButtonElement | null;
+  const flash = document.getElementById('dep-flash') as HTMLElement | null;
+  if (button && flash) {
+    const say = (message: string, ok: boolean) => {
+      flash.textContent = message;
+      flash.className = 'alert alert--' + (ok ? 'ok' : 'error');
+      flash.hidden = false;
+    };
+    button.addEventListener('click', async () => {
+      if (!window.confirm('Rebuild the site and publish everything currently marked published?')) return;
+      button.disabled = true;
+      say('Asking the build to start…', true);
+      const body = new FormData();
+      body.append('csrf', button.dataset.csrf ?? '');
+      try {
+        const r = await fetch('/api/admin/deploy/', { method: 'POST', body });
+        const data = (await r.json()) as { message?: string; error?: string };
+        say(data.message || data.error || 'Something unexpected came back.', r.ok);
+      } catch {
+        say('Could not reach the server.', false);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+</script>
+
+<style is:global>
+  .steps { margin: 0 0 12px; padding-left: 20px; }
+  .steps li { margin: 0 0 6px; }
+</style>

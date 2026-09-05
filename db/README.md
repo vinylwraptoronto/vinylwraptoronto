@@ -144,6 +144,74 @@ accented and 200-character passwords before the first account was created.
 signed-in user their own recent sign-ins, which is how someone notices a
 password in the wrong hands.
 
+## Writing posts
+
+`/admin/posts/` lists everything; `/admin/posts/new/` writes one. Migration
+0005 adds the SEO columns and `post_revisions`; 0006 adds `deleted_posts`.
+
+### How a post becomes a page
+
+The editor stores editorial fields. `src/lib/postdoc.ts` turns them into
+exactly the shapes an imported post already carries — `sections_json`,
+`head_json` as `[key, isProperty, value]` triples, and the `robots` string — so
+the site's renderer needs no idea whether a post was written here or ported
+from Elementor. Nothing in `Base.astro` or `Blocks.astro` changed for this.
+
+**Imported posts are not regenerated.** Their `sections_json` is the full
+Elementor layout (galleries, before/after sliders, the sidebar) while their
+`body_html` is only the text blocks extracted from it — so rebuilding one from
+the other would silently throw the rest of the page away. Editing an imported
+post's body is refused unless the request carries `relayout=1`, and the post is
+marked `origin='authored'` from then on. Editing only its SEO fields is always
+safe. `posts.origin` records which is which.
+
+### SEO
+
+`src/lib/seo.ts` is a Rank Math-style analyser: 18 checks in four groups
+(basic, additional, title readability, content readability), a 0–100 weighted
+score, and the stats behind it. The editor runs it on every keystroke for live
+feedback; the save route runs the same module again and stores *that* result,
+because a score arriving in the request body is a number the client chose. A
+post with no focus keyword scores honestly — the keyword checks report as
+unset and still count, rather than being skipped.
+
+The panel covers what Rank Math covers: focus keyword, SEO title and meta
+description with a Google preview, OpenGraph and Twitter overrides, canonical,
+`index`/`follow`/`noarchive`/`nosnippet`/`noimageindex`, schema type and
+breadcrumb title.
+
+### Images
+
+Uploads go straight to the B2 bucket under `wp-content/uploads/YYYY/MM/`, so
+they are served from `img.vinylwraptoronto.com` like every other image and need
+no special case anywhere. The declared MIME type is checked against the file's
+actual magic bytes — a `.png` that begins with `<svg` is refused.
+
+Needs five Worker secrets, and until they are set the editor says so rather
+than failing oddly: `B2_ENDPOINT`, `B2_REGION`, `B2_BUCKET`, `B2_KEY_ID`,
+`B2_APPLICATION_KEY`. Scope the application key to this bucket only.
+
+### Publishing
+
+The site is 1,620 prerendered pages, so a saved post is not live until the site
+is rebuilt. `/admin/deploy/` triggers `.github/workflows/deploy.yml`, which
+pulls from D1, rebuilds, gates on the link and image sweep, and deploys —
+the same path a code change takes. Needs `GITHUB_DEPLOY_TOKEN` (a GitHub token
+with `actions: write` on this repository) as a Worker secret.
+
+`/admin/posts/<id>/preview/` renders a draft through the real layout and
+renderer beforehand, so nothing has to be deployed to be read.
+
+### Getting a new post into the listings
+
+Nearly every archive on this site, `/blog/` included, carries **zero**
+`members` and renders its listing from Elementor markup ported off the
+original. A newly written post would therefore be live at its own address and
+linked from nowhere. `scripts/pull-posts.mjs` writes
+`src/data/post-additions.json` — summaries and `/blog/` membership for posts
+written here only — which `ArchiveList.astro` and `[...slug].astro` merge in.
+It is empty until the first post is written here, so no existing page changes.
+
 ## Notes for the authoring feature
 
 - `media.path` is the bucket key, not a URL. The public address is that path on

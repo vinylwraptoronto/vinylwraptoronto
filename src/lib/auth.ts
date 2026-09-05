@@ -502,9 +502,13 @@ export const ADMIN_HEADERS: Record<string, string> = {
   'referrer-policy': 'no-referrer',
   'content-security-policy': [
     "default-src 'self'",
-    "img-src 'self' https://img.vinylwraptoronto.com data:",
+    /* blob: is for the editor showing a picked image before it has uploaded. */
+    "img-src 'self' https://img.vinylwraptoronto.com data: blob:",
     "style-src 'self' 'unsafe-inline'",
-    "script-src 'none'",
+    /* 'self' rather than 'none' since the post editor: Astro bundles its
+       script to /_astro/*.js, so no inline script and no CDN is needed, and
+       'unsafe-inline' stays off. */
+    "script-src 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
     "base-uri 'none'",

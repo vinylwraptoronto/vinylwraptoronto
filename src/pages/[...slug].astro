@@ -11,6 +11,7 @@ import Blocks from '../components/Blocks.astro';
 import ArchiveList from '../components/ArchiveList.astro';
 import type { PageData } from '../types';
 import posts from '../data/posts.json';
+import additions from '../data/post-additions.json';
 
 export const prerender = true;
 
@@ -53,6 +54,16 @@ const AUTHOR_ARCHIVES: Record<string, string> = {
 };
 const authorHref = page.author ? AUTHOR_ARCHIVES[page.author] : undefined;
 
+/* An archive lists the members extracted from the original site, plus any post
+   written in /admin that belongs there. Nearly every archive on this site
+   carries zero members and renders its listing from ported Elementor markup
+   instead, so without this a newly written post would be live at its own
+   address and linked from nowhere. The additions are empty until the first
+   post is written here, so no existing page changes. */
+const extraMembers =
+  (additions as { members?: Record<string, string[]> }).members?.[page.slug] ?? [];
+const archiveMembers = [...new Set([...(page.members ?? []), ...extraMembers])];
+
 const dateLabel = page.published
   ? new Date(page.published).toLocaleDateString('en-CA', {
       year: 'numeric',
@@ -92,8 +103,8 @@ const dateLabel = page.published
     <Blocks sections={page.sections} />
   )}
 
-  {page.kind === 'archive' && page.members && page.members.length > 0 && (
-    <ArchiveList members={page.members} />
+  {page.kind === 'archive' && archiveMembers.length > 0 && (
+    <ArchiveList members={archiveMembers} />
   )}
 
 </Base>

@@ -1,0 +1,105 @@
+---
+/**
+ * See a post as the site will render it, before it is built.
+ *
+ * The site is static: a post saved in the database does not appear on
+ * vinylwraptoronto.com until the next build. Without this there is no way to
+ * check a draft except by deploying it, which is not a thing anyone should
+ * have to do to read their own writing.
+ *
+ * It renders through the real Base layout and the real Blocks renderer, from
+ * the same `sections` the build will use, so what you see here is what the
+ * built page will be — not a separate preview template that can drift.
+ */
+import Base from '../../../../layouts/Base.astro';
+import Blocks from '../../../../components/Blocks.astro';
+import { applyAdminHeaders } from '../../../../lib/auth';
+import { guardPage } from '../../../../lib/adminroute';
+import { buildSections, type PostDoc } from '../../../../lib/postdoc';
+import type { Section } from '../../../../types';
+
+export const prerender = false;
+
+applyAdminHeaders(Astro.response.headers);
+const guard = await guardPage(Astro.locals, Astro.cookies, Astro.url);
+if (!guard.ok) return guard.response;
+const { db } = guard.ctx;
+
+const id = Number(Astro.params.id ?? '');
+if (!Number.isInteger(id) || id <= 0) return Astro.redirect('/admin/posts/', 302);
+
+const post = await db
+  .prepare(
+    `SELECT p.*, m.path AS featured_path, a.name AS author
+       FROM posts p
+       LEFT JOIN media m ON m.id = p.featured_id
+       LEFT JOIN authors a ON a.id = p.author_id
+      WHERE p.id = ?`,
+  )
+  .bind(id)
+  .first<Record<string, unknown>>();
+if (!post) return Astro.redirect('/admin/posts/?e=gone', 302);
+
+/* An imported post keeps the Elementor tree it arrived with; one written here
+   is rebuilt from its fields. Falling back to buildSections covers a post
+   saved before sections_json existed. */
+let sections: Section[];
+try {
+  sections = post.sections_json
+    ? (JSON.parse(String(post.sections_json)) as Section[])
+    : buildSections(asDoc(post));
+} catch {
+  sections = buildSections(asDoc(post));
+}
+
+function asDoc(row: Record<string, unknown>): PostDoc {
+  return {
+    slug: String(row.slug ?? ''),
+    title: String(row.title ?? ''),
+    headline: (row.headline as string) ?? null,
+    seoTitle: (row.seo_title as string) ?? null,
+    excerpt: (row.excerpt as string) ?? null,
+    bodyHtml: String(row.body_html ?? ''),
+    featuredPath: (row.featured_path as string) ?? null,
+    author: (row.author as string) ?? null,
+    publishedAt: (row.published_at as string) ?? null,
+  };
+}
+
+const title = String(post.seo_title || post.title || 'Preview');
+---
+
+<Base
+  title={title}
+  description={String(post.excerpt ?? '')}
+  robots="noindex, nofollow"
+  pageCss={(post.page_css as string) ?? undefined}
+>
+  <div class="preview-bar">
+    <strong>Preview</strong>
+    <span>{String(post.status)} · not on the public site until the next build</span>
+    <a href={`/admin/posts/${id}/`}>← Back to the editor</a>
+  </div>
+  <div class="postbody"><Blocks sections={sections} /></div>
+</Base>
+
+<style>
+  /* Fixed, so it stays visible while reading a long post, and clearly not
+     part of the page being previewed. */
+  .preview-bar {
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 8px 16px;
+    background: #15334c;
+    color: #fff;
+    font: 13px/1.4 system-ui, sans-serif;
+  }
+  .preview-bar span { opacity: 0.8; }
+  .preview-bar a { color: #fff; margin-left: auto; }
+  .postbody :global(.rt) { color: #444444; }
+</style>

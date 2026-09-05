@@ -76,7 +76,7 @@ try {
     rows.push(...await d1(`
       SELECT p.slug, p.title, p.seo_title, p.headline, p.excerpt, p.status,
              p.published_at, p.modified_at, p.canonical_url, p.robots,
-             p.head_json, p.sections_json, p.page_css, p.layout,
+             p.head_json, p.sections_json, p.page_css, p.layout, p.origin,
              a.name AS author, m.path AS featured
         FROM posts p
         LEFT JOIN authors a ON a.id = p.author_id
@@ -107,7 +107,46 @@ const posts = rows.map((r) => ({
   modified: r.modified_at || null,
   author: r.author || null,
   layout: r.layout || null,
+  origin: r.origin || 'imported',
 }));
+
+/*
+ * Getting a newly written post into the blog listing.
+ *
+ * The archives on this site do not list from `members`: nearly all of them,
+ * /blog/ included, carry zero and render their listing from the Elementor
+ * markup ported off the original. So a post written in /admin would be live at
+ * its own address and linked from nowhere.
+ *
+ * These additions fix that without touching a single existing page. Only posts
+ * written here are added, and /blog/ has no members today, so until the first
+ * one is written the file is empty and every page builds exactly as before.
+ */
+const authored = posts.filter((p) => p.origin === 'authored');
+const additions = {
+  summaries: Object.fromEntries(
+    authored.map((p) => [
+      p.slug,
+      {
+        slug: p.slug,
+        title: p.title,
+        description: p.description,
+        image: p.ogImage,
+        alt: p.title,
+        published: p.published,
+        kind: 'post',
+      },
+    ]),
+  ),
+  // Newest first, which is the order every listing on this site uses.
+  members: {
+    blog: authored
+      .slice()
+      .sort((a, b) => String(b.published ?? '').localeCompare(String(a.published ?? '')))
+      .map((p) => p.slug),
+  },
+};
+fs.writeFileSync(path.join(ROOT, 'src/data/post-additions.json'), JSON.stringify(additions));
 
 const empty = posts.filter((p) => !p.sections?.length).length;
 const prev = existing();

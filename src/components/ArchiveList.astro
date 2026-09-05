@@ -8,6 +8,7 @@
  * is correct rather than guessed from titles.
  */
 import summaries from '../data/summaries.json';
+import additions from '../data/post-additions.json';
 import type { Summary } from '../types';
 import { img } from '../lib/img';
 
@@ -17,7 +18,15 @@ export interface Props {
 }
 
 const { members, heading } = Astro.props;
-const all = summaries as Record<string, Summary>;
+
+/* Posts written in /admin are not in summaries.json, which was extracted from
+   the original site. scripts/pull-posts.mjs emits them separately so a new
+   post can be listed without regenerating the imported set. Empty until the
+   first one is written. */
+const all = {
+  ...(summaries as Record<string, Summary>),
+  ...((additions as { summaries?: Record<string, Summary> }).summaries ?? {}),
+};
 const items = members.map((s) => all[s]).filter(Boolean);
 
 const fmt = (d: string | null) =>
