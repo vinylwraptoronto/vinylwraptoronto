@@ -14,8 +14,11 @@ export interface Props {
   /** `popup` is the compact variant used inside the Request a Quote popup. */
   variant?: 'inline' | 'popup';
   id?: string;
+  /** The Limited Time Offer form asks which wrap, where the site-wide form
+      asks the vehicle type. Passing the list swaps that one field. */
+  products?: readonly string[];
 }
-const { variant = 'inline', id = 'quote' } = Astro.props;
+const { variant = 'inline', id = 'quote', products } = Astro.props;
 const vehicleTypes = ['Van', 'Truck', 'Car', 'SUV', 'Trailer', 'Boat',
   'Motorcycle', 'Jet Ski', 'Windows', 'Walls', 'Object', 'Other'];
 ---
@@ -43,11 +46,22 @@ const vehicleTypes = ['Van', 'Truck', 'Car', 'SUV', 'Trailer', 'Boat',
   </fieldset>
 
   <div class="row">
-    <label class="sr-only" for={`${id}-vehicle`}>Vehicle Type</label>
-    <select id={`${id}-vehicle`} name="vehicle_type">
-      <option value="">Select Vehicle Type</option>
-      {vehicleTypes.map((v) => <option value={v}>{v}</option>)}
-    </select>
+    {products ? (
+      <>
+        <label class="sr-only" for={`${id}-product`}>Product</label>
+        <select id={`${id}-product`} name="product" required>
+          {products.map((v, i) => <option value={i === 0 ? '' : v}>{v}</option>)}
+        </select>
+      </>
+    ) : (
+      <>
+        <label class="sr-only" for={`${id}-vehicle`}>Vehicle Type</label>
+        <select id={`${id}-vehicle`} name="vehicle_type">
+          <option value="">Select Vehicle Type</option>
+          {vehicleTypes.map((v) => <option value={v}>{v}</option>)}
+        </select>
+      </>
+    )}
   </div>
 
   <div class="row">

@@ -189,10 +189,17 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
           return (
             <p class="btnrow" data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
               {run.map((rb) => (
-                <a class="btn" href={img(rb.href)} style={rb.style ?? undefined}>
-                  {rb.icon && <i class:list={['btn-ic', rb.icon]} aria-hidden="true"></i>}
-                  {rb.text}
-                </a>
+                rb.popup ? (
+                  <button class="btn" type="button" data-popup={rb.popup} style={rb.style ?? undefined}>
+                    {rb.icon && <i class:list={['btn-ic', rb.icon]} aria-hidden="true"></i>}
+                    {rb.text}
+                  </button>
+                ) : (
+                  <a class="btn" href={img(rb.href!)} style={rb.style ?? undefined}>
+                    {rb.icon && <i class:list={['btn-ic', rb.icon]} aria-hidden="true"></i>}
+                    {rb.text}
+                  </a>
+                )
               ))}
             </p>
           );
@@ -682,6 +689,7 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
   .btnrow[style*='right'] { justify-content: flex-end; }
 
   /* Button styling follows the header CTA: navy, green on hover, square. */
+  .btnrow button.btn { border: 0; cursor: pointer; font: inherit; }
   .btn {
     display: inline-block;
     background-color: var(--e-global-color-d077a13);

@@ -25,7 +25,12 @@ export type Block = (
   | {
       type: 'button';
       text: string;
-      href: string;
+      /** Absent when the button opens a popup rather than navigating. */
+      href?: string;
+      /** The popup this button opens. Elementor encodes that as a base64 blob
+          inside the href, which the port passed through verbatim — so 426
+          buttons across 418 pages only appended a hash to the address. */
+      popup?: string;
       style?: string | null;
       /** Font Awesome classes, e.g. "fas fa-phone-alt". */
       icon?: string | null;

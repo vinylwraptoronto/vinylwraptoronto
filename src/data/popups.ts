@@ -66,3 +66,21 @@ export const quotePopup = {
     { text: 'Email Us', href: 'mailto:info@VinylWrapToronto.com' },
   ],
 } as const;
+
+
+/**
+ * Elementor template 22055 — the "Limited Time Offer" pricing popup, opened by
+ * the "Claim Now" button on 402 posts. It was never ported, so every one of
+ * those buttons resolved to nothing.
+ */
+export const offerPopup = {
+  id: 'popup-limited-offer',
+  title: 'Limited Time Offer',
+  tiers: [
+    { name: 'Standard 3M or Avery Manufactured Colour Change', was: '$4,500', now: '$3,500' },
+    { name: 'Custom Printed Colours & Patterns', was: '$5,700', now: '$4,500' },
+    { name: 'Custom Printed Designs', was: '$5,995', now: '$4,750' },
+  ],
+  /** The form's own Product select, which the site-wide quote form does not have. */
+  products: ['Select Your Wrap', 'Standard Colour', 'Custom Colour', 'Custom Design', 'Undecided'],
+} as const;

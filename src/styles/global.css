@@ -95,3 +95,10 @@ label { display: inline-block; line-height: 1; vertical-align: middle; }
 @media (max-width: 1024px) and (min-width: 768px) {
   [data-hide~='tablet'] { display: none !important; }
 }
+/* Art direction: the homepage hero is three widgets, one per breakpoint, each
+   hiding itself at the other two. The port used to delete the desktop-hidden
+   copies, which left nothing at all on tablet and mobile once the hide rules
+   were honoured. */
+@media (min-width: 1025px) {
+  [data-hide~='desktop'] { display: none !important; }
+}

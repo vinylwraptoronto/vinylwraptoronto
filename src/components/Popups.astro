@@ -1,13 +1,14 @@
 ---
 /**
- * The two site-wide popups, ported from Elementor templates 18856 and 17564.
+ * The three site-wide popups, ported from Elementor templates 18856, 17564
+ * and 22055.
  *
  * Opened by any element carrying `data-popup="popup-want-to"` or
  * `data-popup="popup-quote"`. On the live site those triggers are Elementor
  * actions; the visible behaviour is the same.
  */
 import QuoteForm from './QuoteForm.astro';
-import { wantToPopup, quotePopup } from '../data/popups';
+import { wantToPopup, quotePopup, offerPopup } from '../data/popups';
 import { img } from '../lib/img';
 ---
 
@@ -50,7 +51,33 @@ import { img } from '../lib/img';
   </div>
 </div>
 
+<div class="pop" id={offerPopup.id} hidden role="dialog" aria-modal="true" aria-label={offerPopup.title}>
+  <div class="pop-back" data-close></div>
+  <div class="pop-box">
+    <button class="pop-x" type="button" data-close aria-label="Close">&times;</button>
+    <h2 class="pop-title">{offerPopup.title}</h2>
+    <ul class="offer-tiers">
+      {offerPopup.tiers.map((t) => (
+        <li>
+          <h3>{t.name}</h3>
+          <p class="offer-price">
+            <s>{t.was}</s> <strong>{t.now}</strong>
+          </p>
+        </li>
+      ))}
+    </ul>
+    <QuoteForm variant="popup" id="offer-form" products={offerPopup.products} />
+  </div>
+</div>
+
 <style>
+  .offer-tiers { list-style: none; margin: 0 0 18px; padding: 0; }
+  .offer-tiers li { margin-bottom: 12px; }
+  .offer-tiers h3 { margin: 0 0 4px; font-size: 16px; }
+  .offer-price { margin: 0; font-size: 22px; }
+  .offer-price s { color: #9e9e9e; margin-inline-end: 8px; }
+  .offer-price strong { color: var(--brand-pink); }
+
   .pop { position: fixed; inset: 0; z-index: 1000; display: flex; }
   .pop[hidden] { display: none; }
   .pop-back { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.6); }
