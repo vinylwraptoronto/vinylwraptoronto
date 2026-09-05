@@ -38,6 +38,16 @@
   // The cutover hostnames (apex and www) are recorded but NOT attached —
   // attaching the apex belongs to the domain-cutover gate, not here.
 
+  // The blog database. Every current post is already in it; the authoring
+  // feature reads and writes it from here rather than from src/data.
+  "d1_databases": [
+    {
+      "binding": "BLOG",
+      "database_name": "vinylwraptoronto-blog",
+      "database_id": "ed3116e7-7699-4d4d-8785-2ea67f81aed1"
+    }
+  ],
+
   "observability": {
     "enabled": true
   }
