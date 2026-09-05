@@ -39,8 +39,12 @@ export CLOUDFLARE_API_TOKEN="$TOKEN"
 export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT_ID"
 unset CF_API_TOKEN || true
 
+# `npm run build`, not `npx astro build`: the blog renders from D1 now, and the
+# npm script is the one that pulls it first. Calling astro directly would ship
+# whatever snapshot happens to be committed and quietly skip any post edited
+# since. pull-posts falls back to that snapshot on its own if D1 is unreachable.
 echo "==> Building"
-npx astro build
+npm run build
 
 echo "==> Uploading version"
 npx wrangler deploy
