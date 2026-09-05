@@ -78,16 +78,6 @@ const dateLabel = page.published
     <ArchiveList members={page.members} />
   )}
 
-  {/* The original's archive widget renders this in place of the grid when a
-      term has no posts (elementor-posts-nothing-found). The port left those
-      pages showing nothing at all. */}
-  {page.kind === 'archive' && (!page.members || page.members.length === 0) && (
-    <div class="nothing-found">
-      <div class="container">
-        <p>It seems we can't find what you're looking for.</p>
-      </div>
-    </div>
-  )}
 </Base>
 
 <style>
@@ -109,9 +99,4 @@ const dateLabel = page.published
   /* theme-post-content sets its own ink, a shade darker than the body's. */
   .postbody :global(.rt) { color: #444444; }
 
-  .nothing-found {
-    padding: 24px 0 48px;
-    font-family: 'Poppins', sans-serif;
-    color: #767676;
-  }
 </style>

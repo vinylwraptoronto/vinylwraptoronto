@@ -46,7 +46,7 @@ export const wantToPopup = {
         },
         {
           text: 'Avery Colour Guide',
-          href: '/wp-content/uploads/2022/03/Avery-Dennison-2021-Colour-Selector-Guide-Vinyl-Wrap-Toronto.pdf',
+          href: '/wp-content/uploads/2022/03/Avery-Dennison-2021-Colour-Selector-Guide-SW900.pdf',
         },
       ],
     },

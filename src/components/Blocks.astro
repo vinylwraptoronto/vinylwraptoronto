@@ -581,6 +581,14 @@ const tocEntries = (sections ?? [])
     transform: translateX(-50%);
   }
   .fig--full img { border-radius: 0; width: 100%; }
+  /* A guard, so a viewport-wide breakout can never escape a column even if the
+     flag is ever wrong again. */
+  .col .fig--full {
+    width: auto;
+    max-width: 100%;
+    margin-left: 0;
+    transform: none;
+  }
 
   .btnrow {
     display: flex;
