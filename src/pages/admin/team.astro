@@ -1,0 +1,201 @@
+---
+/**
+ * Who can sign in.
+ *
+ * A generated password is shown once, in the page, and never put in a URL — a
+ * redirect carrying one would leave it in browser history and in the referrer
+ * of the next request.
+ */
+import Admin from '../../layouts/Admin.astro';
+import { applyAdminHeaders } from '../../lib/auth';
+import { guardPage } from '../../lib/adminroute';
+
+export const prerender = false;
+
+applyAdminHeaders(Astro.response.headers);
+const guard = await guardPage(Astro.locals, Astro.cookies, Astro.url);
+if (!guard.ok) return guard.response;
+const { db, session } = guard.ctx;
+
+const users = await db
+  .prepare(
+    `SELECT u.id, u.username, u.disabled, u.must_change_password, u.created_at, u.last_login_at,
+            (SELECT COUNT(*) FROM admin_sessions s
+              WHERE s.user_id = u.id AND s.expires_at > datetime('now')) AS live
+       FROM admin_users u
+      ORDER BY u.username`,
+  )
+  .all<{
+    id: number;
+    username: string;
+    disabled: number;
+    must_change_password: number;
+    created_at: string;
+    last_login_at: string | null;
+    live: number;
+  }>();
+
+const recentFailures = await db
+  .prepare(
+    `SELECT username, ip, at, reason FROM admin_login_attempts
+      WHERE ok = 0 AND at > datetime('now', '-7 days')
+      ORDER BY at DESC LIMIT 10`,
+  )
+  .all<{ username: string | null; ip: string | null; at: string; reason: string | null }>();
+---
+
+<Admin title="Team" user={{ username: session.username, csrfToken: session.csrfToken }}>
+  <h1>Team</h1>
+  <p class="lede">Everyone who can sign in to this admin.</p>
+
+  <p id="tm-flash" class="alert" role="status" hidden></p>
+  <div id="tm-secret" class="card secret" hidden>
+    <h2>New password</h2>
+    <p class="hint" style="margin-top:0">
+      Shown once and never again. Pass it on, then it can only be replaced.
+      They must choose their own before the admin will answer.
+    </p>
+    <p class="secret-value"><code id="tm-secret-user"></code> <code id="tm-secret-pw"></code></p>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>Username</th><th>State</th><th>Signed in</th><th>Last sign-in</th><th></th></tr>
+      </thead>
+      <tbody>
+        {users.results.map((u) => (
+          <tr>
+            <td>
+              <b>{u.username}</b>
+              {u.id === session.userId && <span class="you">you</span>}
+            </td>
+            <td>
+              <span class={`pill pill--${u.disabled ? 'draft' : 'published'}`}>
+                {u.disabled ? 'disabled' : u.must_change_password ? 'must change password' : 'active'}
+              </span>
+            </td>
+            <td>{u.live > 0 ? `${u.live} browser${u.live === 1 ? '' : 's'}` : '—'}</td>
+            <td>{u.last_login_at ?? 'never'}</td>
+            <td class="row-actions">
+              <button type="button" class="clear" data-act="reset" data-user={u.username}>Reset password</button>
+              {u.live > 0 && (
+                <button type="button" class="clear" data-act="logout" data-user={u.username}>Sign out</button>
+              )}
+              {u.id !== session.userId && (
+                <button type="button" class="clear" data-act={u.disabled ? 'enable' : 'disable'} data-user={u.username}>
+                  {u.disabled ? 'Enable' : 'Disable'}
+                </button>
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Add someone</h2>
+    <div class="field">
+      <label for="tm-new">Username</label>
+      <input type="text" id="tm-new" maxlength="100" autocomplete="off" placeholder="e.g. harjit" />
+      <p class="hint">Letters, digits, dot, underscore and hyphen. A password is generated and shown once.</p>
+    </div>
+    <button type="button" class="primary" id="tm-create" data-csrf={session.csrfToken}>Create account</button>
+  </div>
+
+  {recentFailures.results.length > 0 && (
+    <div class="card">
+      <h2>Failed sign-ins, last 7 days</h2>
+      <table>
+        <thead><tr><th>When</th><th>Username tried</th><th>From</th><th>Why</th></tr></thead>
+        <tbody>
+          {recentFailures.results.map((f) => (
+            <tr>
+              <td>{f.at}</td><td>{f.username ?? '—'}</td><td>{f.ip ?? '—'}</td><td>{f.reason ?? '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p class="hint">
+        Repeated attempts on a real username from an address you do not recognise are worth acting on.
+        Sign-ins are held after 8 failures in 15 minutes.
+      </p>
+    </div>
+  )}
+</Admin>
+
+<script>
+  const csrf = (document.getElementById('tm-create') as HTMLButtonElement | null)?.dataset.csrf ?? '';
+  const flash = document.getElementById('tm-flash') as HTMLElement | null;
+  const secret = document.getElementById('tm-secret') as HTMLElement | null;
+
+  const say = (message: string, ok: boolean) => {
+    if (!flash) return;
+    flash.textContent = message;
+    flash.className = 'alert alert--' + (ok ? 'ok' : 'error');
+    flash.hidden = false;
+  };
+
+  const showSecret = (username: string, password: string) => {
+    if (!secret) return;
+    (document.getElementById('tm-secret-user') as HTMLElement).textContent = username;
+    (document.getElementById('tm-secret-pw') as HTMLElement).textContent = password;
+    secret.hidden = false;
+    secret.scrollIntoView({ block: 'center' });
+  };
+
+  async function send(action: string, username: string) {
+    const body = new FormData();
+    body.append('csrf', csrf);
+    body.append('action', action);
+    body.append('username', username);
+    try {
+      const r = await fetch('/api/admin/team/', { method: 'POST', body });
+      const data = (await r.json()) as { message?: string; error?: string; password?: string; username?: string };
+      if (!r.ok) { say(data.error || 'That did not work.', false); return; }
+      if (data.password && data.username) showSecret(data.username, data.password);
+      say(data.message || 'Done.', true);
+      // The table is now out of date; reload it once the message has been read.
+      if (action !== 'create' && action !== 'reset') window.setTimeout(() => window.location.reload(), 1200);
+    } catch {
+      say('Could not reach the server.', false);
+    }
+  }
+
+  document.querySelectorAll<HTMLButtonElement>('button[data-act]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const act = button.dataset.act!;
+      const user = button.dataset.user!;
+      const asks: Record<string, string> = {
+        reset: `Replace ${user}'s password? Their current one stops working and they are signed out.`,
+        disable: `Disable ${user}? They are signed out immediately.`,
+        logout: `Sign ${user} out of every browser?`,
+        enable: `Let ${user} sign in again?`,
+      };
+      if (!window.confirm(asks[act] ?? 'Are you sure?')) return;
+      void send(act, user);
+    });
+  });
+
+  document.getElementById('tm-create')?.addEventListener('click', () => {
+    const input = document.getElementById('tm-new') as HTMLInputElement;
+    const username = input.value.trim();
+    if (!username) { say('Give the new account a username.', false); return; }
+    void send('create', username).then(() => { input.value = ''; });
+  });
+</script>
+
+<style is:global>
+  .you {
+    margin-left: 8px; padding: 1px 7px; border-radius: 20px;
+    background: #eef1f4; color: var(--muted); font-size: 11px; font-weight: 500;
+  }
+  .card.secret { border-color: var(--accent); background: #f4fbf8; }
+  .secret-value { margin: 8px 0 0; }
+  .secret-value code {
+    display: inline-block; padding: 6px 10px; background: #fff; border: 1px solid var(--line);
+    border-radius: 6px; font-size: 15px; margin-right: 8px; user-select: all;
+  }
+  .row-actions button { margin-right: 12px; }
+</style>

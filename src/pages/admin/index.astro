@@ -1,137 +1,196 @@
 ---
 /**
- * The admin dashboard.
+ * Where signing in lands you.
  *
- * Today it authenticates and reports what is in the blog database. It is
- * deliberately a shell: the authoring feature (write a post, upload images
- * into it) is the next piece of work, and this is the signed-in surface it
- * will hang off.
+ * The one thing anyone comes here to do is write a post, so that is the first
+ * thing on the page and the only button styled as the primary action.
+ * Everything under it is either work already in progress (drafts), work worth
+ * doing (posts scoring badly), or a way to the other screens.
  */
 import Admin from '../../layouts/Admin.astro';
-import {
-  applyAdminHeaders,
-  readSession,
-  sessionCookieName,
-  touchSession,
-  type Db,
-} from '../../lib/auth';
+import { applyAdminHeaders } from '../../lib/auth';
+import { guardPage } from '../../lib/adminroute';
+import { readSettings, effective } from '../../lib/settings';
 
 export const prerender = false;
 
-const db = Astro.locals.runtime?.env?.BLOG as unknown as Db | undefined;
 applyAdminHeaders(Astro.response.headers);
+const guard = await guardPage(Astro.locals, Astro.cookies, Astro.url);
+if (!guard.ok) return guard.response;
+const { db, session } = guard.ctx;
 
-if (!db) return Astro.redirect('/admin/login/?e=config', 302);
-
-const session = await readSession(db, Astro.cookies.get(sessionCookieName(Astro.url))?.value);
-if (!session) return Astro.redirect('/admin/login/?e=expired', 302);
-if (session.mustChangePassword) return Astro.redirect('/admin/password/', 302);
-
-await touchSession(db, session.tokenHash);
-
-const counts = await db
-  .prepare(
-    `SELECT
-       (SELECT COUNT(*) FROM posts WHERE status = 'published') AS published,
-       (SELECT COUNT(*) FROM posts WHERE status = 'draft')     AS drafts,
-       (SELECT COUNT(*) FROM posts)                            AS posts,
-       (SELECT COUNT(*) FROM media)                            AS media,
-       (SELECT COUNT(*) FROM authors)                          AS authors,
-       (SELECT COUNT(*) FROM terms WHERE taxonomy = 'category') AS categories,
-       (SELECT COUNT(*) FROM terms WHERE taxonomy = 'brand')    AS brands,
-       (SELECT COUNT(*) FROM terms WHERE taxonomy = 'tag')      AS tags`,
-  )
-  .first<Record<string, number>>();
-
-const recent = await db
-  .prepare(
-    `SELECT p.slug, p.title, p.status, p.published_at, a.name AS author
-       FROM posts p
-       LEFT JOIN authors a ON a.id = p.author_id
-      ORDER BY COALESCE(p.published_at, p.created_at) DESC
-      LIMIT 8`,
-  )
-  .all<{
-    slug: string;
-    title: string;
-    status: string;
-    published_at: string | null;
-    author: string | null;
-  }>();
-
-const signIns = await db
-  .prepare(
-    `SELECT ip, at FROM admin_login_attempts
-      WHERE ok = 1 AND username = ?
-      ORDER BY at DESC LIMIT 5`,
-  )
-  .bind(session.username)
-  .all<{ ip: string | null; at: string }>();
+const [counts, drafts, recent, weak, settings] = await Promise.all([
+  db
+    .prepare(
+      `SELECT
+         (SELECT COUNT(*) FROM posts WHERE status = 'published')  AS published,
+         (SELECT COUNT(*) FROM posts WHERE status = 'draft')      AS drafts,
+         (SELECT COUNT(*) FROM posts WHERE origin = 'authored')   AS authored,
+         (SELECT COUNT(*) FROM media)                             AS media`,
+    )
+    .first<Record<string, number>>(),
+  db
+    .prepare(
+      `SELECT id, title, updated_at FROM posts
+        WHERE status = 'draft' ORDER BY updated_at DESC LIMIT 5`,
+    )
+    .all<{ id: number; title: string; updated_at: string }>(),
+  db
+    .prepare(
+      `SELECT id, slug, title, status, seo_score FROM posts
+        ORDER BY COALESCE(published_at, created_at) DESC LIMIT 6`,
+    )
+    .all<{ id: number; slug: string; title: string; status: string; seo_score: number | null }>(),
+  db
+    .prepare(
+      `SELECT id, title, seo_score FROM posts
+        WHERE seo_score IS NOT NULL AND seo_score < 60
+        ORDER BY seo_score ASC LIMIT 5`,
+    )
+    .all<{ id: number; title: string; seo_score: number }>(),
+  readSettings(db),
+]);
 
 const changed = Astro.url.searchParams.get('m') === 'password';
-
-const day = (s: string | null) =>
-  s ? new Date(s.replace(' ', 'T') + (s.includes('Z') ? '' : 'Z')).toLocaleString('en-CA', {
-        year: 'numeric', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit', timeZone: 'America/Toronto',
-      })
-    : '—';
+const businessName = effective(settings, 'business_name');
+const band = (n: number | null) => (n === null ? 'none' : n >= 80 ? 'good' : n >= 50 ? 'ok' : 'bad');
 ---
 
 <Admin title="Dashboard" user={{ username: session.username, csrfToken: session.csrfToken }}>
-  <h1>Dashboard</h1>
-  <p class="lede">Signed in as {session.username}. This session ends {day(session.expiresAt)}.</p>
-
   {changed && <p class="alert alert--ok" role="status">Your password has been changed.</p>}
 
-  <h2>Blog database</h2>
-  <div class="stats">
-    <div class="stat"><b>{counts?.published ?? 0}</b><span>published posts</span></div>
-    <div class="stat"><b>{counts?.drafts ?? 0}</b><span>drafts</span></div>
-    <div class="stat"><b>{counts?.media ?? 0}</b><span>images</span></div>
-    <div class="stat"><b>{counts?.categories ?? 0}</b><span>categories</span></div>
-    <div class="stat"><b>{counts?.brands ?? 0}</b><span>vehicle brands</span></div>
-    <div class="stat"><b>{counts?.tags ?? 0}</b><span>tags</span></div>
+  <div class="hero">
+    <div>
+      <h1>Hello, {session.username}</h1>
+      <p class="lede">
+        {businessName}'s blog. {counts?.published ?? 0} posts are live and
+        {' '}{counts?.drafts ?? 0} {counts?.drafts === 1 ? 'draft is' : 'drafts are'} in progress.
+      </p>
+    </div>
+    <a class="cta" href="/admin/posts/new/">
+      <span class="cta-plus" aria-hidden="true">+</span>
+      Write a new post
+    </a>
   </div>
 
-  <div class="card" style="margin-top:18px">
+  <div class="stats">
+    <div class="stat"><b>{counts?.published ?? 0}</b><span>published</span></div>
+    <div class="stat"><b>{counts?.drafts ?? 0}</b><span>drafts</span></div>
+    <div class="stat"><b>{counts?.authored ?? 0}</b><span>written here</span></div>
+    <div class="stat"><b>{counts?.media ?? 0}</b><span>images</span></div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h2>Pick up where you left off</h2>
+      {drafts.results.length === 0 ? (
+        <p class="empty">No drafts. <a href="/admin/posts/new/">Start one</a>.</p>
+      ) : (
+        <ul class="rows">
+          {drafts.results.map((d) => (
+            <li>
+              <a href={`/admin/posts/${d.id}/`}>{d.title || 'Untitled'}</a>
+              <em>{d.updated_at.slice(0, 10)}</em>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+
+    <div class="card">
+      <h2>Worth a second look</h2>
+      {weak.results.length === 0 ? (
+        <p class="empty">Nothing is scoring badly. Scores appear once a post is saved here.</p>
+      ) : (
+        <ul class="rows">
+          {weak.results.map((w) => (
+            <li>
+              <a href={`/admin/posts/${w.id}/`}>{w.title}</a>
+              <em class={`score score--${band(w.seo_score)}`}>{w.seo_score}</em>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p class="hint">Posts scoring under 60 on their focus keyword.</p>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>Latest posts</h2>
     <table>
-      <thead>
-        <tr><th>Title</th><th>Author</th><th>Published</th></tr>
-      </thead>
+      <thead><tr><th>Title</th><th>Status</th><th>SEO</th><th></th></tr></thead>
       <tbody>
         {recent.results.map((p) => (
           <tr>
-            <td><a href={`/${p.slug}/`} target="_blank" rel="noreferrer">{p.title}</a></td>
-            <td>{p.author ?? '—'}</td>
-            <td>{p.published_at ? p.published_at.slice(0, 10) : '—'}</td>
+            <td><a href={`/admin/posts/${p.id}/`}>{p.title}</a></td>
+            <td><span class={`pill pill--${p.status}`}>{p.status}</span></td>
+            <td><span class={`score score--${band(p.seo_score)}`}>{p.seo_score ?? '—'}</span></td>
+            <td class="row-actions"><a href={`/${p.slug}/`} target="_blank" rel="noreferrer">View</a></td>
           </tr>
         ))}
       </tbody>
     </table>
+    <p class="hint"><a href="/admin/posts/">All posts →</a></p>
   </div>
 
-  <div class="card">
-    <h2>Your recent sign-ins</h2>
-    <table>
-      <thead><tr><th>When</th><th>From</th></tr></thead>
-      <tbody>
-        {signIns.results.map((s) => (
-          <tr><td>{day(s.at)}</td><td>{s.ip ?? '—'}</td></tr>
-        ))}
-      </tbody>
-    </table>
-    <p class="hint">
-      Anything here you do not recognise means someone else has your password.
-      <a href="/admin/password/">Change it</a> — that also signs out every other browser.
-    </p>
-  </div>
-
-  <div class="card">
-    <h2>Account</h2>
-    <p class="hint" style="margin-top:0">
-      <a href="/admin/password/">Change password</a>
-    </p>
+  <div class="shortcuts">
+    <a class="shortcut" href="/admin/posts/">
+      <b>All posts</b><span>Search, filter and edit anything on the blog.</span>
+    </a>
+    <a class="shortcut" href="/admin/deploy/">
+      <b>Publish</b><span>Rebuild the site so saved posts go live.</span>
+    </a>
+    <a class="shortcut" href="/admin/settings/">
+      <b>Settings</b><span>Phone, address, email and blog defaults.</span>
+    </a>
+    <a class="shortcut" href="/admin/team/">
+      <b>Team</b><span>Who can sign in, and recent failed attempts.</span>
+    </a>
   </div>
 </Admin>
+
+<style is:global>
+  .hero {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 20px; flex-wrap: wrap; margin-bottom: 22px;
+  }
+  .hero h1 { margin-bottom: 4px; }
+  .hero .lede { margin: 0; }
+
+  /* The one action this screen exists for. */
+  .cta {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 22px; border-radius: 9px;
+    background: var(--accent); color: #fff; text-decoration: none;
+    font-size: 16px; font-weight: 500; white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(20, 96, 63, 0.25);
+  }
+  .cta:hover { background: #15694a; }
+  .cta-plus { font-size: 20px; line-height: 1; font-weight: 400; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 720px) { .two { grid-template-columns: 1fr; } }
+  .two .card { margin-bottom: 18px; }
+
+  .rows { list-style: none; margin: 0; padding: 0; }
+  .rows li {
+    display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+    padding: 7px 0; border-bottom: 1px solid var(--line);
+  }
+  .rows li:last-child { border-bottom: 0; }
+  .rows em { font-style: normal; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .empty { color: var(--muted); margin: 0; }
+
+  .stats { margin-bottom: 18px; }
+
+  .shortcuts {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;
+  }
+  .shortcut {
+    display: block; padding: 16px 18px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 10px; text-decoration: none; color: var(--ink);
+  }
+  .shortcut:hover { border-color: var(--accent); }
+  .shortcut b { display: block; margin-bottom: 3px; }
+  .shortcut span { font-size: 13px; color: var(--muted); }
+</style>

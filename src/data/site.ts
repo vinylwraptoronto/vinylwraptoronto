@@ -4,16 +4,46 @@
  *
  * The email is served through Cloudflare's email-protection shim on the live
  * site; it is decoded here so the markup carries a real mailto:.
+ *
+ * The contact details below are DEFAULTS. /admin/settings/ can override them,
+ * and scripts/pull-posts.mjs writes whatever is stored into
+ * src/data/site-settings.json before the build, which is merged over these.
+ * An absent or blank setting falls back here, so the built site is unchanged
+ * until someone actually edits one — and clearing a field in the admin
+ * restores the original rather than publishing an empty footer on 1,620 pages.
  */
+import stored from './site-settings.json';
 
-export const site = {
+const defaults = {
   name: 'Vinyl Wrap Toronto',
   url: 'https://vinylwraptoronto.com',
   phone: '416-746-1381',
-  phoneHref: 'tel:416-746-1381',
   email: 'info@VinylWrapToronto.com',
   address: '24 Ronson Dr, Unit 1, Etobicoke ON',
   mapUrl: 'https://g.page/vinylwraptoronto?share',
+};
+
+const overrides = stored as Partial<Record<string, string>>;
+const pick = (key: string, fallback: string): string => {
+  const value = (overrides[key] ?? '').trim();
+  return value || fallback;
+};
+
+const phone = pick('phone', defaults.phone);
+
+export const site = {
+  name: pick('business_name', defaults.name),
+  /* Not settable. Every canonical URL and the whole JSON-LD graph are built
+     from it, so changing it is a domain move rather than a preference. */
+  url: defaults.url,
+  phone,
+  /* Derived, so a changed number cannot leave the call link on the old one —
+     but verbatim, hyphens and all. The original serves tel:416-746-1381, and
+     normalising it to tel:4167461381 would change the markup of every page. */
+  phoneHref: `tel:${phone}`,
+  email: pick('email', defaults.email),
+  address: pick('address', defaults.address),
+  mapUrl: pick('map_url', defaults.mapUrl),
   /** The original's favicon, served from the image host like every other upload.
       Used for rel=icon, apple-touch-icon and msapplication-TileImage. */
   favicon: '/wp-content/uploads/2022/12/VWT-Favicon.webp',
@@ -26,7 +56,7 @@ export const site = {
     width: 500,
     height: 108,
   },
-} as const;
+};
 
 /* The original's footer renders these as Font Awesome brand icons, not as
    text links; the icon class is part of the data. */

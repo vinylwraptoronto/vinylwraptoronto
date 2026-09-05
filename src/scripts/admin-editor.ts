@@ -176,8 +176,23 @@ if (form) {
   // you lose the rankings this whole panel exists to protect.
   let slugTouched = slugInput.value.length > 0;
   slugInput.addEventListener('input', () => { slugTouched = true; });
+
+  /* The SEO title follows the post title until it is edited, with the suffix
+     from /admin/settings/ appended — the same thing Rank Math's title template
+     does, and it keeps the character count honest while you write. */
+  const suffix = form.dataset.titleSuffix ?? '';
+  let seoTitleTouched = seoTitle.value.length > 0;
+  seoTitle.addEventListener('input', () => { seoTitleTouched = true; });
+
   titleInput.addEventListener('input', () => {
     if (!slugTouched) slugInput.value = slugify(titleInput.value);
+    if (!seoTitleTouched && suffix) {
+      /* Joined with a space rather than concatenated: settings are stored
+         trimmed, so a suffix typed as " - Vinyl Wrap Toronto" arrives here
+         without its leading space and would otherwise read "Title- Vinyl
+         Wrap Toronto". */
+      seoTitle.value = titleInput.value ? `${titleInput.value} ${suffix}` : '';
+    }
     schedule();
   });
 
@@ -326,6 +341,14 @@ if (form) {
     e.returnValue = '';
   });
 
+  const post = async (data: FormData) => {
+    const r = await fetch(form.action, { method: 'POST', body: data });
+    const out = (await r.json()) as {
+      id?: number; error?: string; score?: number; slug?: string; needsRelayout?: boolean;
+    };
+    return { ok: r.ok, out };
+  };
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     syncOut();
@@ -334,9 +357,21 @@ if (form) {
     if (button) button.disabled = true;
     say('Saving…', 'ok');
     try {
-      const r = await fetch(form.action, { method: 'POST', body: data });
-      const out = (await r.json()) as { id?: number; error?: string; score?: number; slug?: string };
-      if (!r.ok || !out.id) {
+      let { ok: r, out } = await post(data);
+
+      /* The post came from the old site and its page is the original Elementor
+         layout. Saving an edited body rebuilds it from this text and loses
+         that, so the server refuses until it is confirmed here. */
+      if (!r && out.needsRelayout) {
+        if (!window.confirm(`${out.error}\n\nRebuild the page from your text?`)) {
+          say('Nothing was saved. The original layout is untouched.', 'error');
+          return;
+        }
+        data.set('relayout', '1');
+        ({ ok: r, out } = await post(data));
+      }
+
+      if (!r || !out.id) {
         say(out.error || 'Could not save.', 'error');
         return;
       }

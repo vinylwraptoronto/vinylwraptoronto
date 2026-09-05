@@ -16,6 +16,7 @@
 import Admin from '../../../layouts/Admin.astro';
 import { applyAdminHeaders } from '../../../lib/auth';
 import { guardPage } from '../../../lib/adminroute';
+import { effective, readSettings } from '../../../lib/settings';
 
 export const prerender = false;
 
@@ -80,6 +81,15 @@ const chosenIds = new Set(chosen.results.map((r) => r.term_id));
 const advanced: string[] = post?.robots_advanced ? JSON.parse(post.robots_advanced) : [];
 const saved = Astro.url.searchParams.get('saved') === '1';
 
+/* A new post opens on the defaults from /admin/settings/; an existing one
+   opens on whatever it was saved with, so changing a default never rewrites
+   posts that already exist. */
+const settings = await readSettings(db);
+const defaultAuthorName = effective(settings, 'default_author');
+const defaultAuthorId = defaultAuthorName
+  ? (authors.results.find((a) => a.name === defaultAuthorName)?.id ?? '')
+  : '';
+
 const v = {
   title: post?.title ?? '',
   slug: post?.slug ?? '',
@@ -87,19 +97,19 @@ const v = {
   seoTitle: post?.seo_title ?? '',
   excerpt: post?.excerpt ?? '',
   body: post?.body_html ?? '',
-  status: post?.status ?? 'draft',
-  authorId: post?.author_id ?? '',
+  status: post?.status ?? effective(settings, 'default_post_status'),
+  authorId: post?.author_id ?? defaultAuthorId,
   published: (post?.published_at ?? '').slice(0, 10),
   featured: post?.featured_path ?? '',
   focus: post?.focus_keyword ?? '',
   canonical: post?.canonical_url ?? '',
   ogTitle: post?.og_title ?? '',
   ogDescription: post?.og_description ?? '',
-  ogImage: post?.og_image_path ?? '',
+  ogImage: post?.og_image_path ?? (isNew ? effective(settings, 'default_social_image') : ''),
   twCard: post?.twitter_card ?? 'summary_large_image',
   twTitle: post?.twitter_title ?? '',
   twDescription: post?.twitter_description ?? '',
-  schema: post?.schema_type ?? 'BlogPosting',
+  schema: post?.schema_type ?? effective(settings, 'default_schema_type'),
   breadcrumb: post?.breadcrumb_title ?? '',
   index: post ? post.robots_index !== 0 : true,
   follow: post ? post.robots_follow !== 0 : true,
@@ -122,7 +132,10 @@ const v = {
   {saved && <p class="alert alert--ok" role="status">Saved.</p>}
   <p id="ed-flash" class="alert" role="status" hidden></p>
 
-  <form id="ed-form" method="post" action="/api/admin/posts/save/">
+  <form id="ed-form" method="post" action="/api/admin/posts/save/"
+        data-new={isNew ? '1' : '0'}
+        data-origin={post?.origin ?? 'authored'}
+        data-title-suffix={effective(settings, 'seo_title_suffix')}>
     <input type="hidden" name="csrf" value={session.csrfToken} />
     <input type="hidden" name="id" value={isNew ? '' : String(id)} />
 

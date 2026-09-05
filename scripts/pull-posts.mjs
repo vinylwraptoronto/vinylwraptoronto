@@ -148,6 +148,28 @@ const additions = {
 };
 fs.writeFileSync(path.join(ROOT, 'src/data/post-additions.json'), JSON.stringify(additions));
 
+/*
+ * Site settings.
+ *
+ * The phone number, address and email in src/data/site.ts are defaults;
+ * /admin/settings/ can override them, and this is how the override reaches a
+ * static build. Written last and separately from the posts, so a settings
+ * failure cannot take the blog down with it.
+ *
+ * Every key is taken as-is: it was validated against src/lib/settings.ts when
+ * it was saved, and site.ts only reads the keys it knows about.
+ */
+try {
+  const rows = await d1('SELECT key, value FROM settings');
+  const settings = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+  fs.writeFileSync(path.join(ROOT, 'src/data/site-settings.json'), JSON.stringify(settings));
+  const n = Object.keys(settings).length;
+  console.log(`pull-posts: ${n} site setting${n === 1 ? '' : 's'} overridden`);
+} catch (e) {
+  // Keep whatever is committed. The defaults in site.ts are a working site.
+  console.warn(`⚠  pull-posts: could not read settings (${e.message || e}); keeping the committed copy.`);
+}
+
 const empty = posts.filter((p) => !p.sections?.length).length;
 const prev = existing();
 if (prev && posts.length < prev.length && !process.env.ALLOW_POST_SHRINK) {

@@ -1,0 +1,160 @@
+---
+/**
+ * Site settings.
+ *
+ * Two halves. The top is editable and stored in the database — business
+ * details that render into every page, and the defaults a new post starts
+ * with. The bottom is read-only status for the things that live in Worker
+ * secrets rather than here, because "the image upload button does nothing" is
+ * otherwise a mystery with no way to check it from inside the admin.
+ */
+import Admin from '../../layouts/Admin.astro';
+import { applyAdminHeaders } from '../../lib/auth';
+import { guardPage } from '../../lib/adminroute';
+import { SETTING_GROUPS, effective, readSettings } from '../../lib/settings';
+
+export const prerender = false;
+
+applyAdminHeaders(Astro.response.headers);
+const guard = await guardPage(Astro.locals, Astro.cookies, Astro.url);
+if (!guard.ok) return guard.response;
+const { db, session } = guard.ctx;
+
+const stored = await readSettings(db);
+const env = (Astro.locals.runtime?.env ?? {}) as unknown as Record<string, string | undefined>;
+
+/* Presence only. A secret's value is never read into a page — knowing whether
+   it is set is the entire question, and printing it would put a credential in
+   the browser history of anyone who opens this screen. */
+const integrations = [
+  {
+    name: 'Quote form email',
+    what: 'Where the quote form on the public site delivers enquiries.',
+    ok: !!env.RESEND_API_KEY && !!env.QUOTE_TO_EMAIL,
+    secrets: ['RESEND_API_KEY', 'QUOTE_TO_EMAIL'],
+    missing: ['RESEND_API_KEY', 'QUOTE_TO_EMAIL'].filter((k) => !env[k]),
+    consequence: 'Until both are set the form answers with the phone number instead of dropping the enquiry.',
+  },
+  {
+    name: 'Image uploads',
+    what: 'Uploading images into a post, straight to the Backblaze bucket.',
+    ok: ['B2_ENDPOINT', 'B2_REGION', 'B2_BUCKET', 'B2_KEY_ID', 'B2_APPLICATION_KEY'].every((k) => env[k]),
+    secrets: ['B2_ENDPOINT', 'B2_REGION', 'B2_BUCKET', 'B2_KEY_ID', 'B2_APPLICATION_KEY'],
+    missing: ['B2_ENDPOINT', 'B2_REGION', 'B2_BUCKET', 'B2_KEY_ID', 'B2_APPLICATION_KEY'].filter((k) => !env[k]),
+    consequence: 'Until these are set the editor says so when you choose an image, rather than failing oddly.',
+  },
+  {
+    name: 'Publishing',
+    what: 'The Publish button, which rebuilds the site from the database.',
+    ok: !!env.GITHUB_DEPLOY_TOKEN,
+    secrets: ['GITHUB_DEPLOY_TOKEN'],
+    missing: env.GITHUB_DEPLOY_TOKEN ? [] : ['GITHUB_DEPLOY_TOKEN'],
+    consequence: 'Posts still save; the site can be rebuilt by pushing to main in the meantime.',
+  },
+];
+
+const saved = Astro.url.searchParams.get('saved') === '1';
+const problem = Astro.url.searchParams.get('e');
+---
+
+<Admin title="Settings" user={{ username: session.username, csrfToken: session.csrfToken }}>
+  <h1>Settings</h1>
+  <p class="lede">What the site says about the business, and what a new post starts with.</p>
+
+  {saved && <p class="alert alert--ok" role="status">Saved. The site shows the change after the next build.</p>}
+  {problem && <p class="alert alert--error" role="alert">{problem.slice(0, 300)}</p>}
+
+  <form method="post" action="/api/admin/settings/save/">
+    <input type="hidden" name="csrf" value={session.csrfToken} />
+
+    {SETTING_GROUPS.map((group) => (
+      <div class="card">
+        <h2>{group.title}</h2>
+        <p class="hint" style="margin-top:0">{group.blurb}</p>
+
+        {group.fields.map((field) => (
+          <div class="field">
+            <label for={`s-${field.key}`}>{field.label}</label>
+
+            {field.kind === 'select' ? (
+              <select id={`s-${field.key}`} name={field.key} disabled={field.readOnly}>
+                {field.options?.map((o) => (
+                  <option value={o.value} selected={effective(stored, field.key) === o.value}>{o.label}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                id={`s-${field.key}`}
+                name={field.key}
+                type="text"
+                value={stored[field.key] ?? ''}
+                placeholder={field.fallback || '—'}
+                maxlength={field.maxLength}
+                readonly={field.readOnly}
+                autocomplete="off"
+              />
+            )}
+
+            {field.hint && <p class="hint">{field.hint}</p>}
+            {!field.readOnly && field.fallback && !stored[field.key] && (
+              <p class="hint">Using the default: <code>{field.fallback}</code></p>
+            )}
+          </div>
+        ))}
+      </div>
+    ))}
+
+    <div class="card">
+      <div class="actions" style="margin-top:0">
+        <button type="submit" class="primary">Save settings</button>
+        <span class="hint" style="margin:0">Clearing a field puts it back to the default.</span>
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <h2>Connections</h2>
+    <p class="hint" style="margin-top:0">
+      These live in Worker secrets rather than here, because they are credentials.
+      This only reports whether each one is present.
+    </p>
+    <ul class="integrations">
+      {integrations.map((i) => (
+        <li>
+          <span class={`badge badge--${i.ok ? 'on' : 'off'}`}>{i.ok ? 'Connected' : 'Not set up'}</span>
+          <div>
+            <b>{i.name}</b>
+            <p>{i.what}</p>
+            {!i.ok && (
+              <p class="hint">
+                Missing: {i.missing.map((m) => <code>{m}</code>)} — add under the Worker’s
+                Settings → Variables &amp; Secrets, as secrets rather than build variables.
+                {' '}{i.consequence}
+              </p>
+            )}
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+</Admin>
+
+<style is:global>
+  .integrations { list-style: none; margin: 0; padding: 0; }
+  .integrations li {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 14px 0; border-top: 1px solid var(--line);
+  }
+  .integrations li:first-child { border-top: 0; }
+  .integrations p { margin: 2px 0 0; font-size: 14px; color: var(--muted); }
+  .integrations code {
+    font-size: 12px; background: #eef1f4; padding: 1px 5px; border-radius: 4px; margin-right: 4px;
+  }
+  .badge {
+    flex: none; padding: 3px 9px; border-radius: 20px; font-size: 12px; font-weight: 500;
+    white-space: nowrap; margin-top: 2px;
+  }
+  .badge--on { background: #e6f4ee; color: #14603f; }
+  .badge--off { background: #fdf3e4; color: #8a5a00; }
+  input[readonly] { background: #f3f5f7; color: var(--muted); }
+</style>

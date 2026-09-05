@@ -212,6 +212,37 @@ linked from nowhere. `scripts/pull-posts.mjs` writes
 written here only — which `ArchiveList.astro` and `[...slug].astro` merge in.
 It is empty until the first post is written here, so no existing page changes.
 
+## Settings and team
+
+`/admin/settings/` edits the business details rendered into every page — name,
+phone, email, address, map link — plus the defaults a new post starts with.
+They are stored in the `settings` table (migration 0007) and validated against
+`src/lib/settings.ts`, which declares every key the site knows about; a row
+with an undeclared key is ignored rather than trusted.
+
+`src/data/site.ts` now holds **defaults**. `scripts/pull-posts.mjs` writes
+whatever is stored into `src/data/site-settings.json` before the build, and
+site.ts merges it over them. So:
+
+- nothing is seeded, and an empty table means the site builds exactly as before
+- clearing a field in the admin deletes the row, which restores the default
+  rather than publishing an empty footer line on 1,620 pages
+- the site address is deliberately **not** settable: every canonical URL and
+  the whole JSON-LD graph is built from it, so changing it is a domain move
+- `phoneHref` is derived but kept verbatim, hyphens and all — the original
+  serves `tel:416-746-1381`, and normalising it would change every page
+
+The Connections panel on that page reports whether the Worker secrets behind
+the quote form, image uploads and publishing are present. Presence only: a
+secret's value is never read into a page.
+
+`/admin/team/` adds and manages accounts, which was command-line only before.
+A generated password is returned in the response body and shown once in the
+page — never in a redirect URL, which would leave a live credential in browser
+history and in the next request's referrer. Two rules stop the screen locking
+everyone out: you cannot disable your own account, and you cannot disable the
+last enabled one. It also lists failed sign-ins from the last seven days.
+
 ## Notes for the authoring feature
 
 - `media.path` is the bucket key, not a URL. The public address is that path on
