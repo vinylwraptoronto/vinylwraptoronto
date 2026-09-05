@@ -10,15 +10,33 @@ import Base from '../layouts/Base.astro';
 import Blocks from '../components/Blocks.astro';
 import ArchiveList from '../components/ArchiveList.astro';
 import type { PageData } from '../types';
+import posts from '../data/posts.json';
 
 export const prerender = true;
 
+/* Posts come from the D1 blog database, pulled into src/data/posts.json by
+   scripts/pull-posts.mjs before the build. Everything else -- pages, archives,
+   the two web stories -- still comes from the extracted page data.
+
+   The post entries under src/data/pages are the seed input for D1, not a
+   render source; taking both would give two sources of truth for the same 478
+   addresses, and they would drift the moment anyone edited a post. */
 export async function getStaticPaths() {
   const files = import.meta.glob<PageData>('../data/pages/*.json', {
     eager: true,
     import: 'default',
   });
-  return Object.values(files).map((page) => ({
+  const notPosts = Object.values(files).filter((p) => p.kind !== 'post');
+  const fromDb = posts as unknown as PageData[];
+
+  if (!fromDb.length) {
+    throw new Error(
+      'src/data/posts.json is empty — the build would ship without any blog ' +
+      'posts. Run `npm run posts:pull` (it needs CLOUDFLARE_API_TOKEN).',
+    );
+  }
+
+  return [...notPosts, ...fromDb].map((page) => ({
     params: { slug: page.slug === '' ? undefined : page.slug },
     props: { page },
   }));

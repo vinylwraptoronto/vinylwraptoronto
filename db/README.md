@@ -20,20 +20,65 @@ Cloudflare D1, bound to the Worker as `BLOG`.
 | `post_media` | 848 | 478 featured + 370 in-body |
 | `authors` | 3 | |
 
+## How a post reaches the page
+
+D1 is the source of truth for the blog. The site is a static build, so there is
+a pull step between the two:
+
+    npm run posts:pull    # D1 -> src/data/posts.json   (needs CLOUDFLARE_API_TOKEN)
+    npm run build         # runs posts:pull, then astro build
+
+`src/data/posts.json` is committed on purpose. A build with no network, no
+token, or a D1 outage then still produces the whole site from the last
+known-good snapshot instead of silently dropping 478 pages, and a content
+change is reviewable as a diff before it ships. `scripts/pull-posts.mjs`
+refuses to overwrite a good snapshot with a smaller one unless
+`ALLOW_POST_SHRINK` is set — "the query returned fewer rows than expected" and
+"we deleted half the blog" look identical to a build script.
+
+The post entries still under `src/data/pages/*.json` are the seed input, not a
+render source. `src/pages/[...slug].astro` filters them out, because taking
+both would give two sources of truth for the same 478 addresses and they would
+drift the moment anyone edited a post.
+
+## Editorial columns vs the render tree
+
+`title`, `body_html`, `featured_id` and the terms are what an editor edits.
+They are not enough to redraw a post: 312 of the 318 filterable galleries are
+distinct per post, and all 69 before/after comparisons are. So each post also
+carries `sections_json` (the document as it renders), `page_css` (its own
+responsive rules) and `layout` (which template furniture it uses, so the
+authoring feature can compose the same shape rather than guess).
+
+| layout | posts |
+|---|---|
+| `standard+gallery` | 259 |
+| `standard` | 143 |
+| `comparison+gallery` | 52 |
+| `comparison` | 17 |
+| `minimal+gallery` | 7 |
+
 ## What is deliberately not in it
 
 The static pages mix the post an author wrote with the template Elementor
-wrapped around it. Only the post is stored. The table of contents, the
-related-posts grid, the quote form, the promo panel and the prev/next links are
-template furniture, identical on every post, and are rendered by the template.
+wrapped around it. The table of contents, the related-posts grid, the quote
+form, the promo panel and the prev/next links are template furniture, identical
+on every post, and are rendered by the template rather than stored 478 times.
 
 ## Rebuilding the seed
 
     python3 db/blog_export.py     # static pages -> db/blog_rows.json
-    python3 db/blog_sql.py        # rows -> blog_seed.sql
-    npx wrangler d1 execute vinylwraptoronto-blog --remote --file=blog_seed.sql
+    python3 db/blog_sql.py        # rows -> db/blog_seed.sql
+    python3 db/blog_render.py     # render tree -> db/blog_render.sql
+    python3 db/fix_featured.py    # featured = declared og:image -> db/fix_featured.sql
 
-Both scripts read from `src/data/pages/*.json` and the cached taxonomy exports.
+Each reads from `src/data/pages/*.json` and the cached taxonomy exports, and
+each is re-runnable. Apply with:
+
+    npx wrangler d1 execute vinylwraptoronto-blog --remote --file=db/<file>.sql
+
+The generated `.sql` is gitignored — `blog_render.sql` alone is 5.8MB and it
+regenerates from committed inputs. `db/migrations/` is tracked.
 
 ## Notes for the authoring feature
 
