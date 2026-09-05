@@ -10,8 +10,8 @@ import QuoteForm from './QuoteForm.astro';
 import { site, social, legalLinks } from '../data/site';
 import { img } from '../lib/img';
 import {
-  areasServed, areasIndex, workflow, fasterProcess, warranty, credit, hours, addressFull,
-  contactIcons, warrantyIcon, areaIcon,
+  workflow, fasterProcess, warranty, credit, hours, addressFull,
+  contactIcons, warrantyIcon,
 } from '../data/footer';
 ---
 
@@ -20,12 +20,11 @@ import {
     <!-- #70aa3a51 — navy column -->
     <section class="col">
       <h4>Areas We Serve</h4>
-      <ul class="list">
-        {areasServed.map((a) => (
-          <li><i class={areaIcon} aria-hidden="true"></i><a href={img(a.href)}>{a.text}</a></li>
-        ))}
-        <li><i class={areaIcon} aria-hidden="true"></i><a href={areasIndex.href}>{areasIndex.text}</a></li>
-      </ul>
+      {/* The original serves two heading widgets here and nothing else. The
+          seven city links and the /locations-served/ link that used to be in
+          this column were invented — the live footer contains no location
+          link at all, and "and more..." is plain text, not a link. */}
+      <p class="areas-more">and more...</p>
     </section>
 
     <!-- #6ef5e811 — contact column, pink icons (#32151746) -->
@@ -148,6 +147,15 @@ import {
     color: var(--e-global-color-8c22d81); /* #14A278 */
   }
   .list--pink > li > i { color: var(--e-global-color-f32bb28); /* #FF0099 */ }
+
+  /* measured on the live column: Poppins 400, 16px/16px, white */
+  .areas-more {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1;
+    font-weight: 400;
+    color: #ffffff;
+  }
 
   .list a { color: #ffffff; text-decoration: none; }
   .list a:hover { text-decoration: underline; }

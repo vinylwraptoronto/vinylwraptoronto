@@ -4,6 +4,9 @@
  * from locations-served-sitemap.xml, which is the same set of addresses.
  */
 
+/* NOT RENDERED. The live footer serves no location links at all — this list
+   was invented by the port. Kept only because the sitemap addresses are real
+   and may be wanted elsewhere; the footer no longer reads it. */
 export const areasServed = [
   { text: 'Toronto', href: '/locations-served/custom-wraps-toronto/' },
   { text: 'North York', href: '/locations-served/custom-wraps-north-york/' },
@@ -42,6 +45,7 @@ export const contactIcons = {
 };
 
 export const warrantyIcon = 'fas fa-check';
+/* NOT RENDERED: see areasServed above. */
 export const areaIcon = 'fas fa-chevron-circle-right';
 
 export const warranty =

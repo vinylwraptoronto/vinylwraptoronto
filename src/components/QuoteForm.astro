@@ -16,7 +16,8 @@ export interface Props {
   id?: string;
 }
 const { variant = 'inline', id = 'quote' } = Astro.props;
-const vehicleTypes = ['Van', 'Truck', 'Car', 'SUV', 'Trailer', 'Boat', 'Motorcycle'];
+const vehicleTypes = ['Van', 'Truck', 'Car', 'SUV', 'Trailer', 'Boat',
+  'Motorcycle', 'Jet Ski', 'Windows', 'Walls', 'Object', 'Other'];
 ---
 
 <form class={`qform qform--${variant}`} method="post" action="/api/quote" enctype="multipart/form-data" novalidate>

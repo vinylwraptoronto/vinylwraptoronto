@@ -414,13 +414,15 @@ const branchCurrent = (item: NavItem): boolean =>
      the space is needed for the logo. */
   @media (max-width: 767px) {
     .toggle { margin-right: 0; }
+    /* The column carries elementor-hidden-mobile, so below 768px the original
+       shows logo + burger only. The port kept it visible, pushing the burger
+       ~145px inward and squeezing the logo. */
+    .wantto-col { display: none; }
   }
 
   @media (max-width: 480px) {
     .brand { width: auto; max-width: 150px; padding-left: 10px; }
     .toggle { width: 48px; height: 48px; }
-    .wantto-col { width: auto; }
-    .wantto { font-size: 13px; padding: 12px 12px; }
   }
 </style>
 
