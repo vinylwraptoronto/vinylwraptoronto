@@ -142,6 +142,10 @@ export type Block = (
   /** The Elementor id of the widget this block came from. It is rendered as
       `data-eid` so the page's own responsive rules have something to select. */
   eid?: string;
+  /** Breakpoints the original hides this widget at ("mobile", "tablet").
+      Elementor expresses these as a class acted on by its global stylesheet,
+      which the port never carried, so hidden widgets showed everywhere. */
+  hide?: string[];
 };
 
 /** An Elementor row: columns side by side, each with its own percentage width.

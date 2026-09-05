@@ -84,3 +84,14 @@ label { display: inline-block; line-height: 1; vertical-align: middle; }
    measured `line-height: 1`. Where the original does shrink a heading on a
    narrow screen it does so per widget, from the @media blocks in the page's
    own stylesheet, which this port reads at desktop width only. */
+
+/* Elementor's "Hide on tablet/mobile" per-widget settings. It expresses these
+   as a class acted on by its own global stylesheet, never in the page's
+   per-widget CSS, so the port showed every hidden widget at every width —
+   about 400px of extra sidebar on 1,051 pages' phone view. */
+@media (max-width: 767px) {
+  [data-hide~='mobile'] { display: none !important; }
+}
+@media (max-width: 1024px) and (min-width: 768px) {
+  [data-hide~='tablet'] { display: none !important; }
+}
