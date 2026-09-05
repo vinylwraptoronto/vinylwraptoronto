@@ -1,0 +1,137 @@
+---
+/**
+ * The admin dashboard.
+ *
+ * Today it authenticates and reports what is in the blog database. It is
+ * deliberately a shell: the authoring feature (write a post, upload images
+ * into it) is the next piece of work, and this is the signed-in surface it
+ * will hang off.
+ */
+import Admin from '../../layouts/Admin.astro';
+import {
+  applyAdminHeaders,
+  readSession,
+  sessionCookieName,
+  touchSession,
+  type Db,
+} from '../../lib/auth';
+
+export const prerender = false;
+
+const db = Astro.locals.runtime?.env?.BLOG as unknown as Db | undefined;
+applyAdminHeaders(Astro.response.headers);
+
+if (!db) return Astro.redirect('/admin/login/?e=config', 302);
+
+const session = await readSession(db, Astro.cookies.get(sessionCookieName(Astro.url))?.value);
+if (!session) return Astro.redirect('/admin/login/?e=expired', 302);
+if (session.mustChangePassword) return Astro.redirect('/admin/password/', 302);
+
+await touchSession(db, session.tokenHash);
+
+const counts = await db
+  .prepare(
+    `SELECT
+       (SELECT COUNT(*) FROM posts WHERE status = 'published') AS published,
+       (SELECT COUNT(*) FROM posts WHERE status = 'draft')     AS drafts,
+       (SELECT COUNT(*) FROM posts)                            AS posts,
+       (SELECT COUNT(*) FROM media)                            AS media,
+       (SELECT COUNT(*) FROM authors)                          AS authors,
+       (SELECT COUNT(*) FROM terms WHERE taxonomy = 'category') AS categories,
+       (SELECT COUNT(*) FROM terms WHERE taxonomy = 'brand')    AS brands,
+       (SELECT COUNT(*) FROM terms WHERE taxonomy = 'tag')      AS tags`,
+  )
+  .first<Record<string, number>>();
+
+const recent = await db
+  .prepare(
+    `SELECT p.slug, p.title, p.status, p.published_at, a.name AS author
+       FROM posts p
+       LEFT JOIN authors a ON a.id = p.author_id
+      ORDER BY COALESCE(p.published_at, p.created_at) DESC
+      LIMIT 8`,
+  )
+  .all<{
+    slug: string;
+    title: string;
+    status: string;
+    published_at: string | null;
+    author: string | null;
+  }>();
+
+const signIns = await db
+  .prepare(
+    `SELECT ip, at FROM admin_login_attempts
+      WHERE ok = 1 AND username = ?
+      ORDER BY at DESC LIMIT 5`,
+  )
+  .bind(session.username)
+  .all<{ ip: string | null; at: string }>();
+
+const changed = Astro.url.searchParams.get('m') === 'password';
+
+const day = (s: string | null) =>
+  s ? new Date(s.replace(' ', 'T') + (s.includes('Z') ? '' : 'Z')).toLocaleString('en-CA', {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit', timeZone: 'America/Toronto',
+      })
+    : '—';
+---
+
+<Admin title="Dashboard" user={{ username: session.username, csrfToken: session.csrfToken }}>
+  <h1>Dashboard</h1>
+  <p class="lede">Signed in as {session.username}. This session ends {day(session.expiresAt)}.</p>
+
+  {changed && <p class="alert alert--ok" role="status">Your password has been changed.</p>}
+
+  <h2>Blog database</h2>
+  <div class="stats">
+    <div class="stat"><b>{counts?.published ?? 0}</b><span>published posts</span></div>
+    <div class="stat"><b>{counts?.drafts ?? 0}</b><span>drafts</span></div>
+    <div class="stat"><b>{counts?.media ?? 0}</b><span>images</span></div>
+    <div class="stat"><b>{counts?.categories ?? 0}</b><span>categories</span></div>
+    <div class="stat"><b>{counts?.brands ?? 0}</b><span>vehicle brands</span></div>
+    <div class="stat"><b>{counts?.tags ?? 0}</b><span>tags</span></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h2>Latest posts</h2>
+    <table>
+      <thead>
+        <tr><th>Title</th><th>Author</th><th>Published</th></tr>
+      </thead>
+      <tbody>
+        {recent.results.map((p) => (
+          <tr>
+            <td><a href={`/${p.slug}/`} target="_blank" rel="noreferrer">{p.title}</a></td>
+            <td>{p.author ?? '—'}</td>
+            <td>{p.published_at ? p.published_at.slice(0, 10) : '—'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Your recent sign-ins</h2>
+    <table>
+      <thead><tr><th>When</th><th>From</th></tr></thead>
+      <tbody>
+        {signIns.results.map((s) => (
+          <tr><td>{day(s.at)}</td><td>{s.ip ?? '—'}</td></tr>
+        ))}
+      </tbody>
+    </table>
+    <p class="hint">
+      Anything here you do not recognise means someone else has your password.
+      <a href="/admin/password/">Change it</a> — that also signs out every other browser.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Account</h2>
+    <p class="hint" style="margin-top:0">
+      <a href="/admin/password/">Change password</a>
+    </p>
+  </div>
+</Admin>

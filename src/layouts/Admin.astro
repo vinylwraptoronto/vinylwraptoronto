@@ -1,0 +1,251 @@
+---
+/**
+ * Chrome for /admin.
+ *
+ * Deliberately not Base.astro: the admin is not part of the site. Pulling in
+ * Base would drag the header, footer, popups, sticky bar and the whole
+ * Elementor cascade into a page that wants none of it, and would put the
+ * marketing chrome around a login form.
+ *
+ * Styles are inline here rather than in src/styles so nothing about the admin
+ * can leak into the site's cascade, or the site's into the admin.
+ */
+export interface Props {
+  title: string;
+  /** Rendered when someone is signed in; drives the sign-out control. */
+  user?: { username: string; csrfToken: string } | null;
+}
+
+const { title, user = null } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en-CA">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} — Vinyl Wrap Toronto admin</title>
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <link rel="icon" href="data:," />
+  </head>
+  <body>
+    <header class="bar">
+      <a class="brand" href="/admin/">Vinyl Wrap Toronto <span>admin</span></a>
+      {user && (
+        <div class="who">
+          <span class="name">{user.username}</span>
+          <form method="post" action="/api/admin/logout/">
+            <input type="hidden" name="csrf" value={user.csrfToken} />
+            <button type="submit" class="link">Sign out</button>
+          </form>
+        </div>
+      )}
+    </header>
+
+    <main class="wrap">
+      <slot />
+    </main>
+
+    <footer class="foot">
+      <a href="/" rel="noreferrer">View the site</a>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    color-scheme: light;
+    --ink: #16181d;
+    --muted: #5c6470;
+    --line: #dfe3e8;
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --accent: #1a7f5a;
+    --danger: #b3261e;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 20px;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .brand {
+    font-weight: 600;
+    color: var(--ink);
+    text-decoration: none;
+    letter-spacing: -0.01em;
+  }
+  .brand span {
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .who {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .who form { margin: 0; }
+  .who .name { font-weight: 500; color: var(--ink); }
+
+  .link {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .wrap {
+    flex: 1;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 28px 20px 48px;
+  }
+
+  h1 {
+    font-size: 22px;
+    line-height: 1.25;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  h2 {
+    font-size: 15px;
+    margin: 0 0 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .lede {
+    margin: 0 0 24px;
+    color: var(--muted);
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 0 0 18px;
+  }
+
+  label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 0 6px;
+  }
+
+  input[type='text'],
+  input[type='password'] {
+    width: 100%;
+    padding: 10px 12px;
+    font: inherit;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid #c6ccd4;
+    border-radius: 7px;
+  }
+  input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+
+  .field { margin: 0 0 16px; }
+  .hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+
+  button.primary {
+    padding: 10px 18px;
+    font: inherit;
+    font-weight: 500;
+    color: #fff;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 7px;
+    cursor: pointer;
+  }
+  button.primary:hover { background: #15694a; border-color: #15694a; }
+
+  .alert {
+    padding: 11px 14px;
+    border-radius: 7px;
+    margin: 0 0 18px;
+    font-size: 14px;
+    border: 1px solid;
+  }
+  .alert--error {
+    color: var(--danger);
+    background: #fdf2f1;
+    border-color: #f0c8c5;
+  }
+  .alert--ok {
+    color: #14603f;
+    background: #eef8f3;
+    border-color: #bfe3d3;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .stat { background: var(--card); padding: 16px 18px; }
+  .stat b {
+    display: block;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .stat span { font-size: 13px; color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td {
+    text-align: left;
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th { color: var(--muted); font-weight: 500; }
+  tr:last-child td { border-bottom: 0; }
+  td a { color: var(--accent); }
+
+  .foot {
+    padding: 18px 20px;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .foot a { color: var(--muted); }
+
+  @media (max-width: 520px) {
+    .wrap { padding: 20px 14px 36px; }
+    .card { padding: 16px; }
+  }
+</style>

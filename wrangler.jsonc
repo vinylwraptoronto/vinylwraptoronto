@@ -25,7 +25,18 @@
     // unknown path returns a bare 404 with no page around it.
     "not_found_handling": "404-page",
     // The default, set explicitly so nobody has to wonder.
-    "html_handling": "auto-trailing-slash"
+    "html_handling": "auto-trailing-slash",
+
+    // The on-demand routes, named explicitly.
+    //
+    // Static assets are matched before the Worker runs, and with
+    // not_found_handling "404-page" a path with no matching file is answered
+    // with the 404 page rather than being passed on. Nothing under /admin or
+    // /api exists as a file, so without this the admin would be a 404 and the
+    // quote form would silently stop posting. These are the only paths the
+    // Worker needs to see first; everything else stays a static file served
+    // without invoking it.
+    "run_worker_first": ["/admin", "/admin/*", "/api/*"]
   },
 
   // Preview hostname: staging.vinylwraptoronto.com, attached to this Worker as

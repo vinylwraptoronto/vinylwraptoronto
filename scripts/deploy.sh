@@ -59,19 +59,58 @@ if [ -z "$VERSION_ID" ]; then
 fi
 echo "    version $VERSION_ID"
 
-curl -sS --max-time 60 -X POST "$API/deployments?force=true" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  --data "{\"strategy\":\"percentage\",\"versions\":[{\"version_id\":\"$VERSION_ID\",\"percentage\":100}]}" \
-  | python3 -c 'import sys,json; d=json.load(sys.stdin); print("    promoted:", d.get("success")) or [print("    ERR",e.get("code"),e.get("message")) for e in (d.get("errors") or [])]'
+# The promote is rate limited (API error 971) and fails outright often enough
+# to matter, so it is retried rather than attempted once.
+promoted=""
+for attempt in 1 2 3 4 5; do
+  ok=$(curl -sS --max-time 60 -X POST "$API/deployments?force=true" \
+    -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+    --data "{\"strategy\":\"percentage\",\"versions\":[{\"version_id\":\"$VERSION_ID\",\"percentage\":100}]}" \
+    | python3 -c 'import sys,json
+d = json.load(sys.stdin)
+print("ok" if d.get("success") else "")
+for e in d.get("errors") or []:
+    print("    ERR", e.get("code"), e.get("message"), file=sys.stderr)')
+  if [ "$ok" = "ok" ]; then promoted=yes; echo "    promoted on attempt $attempt"; break; fi
+  echo "    promote failed, retrying in $((attempt * 10))s"
+  sleep $((attempt * 10))
+done
 
-# Prove it, rather than trusting the exit code. A page that only exists in
-# recent builds is the honest test: if the old asset set were still live it
-# would 404, which is how the stale deploys were eventually caught.
+if [ -z "$promoted" ]; then
+  echo "Could not promote $VERSION_ID after 5 attempts — the previous version is still live." >&2
+  exit 1
+fi
+
+# Verify by asking which version is actually live, NOT by fetching pages.
+#
+# The old check requested three static pages and expected 200. Those pages
+# exist in every build, so they answer 200 from the *previous* version just as
+# happily — which is exactly what happened when a rate-limited promote left the
+# old version serving and this script still printed "Live". A deploy check that
+# passes when the deploy failed is worse than no check.
 echo "==> Verifying against $HOSTNAME_"
 sleep 4
-for path in "/" "/blogs_vehicles_brand/blog-land-rover/" "/tag/vehicle-wrap-etobicoke/"; do
+LIVE_ID=$(curl -sS --max-time 60 -H "Authorization: Bearer $TOKEN" "$API/deployments" \
+  | python3 -c 'import sys,json
+d = json.load(sys.stdin)["result"]["deployments"]
+print(d[0]["versions"][0]["version_id"] if d else "")')
+
+if [ "$LIVE_ID" != "$VERSION_ID" ]; then
+  echo "    live version is $LIVE_ID, expected $VERSION_ID" >&2
+  exit 1
+fi
+echo "    live version $LIVE_ID"
+
+for path in "/" "/blogs_vehicles_brand/blog-land-rover/" "/tag/vehicle-wrap-etobicoke/" "/admin/"; do
   code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "https://$HOSTNAME_$path" || echo 000)
   printf '    %-42s %s\n' "$path" "$code"
-  [ "$code" = "200" ] || { echo "    ^ expected 200 — the live version is not the one just built" >&2; exit 1; }
+  case "$path:$code" in
+    # /admin/ is on-demand and redirects an unauthenticated visitor to the
+    # login form; a 200 or a 404 there means the Worker never saw the request.
+    "/admin/:302"|"/admin/:303") ;;
+    "/admin/:"*) echo "    ^ expected a redirect to the login form" >&2; exit 1 ;;
+    *":200") ;;
+    *) echo "    ^ expected 200" >&2; exit 1 ;;
+  esac
 done
 echo "==> Live"

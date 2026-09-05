@@ -80,6 +80,70 @@ each is re-runnable. Apply with:
 The generated `.sql` is gitignored — `blog_render.sql` alone is 5.8MB and it
 regenerates from committed inputs. `db/migrations/` is tracked.
 
+## Admin sign-in
+
+`/admin` on the deployed site. Three tables carry it: `admin_users`,
+`admin_sessions`, `admin_login_attempts` (migration 0004). The pages are the
+only on-demand routes besides the quote form — everything else is still a
+static file.
+
+Accounts are managed from the command line, never from a page, because there is
+no signed-in surface to create the *first* account from:
+
+    npm run admin:user create <username>    # generates the password, prints it once
+    npm run admin:user reset  <username>    # new password, and ends their sessions
+    npm run admin:user disable <username>   # and signs them out
+    npm run admin:user logout <username>
+    npm run admin:user list
+    npm run admin:user sessions
+
+`create` and `reset` generate the password locally, print it once and store only
+its hash. It is not recoverable — only replaceable. Both flag the account
+`must_change_password`, so /admin sends the holder to the change-password form
+and answers nothing else until they have picked their own.
+
+### How the credentials are held
+
+Passwords are PBKDF2-HMAC-SHA256, salted per account, stored as
+
+    pbkdf2$sha256$<iterations>$<rounds>$<salt-b64>$<key-b64>
+
+Both cost figures live in the hash, so they can be raised later without
+invalidating existing passwords: an old hash verifies at its own cost and is
+rewritten at the current one the next time its owner signs in.
+
+The cost is two numbers rather than one because **Workers rejects any single
+PBKDF2 call above 100,000 iterations** —
+
+    NotSupportedError: Pbkdf2 failed: iteration counts above 100000 are not
+    supported (requested 210000)
+
+— which is below what is considered adequate today. So six rounds are chained,
+each at the platform maximum, each round taking the previous round's output:
+600,000 iterations of work per guess, and no shortcut through them. Measured at
+about 280ms, against a 30s CPU budget per request on this account's usage model.
+
+`scripts/admin-user.mjs` must derive identically or nothing it writes will ever
+verify. The two implementations were checked against each other on ASCII,
+accented and 200-character passwords before the first account was created.
+
+### What protects it
+
+| | |
+|---|---|
+| session cookie | `__Host-` prefixed, HttpOnly, Secure, SameSite=Lax |
+| stored server-side | only the SHA-256 of the token, so a database copy hands over no live session |
+| expiry | 8 hours, enforced by SQLite in the same query that reads the session |
+| CSRF | double-submit cookie on login, per-session token on every authenticated POST, plus an `Origin`/`Sec-Fetch-Site` check |
+| rate limiting | 8 failures per username and 25 per address in 15 minutes |
+| enumeration | one message for every failure, and the same PBKDF2 work is spent on a username that does not exist |
+| password change | requires the current password, and revokes every other session |
+| headers | `no-store`, `noindex`, a CSP with `script-src 'none'`, `frame-ancestors 'none'` |
+
+`admin_login_attempts` doubles as the audit trail; the dashboard shows the
+signed-in user their own recent sign-ins, which is how someone notices a
+password in the wrong hands.
+
 ## Notes for the authoring feature
 
 - `media.path` is the bucket key, not a URL. The public address is that path on

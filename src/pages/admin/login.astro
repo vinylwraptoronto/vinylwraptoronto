@@ -1,0 +1,106 @@
+---
+/**
+ * Sign in to /admin.
+ *
+ * Renders the form and hands out the login CSRF token; the POST is handled by
+ * /api/admin/login. Failures come back here as a short code in the query
+ * string, never as a message — a reflected message is an XSS hole, and there
+ * are only a handful of things that can go wrong.
+ */
+import Admin from '../../layouts/Admin.astro';
+import {
+  applyAdminHeaders,
+  cookieOptions,
+  loginCsrfCookieName,
+  randomToken,
+  readSession,
+  sessionCookieName,
+  type Db,
+} from '../../lib/auth';
+
+export const prerender = false;
+
+const db = Astro.locals.runtime?.env?.BLOG as unknown as Db | undefined;
+applyAdminHeaders(Astro.response.headers);
+
+/* Already signed in? Nothing to do here. */
+if (db) {
+  const existing = await readSession(
+    db,
+    Astro.cookies.get(sessionCookieName(Astro.url))?.value,
+  );
+  if (existing) return Astro.redirect('/admin/', 302);
+}
+
+/* One CSRF token per rendering of the form, held in a cookie and echoed in a
+   hidden field. The POST accepts the submission only when the two agree, which
+   a cross-site form cannot arrange: it can forge the field but not read or set
+   a cookie on this host. */
+const csrf = randomToken();
+Astro.cookies.set(loginCsrfCookieName(Astro.url), csrf, cookieOptions(Astro.url, 1800));
+
+/* Fixed strings, chosen by code. "Incorrect username or password" is
+   deliberately the same whether the account exists or not. */
+const MESSAGES: Record<string, string> = {
+  bad: 'Incorrect username or password.',
+  rate: 'Too many failed attempts. Wait a few minutes and try again.',
+  csrf: 'That form had expired. Please try again.',
+  expired: 'Your session ended. Please sign in again.',
+  out: 'You have been signed out.',
+  config: 'The admin database is not reachable from this deployment.',
+};
+const code = Astro.url.searchParams.get('e') ?? '';
+const message = Object.prototype.hasOwnProperty.call(MESSAGES, code) ? MESSAGES[code] : null;
+const isGood = code === 'out';
+
+/* Carried through the form so an expired session returns you where you were.
+   Only a path inside /admin is accepted — anything else is an open redirect. */
+const rawNext = Astro.url.searchParams.get('next') ?? '';
+const next = /^\/admin\/[A-Za-z0-9\-_/]*$/.test(rawNext) ? rawNext : '/admin/';
+---
+
+<Admin title="Sign in">
+  <h1>Sign in</h1>
+  <p class="lede">This area is not part of the public site.</p>
+
+  {message && (
+    <p class={`alert ${isGood ? 'alert--ok' : 'alert--error'}`} role="status">{message}</p>
+  )}
+
+  <div class="card">
+    <form method="post" action="/api/admin/login/">
+      <input type="hidden" name="csrf" value={csrf} />
+      <input type="hidden" name="next" value={next} />
+
+      <div class="field">
+        <label for="username">Username</label>
+        <input
+          id="username"
+          name="username"
+          type="text"
+          autocomplete="username"
+          autocapitalize="none"
+          autocorrect="off"
+          spellcheck="false"
+          required
+          maxlength="100"
+          autofocus
+        />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          required
+          maxlength="200"
+        />
+      </div>
+
+      <button type="submit" class="primary">Sign in</button>
+    </form>
+  </div>
+</Admin>
