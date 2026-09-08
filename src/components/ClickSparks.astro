@@ -1,0 +1,68 @@
+---
+/**
+ * Click sparks — the burst of coloured dashes the live site throws from the
+ * cursor on every click.
+ *
+ * This is the site's own custom code, not a plugin: an inline handler in the
+ * WordPress head that appends fourteen 2x16px bars to the body per click, each
+ * a random vibrant hue, each rotated to a random angle, then flies them 120px
+ * outward over 500ms while fading and removes them at 550ms. The numbers here
+ * are that script's, not an approximation of it.
+ *
+ * It was missed on the first pass because the port looked for the usual
+ * libraries (confetti, particles) and the site uses neither.
+ */
+---
+
+<script is:inline>
+  (() => {
+    /* The original fires on every click regardless. A burst of fourteen
+       animated elements per click is the exact thing this query exists to
+       suppress, and honouring it changes nothing for anyone who has not asked
+       for reduced motion. */
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    document.addEventListener('click', (e) => {
+      if (still.matches) return;
+
+      for (let i = 0; i < 14; i++) {
+        const spark = document.createElement('div');
+        spark.className = 'spark';
+
+        const hue = Math.floor(Math.random() * 360);
+        const color = `hsl(${hue}, 100%, 60%)`;
+        spark.style.background = color;
+        spark.style.boxShadow = `0 0 6px ${color}`;
+
+        spark.style.left = `${e.clientX}px`;
+        spark.style.top = `${e.clientY}px`;
+        spark.style.setProperty('--angle', `${Math.floor(Math.random() * 360)}deg`);
+
+        document.body.appendChild(spark);
+        setTimeout(() => spark.remove(), 550);
+      }
+    });
+  })();
+</script>
+
+<style is:global>
+  .spark {
+    position: fixed;
+    width: 2px;
+    height: 16px;
+    pointer-events: none;
+    z-index: 9999;
+    transform: rotate(var(--angle)) translateY(0);
+    transform-origin: bottom center;
+    animation: spark-animation 500ms ease-out forwards;
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+    opacity: 1;
+  }
+
+  @keyframes spark-animation {
+    to {
+      opacity: 0;
+      transform: rotate(var(--angle)) translateY(-120px);
+    }
+  }
+</style>

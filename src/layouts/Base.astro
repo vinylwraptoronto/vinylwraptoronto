@@ -4,6 +4,7 @@ import Footer from '../components/Footer.astro';
 import Popups from '../components/Popups.astro';
 import StickyBar from '../components/StickyBar.astro';
 import Interactions from '../components/Interactions.astro';
+import ClickSparks from '../components/ClickSparks.astro';
 import { site } from '../data/site';
 import { img, imgOrigin } from '../lib/img';
 import type { HeadData } from '../types';
@@ -138,6 +139,7 @@ const iconHref = new URL(img(site.favicon), site.url).href;
     <StickyBar />
     <Popups />
     <Interactions />
+    <ClickSparks />
 
     <style is:global>
       .skip {
