@@ -198,6 +198,72 @@ try {
 }
 
 /*
+ * The category dropdown in /blog/'s sidebar.
+ *
+ * The original renders WordPress's categories widget in dropdown mode: nested
+ * options, and a parent's number is the DISTINCT posts in it or any of its
+ * descendants -- not the ones filed directly against it. Getting that wrong
+ * showed Car Wrap (79) where the original says (92), and six more like it.
+ *
+ * Computed here rather than hard-coded off the original, so the numbers stay
+ * true as posts are written. Empty categories are dropped, which is what
+ * WordPress's hide_empty does and why neither dropdown lists "Tinting".
+ */
+try {
+  const terms = await d1(
+    `SELECT t.id, t.name, t.href, t.parent_id
+       FROM terms t WHERE t.taxonomy = 'category' AND t.href IS NOT NULL`,
+  );
+  const pairs = await d1(
+    `SELECT pt.term_id, pt.post_id
+       FROM post_terms pt
+       JOIN posts p ON p.id = pt.post_id
+       JOIN terms t ON t.id = pt.term_id
+      WHERE t.taxonomy = 'category' AND p.status = 'published'`,
+  );
+
+  const direct = new Map();
+  for (const { term_id, post_id } of pairs) {
+    if (!direct.has(term_id)) direct.set(term_id, new Set());
+    direct.get(term_id).add(post_id);
+  }
+  const kids = new Map();
+  for (const t of terms) {
+    if (t.parent_id == null) continue;
+    if (!kids.has(t.parent_id)) kids.set(t.parent_id, []);
+    kids.get(t.parent_id).push(t);
+  }
+  // Distinct posts in this term or below it. A post filed under both a parent
+  // and one of its children must not be counted twice, which is why this is a
+  // set union and not a sum.
+  const reach = (id) => {
+    const set = new Set(direct.get(id) ?? []);
+    for (const k of kids.get(id) ?? []) for (const p of reach(k.id)) set.add(p);
+    return set;
+  };
+
+  /* Plain code-unit ordering, not localeCompare: en collation ignores the
+     space in "Go Cart Wraps", which sorts it after "Golf Cart Wraps" and puts
+     two entries in an order the original does not use. */
+  const byName = (a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+
+  const out = [];
+  const walk = (parentId, level) => {
+    for (const t of terms.filter((x) => x.parent_id === parentId).sort(byName)) {
+      const count = reach(t.id).size;
+      if (count > 0) out.push({ name: t.name, href: t.href, count, level });
+      walk(t.id, level + 1);
+    }
+  };
+  walk(null, 0);
+
+  fs.writeFileSync(path.join(ROOT, 'src/data/categories.json'), JSON.stringify(out));
+  console.log(`pull-posts: ${out.length} categories with posts`);
+} catch (e) {
+  console.warn(`⚠  pull-posts: could not rebuild the category list (${e.message || e}); keeping the committed copy.`);
+}
+
+/*
  * Site settings.
  *
  * The phone number, address and email in src/data/site.ts are defaults;

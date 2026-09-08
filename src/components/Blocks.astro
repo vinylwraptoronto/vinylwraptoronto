@@ -39,6 +39,14 @@ const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined
 const slugify = (t: string) =>
   t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
 
+/* One line of the category dropdown, spelled the way the original spells it:
+   three non-breaking spaces per level of nesting, then the name, then two more
+   before the count. Built here rather than in the template so the escapes stay
+   readable. */
+function catOption(name: string, count: number, level: number): string {
+  return `${' '.repeat(level * 3)}${name}  (${count})`;
+}
+
 /* Pagination for the blog index.
    Computed here rather than in the template: the block below renders inside a
    JSX expression, where statements and type annotations are a syntax error --
@@ -153,16 +161,30 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
 
         if (b.type === 'categories') {
           return (
-            <nav class="catlist" aria-label={b.title}>
+            <div class="catlist">
               <h5 class="cat-title">{b.title}</h5>
-              <ul>
-                {categories.map((c) => (
-                  <li>
-                    <a href={c.href}>{c.name}</a> <span class="n">({c.count})</span>
-                  </li>
-                ))}
-              </ul>
-            </nav>
+              <form class="catform">
+                <label class="elementor-screen-only" for="cat">{b.title}</label>
+                <select name="cat" id="cat" class="postform" data-catnav>
+                  <option value="">Select Category</option>
+                  {categories.map((c) => (
+                    <option value={c.href}>{catOption(c.name, c.count, c.level ?? 0)}</option>
+                  ))}
+                </select>
+              </form>
+              {/* The original's widget is JS-driven too: WordPress attaches a
+                  change handler that submits the form to ?cat=<term id>. There
+                  is no query handler on a static site, so the option value is
+                  the archive address itself and the handler navigates to it —
+                  same control, same options, same destination. */}
+              <script is:inline>
+                document.querySelectorAll('select[data-catnav]').forEach((s) => {
+                  s.addEventListener('change', () => {
+                    if (s.value) window.location.href = s.value;
+                  });
+                });
+              </script>
+            </div>
           );
         }
 
@@ -1115,15 +1137,25 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
     color: #444444;
     margin: 0 0 10px;
   }
-  .catlist ul { list-style: none; margin: 0; padding: 0; columns: 2; }
-  .catlist li { margin-bottom: 5px; break-inside: avoid; font-size: 15px; }
-  .catlist a { color: var(--brand-green); text-decoration: none; }
-  .catlist a:hover { color: var(--brand-pink); }
-  .catlist .n { color: #767676; font-size: 13px; }
-
-  @media (max-width: 767px) {
-    .catlist ul { columns: 1; }
+  /* The control is a dropdown, not a list — the original's sidebar runs
+     WordPress's categories widget in dropdown mode. Its appearance comes
+     entirely from hello-elementor's reset, which styles every form control the
+     same way; these are that rule's declarations, scoped to this one select so
+     they cannot reach the quote form. */
+  .catform { margin: 0; }
+  .catform select {
+    display: block;
+    width: 100%;
+    border: 1px solid #666666;
+    border-radius: 3px;
+    padding: 0.5rem 1rem;
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+    text-transform: none;
+    transition: all 0.3s;
   }
+  .catform select:focus { border-color: #333333; }
 
   /* Elementor filterable gallery */
   .fgal-tabs {

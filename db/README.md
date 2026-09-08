@@ -278,6 +278,34 @@ Pages 2 and beyond are `noindex, follow` and titled "— Page N of M", and their
 ported Yoast graph is dropped rather than left claiming to be `/blog/`. Every
 post is still linked, so every post is still crawled.
 
+### The category dropdown
+
+The sidebar beside the listing is WordPress's categories widget in **dropdown**
+mode — a `<select>` of 43 nested options, not a list of links. Ours had been a
+flat alphabetical `<ul>`, which differed in control type, in ordering, and in
+seven of the numbers.
+
+The numbers were the substantive part. WordPress counts a hierarchical term
+with `pad_counts`: a parent's figure is the **distinct** posts in it or any of
+its descendants, so Car Wrap reads 92 where the posts filed directly against it
+number 79. `terms` had no parent link to compute that from; migration 0011 adds
+`parent_id` and `href`, recovered from the archive addresses the site already
+serves (a child category lives under its parent's path). `pull-posts` then
+derives the whole dropdown from D1 — union of post ids down each subtree, so a
+post filed under both a parent and its child counts once — and reproduces all
+43 of the original's numbers exactly. Deriving rather than copying is the point:
+the counts stay true as posts are written.
+
+Empty categories are dropped, which is what `hide_empty` does and why neither
+dropdown lists "Tinting". Ordering is plain code-unit comparison, **not**
+`localeCompare`: en collation ignores the space in "Go Cart Wraps" and sorts it
+after "Golf Cart Wraps", which is not the order the original uses.
+
+The original's widget submits its form to `?cat=<term id>`; there is no query
+handler on a static site, so each option's value is the archive address and a
+small handler navigates to it. Same control, same options, same destination —
+and the original's is JS-driven too.
+
 ## SEO for the site's own pages
 
 `/admin/pages/` covers the 60 pages that are not blog posts — `/car-wraps/`,
