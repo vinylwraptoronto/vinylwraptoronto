@@ -102,6 +102,16 @@ export type Block = (
     }
   /* Both are built client-side on the live site, so they are regenerated at
      render time rather than ported as markup that would arrive empty. */
+  /* The blog index's page links. /blog/ was ported as a frozen card snapshot
+     with no pagination, which left 460 of 478 posts reachable only by knowing
+     their address. This is generated, not extracted. */
+  | {
+      type: 'pagination';
+      current: number;
+      total: number;
+      /** Page 1 is the bare address; later pages are <base>page/N/. */
+      base: string;
+    }
   | { type: 'toc'; title: string }
   | { type: 'categories'; title: string }
   /* The Elementor Pro quote form; fields are fixed site-wide, so only its

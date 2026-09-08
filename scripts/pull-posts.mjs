@@ -149,6 +149,55 @@ const additions = {
 fs.writeFileSync(path.join(ROOT, 'src/data/post-additions.json'), JSON.stringify(additions));
 
 /*
+ * The blog index.
+ *
+ * /blog/ was a frozen snapshot: the Elementor cards block ported on the day the
+ * site was cloned, 13 entries, no pagination. The original paginates 402 posts
+ * across 34 pages, so 460 of the 478 posts on this site were reachable only by
+ * knowing their address -- not from the blog at all, and not by a crawler
+ * following links.
+ *
+ * This emits the real list, newest first, with the category each post is filed
+ * under so the card badge says what the original's says.
+ */
+try {
+  const rows = await d1(`
+    SELECT p.slug, p.title, p.published_at, p.sticky, a.name AS author, m.path AS image,
+           (SELECT t.name FROM post_terms pt JOIN terms t ON t.id = pt.term_id
+             WHERE pt.post_id = p.id AND t.taxonomy = 'category'
+             ORDER BY t.name LIMIT 1) AS category
+      FROM posts p
+      LEFT JOIN authors a ON a.id = p.author_id
+      LEFT JOIN media   m ON m.id = p.featured_id
+     WHERE p.status = 'published'
+       AND p.slug NOT LIKE '%/%'
+     /* By publication date, NULLs last. NOT COALESCE(published_at,
+        created_at): created_at is when the row was seeded into D1, identical
+        for all 478, so it floated every undated post above every dated one and
+        put a 2020 post at the top of the blog. */
+     ORDER BY (p.published_at IS NULL), p.published_at DESC`);
+
+  const index = rows.map((r) => ({
+    slug: r.slug,
+    title: r.title,
+    image: r.image ?? null,
+    author: r.author ?? null,
+    published: r.published_at ?? null,
+    category: r.category ?? 'Uncategorized',
+    // WordPress's "stick this post to the front page". Kept in its natural
+    // date position here; src/lib/bloglist.ts prepends it to page 1, which is
+    // what the original does -- see db/migrations/0010.
+    ...(r.sticky ? { sticky: true } : {}),
+  }));
+  fs.writeFileSync(path.join(ROOT, 'src/data/blog-index.json'), JSON.stringify(index));
+  const pinned = index.filter((e) => e.sticky).length;
+  console.log(`pull-posts: blog index has ${index.length} posts` +
+              `${pinned ? ` (${pinned} pinned to the top)` : ''}`);
+} catch (e) {
+  console.warn(`⚠  pull-posts: could not build the blog index (${e.message || e}); keeping the committed copy.`);
+}
+
+/*
  * Site settings.
  *
  * The phone number, address and email in src/data/site.ts are defaults;

@@ -236,6 +236,48 @@ linked from nowhere. `scripts/pull-posts.mjs` writes
 written here only — which `ArchiveList.astro` and `[...slug].astro` merge in.
 It is empty until the first post is written here, so no existing page changes.
 
+## The blog index
+
+`/blog/` was ported as a **frozen snapshot**: the Elementor cards block as it
+stood on cloning day, thirteen entries, and no pagination at all, because the
+original renders the page links from WordPress rather than in the layout. The
+effect was that 460 of the site's 478 posts were reachable only by knowing
+their address — not from the blog, and not by a crawler following links.
+
+`scripts/pull-posts.mjs` now also writes `src/data/blog-index.json`: every
+published post whose slug has no `/` in it, newest first, with the author, the
+featured image and the one category the card badge shows.
+`src/lib/bloglist.ts` refills the cards block from it and inserts a pagination
+control, and `[...slug].astro` emits `/blog/page/2/` … `/blog/page/34/`
+alongside `/blog/`. Everything else on the page — the heading, the category
+list, the "Why Choose Us?" panel, the column widths — is left exactly as
+ported, because only the listing was ever wrong.
+
+Two details are matched to the original rather than invented, both verified by
+crawling all 34 of its pages (403 card slots, 402 distinct posts):
+
+- **Ordering is by `published_at` with NULLs last** — *not*
+  `COALESCE(published_at, created_at)`. `created_at` is when the row was seeded
+  into D1 and is identical for all 478, so coalescing floated every undated
+  post above every dated one and put a 2020 post at the top of the blog.
+- **Sticky posts.** The original pins one post to the top of page 1 without
+  dropping anything: page 1 carries thirteen cards and page 2 still starts at
+  the thirteenth post. `posts.sticky` (migration 0010) records that, and the
+  pinned post keeps its natural date position further down, so it appears
+  twice across the 34 pages — exactly as the original serves it.
+
+Migration 0010 also restores four publication dates that were lost in seeding.
+They came in NULL, which sorted those posts to the end of the index; the dates
+are read off each post's own byline on the original, which is the only place
+they are published (these four carry no article schema). Noon is used for the
+time of day, which is safe because each date sits unambiguously between its
+neighbours with no same-day tie to break. With 0010 applied, all 403 card slots
+are in the original's order.
+
+Pages 2 and beyond are `noindex, follow` and titled "— Page N of M", and their
+ported Yoast graph is dropped rather than left claiming to be `/blog/`. Every
+post is still linked, so every post is still crawled.
+
 ## SEO for the site's own pages
 
 `/admin/pages/` covers the 60 pages that are not blog posts — `/car-wraps/`,

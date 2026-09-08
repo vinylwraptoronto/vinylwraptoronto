@@ -34,7 +34,7 @@ export interface PageSeoOverride {
   twitter_description?: string | null;
 }
 
-type MetaTag = [key: string, isProperty: boolean, value: string];
+export type MetaTag = [key: string, isProperty: boolean, value: string];
 
 const clean = (v: string | null | undefined): string | null => {
   const s = (v ?? '').trim();
@@ -62,7 +62,7 @@ export function robotsFrom(o: PageSeoOverride): string | null {
  * Replace a meta entry in place, keeping its position and its property/name
  * flag. Appends only when the page did not already carry that key.
  */
-function setMeta(meta: MetaTag[], key: string, value: string, isProperty: boolean): void {
+export function setMeta(meta: MetaTag[], key: string, value: string, isProperty: boolean): void {
   const at = meta.findIndex(([k]) => k.toLowerCase() === key.toLowerCase());
   if (at === -1) meta.push([key, isProperty, value]);
   else meta[at] = [meta[at]![0], meta[at]![1], value];

@@ -13,7 +13,9 @@ import type { PageData } from '../types';
 import posts from '../data/posts.json';
 import additions from '../data/post-additions.json';
 import pageSeo from '../data/page-seo.json';
+import blogIndex from '../data/blog-index.json';
 import { applyPageSeo, type PageSeoOverride } from '../lib/pageseo';
+import { blogPageMeta, blogSections, pageCount, type BlogEntry } from '../lib/bloglist';
 
 export const prerender = true;
 
@@ -39,23 +41,48 @@ export async function getStaticPaths() {
     );
   }
 
-  return [...notPosts, ...fromDb].map((page) => ({
+  const all = [...notPosts, ...fromDb];
+  const paths = all.map((page) => ({
     params: { slug: page.slug === '' ? undefined : page.slug },
-    props: { page },
+    props: { page, pageNum: 1 },
   }));
+
+  /* /blog/page/2/ … /blog/page/34/.
+     The ported page carries a frozen 13-card snapshot and no pagination, so
+     every post past the first twelve was linked from nowhere. These are the
+     rest of the index. */
+  const blog = all.find((p) => p.slug === 'blog');
+  if (blog) {
+    const total = pageCount((blogIndex as BlogEntry[]).length);
+    for (let n = 2; n <= total; n++) {
+      paths.push({ params: { slug: `blog/page/${n}` }, props: { page: blog, pageNum: n } });
+    }
+  }
+  return paths;
 }
 
-const raw = (Astro.props as { page: PageData }).page;
+const { page: raw, pageNum = 1 } = Astro.props as { page: PageData; pageNum?: number };
 
 /* SEO set in /admin/pages/ wins over what the page was ported with. Applied
    here rather than in the layout because it rewrites the ported head tags in
    place — see src/lib/pageseo.ts for why adding tags beside them would leave
    the old values rendering. Empty until someone edits a page, so this is a
    no-op on a fresh checkout. */
-const page = applyPageSeo(
+const withSeo = applyPageSeo(
   raw,
   (pageSeo as Record<string, PageSeoOverride>)[raw.slug],
 );
+
+/* The blog index is the one page whose listing is generated rather than
+   ported: see src/lib/bloglist.ts. Everything else renders exactly as before. */
+const isBlogIndex = raw.slug === 'blog';
+const blogTotal = pageCount((blogIndex as BlogEntry[]).length);
+const page = isBlogIndex
+  ? {
+      ...blogPageMeta(withSeo, pageNum, blogTotal),
+      sections: blogSections(withSeo, pageNum, blogIndex as BlogEntry[]),
+    }
+  : withSeo;
 
 /* Every post byline on the original links to that author's archive. Only these
    two archives exist and are linked there; a third author value, "Paolo Leone",

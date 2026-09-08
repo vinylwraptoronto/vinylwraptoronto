@@ -39,6 +39,29 @@ const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined
 const slugify = (t: string) =>
   t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
 
+/* Pagination for the blog index.
+   Computed here rather than in the template: the block below renders inside a
+   JSX expression, where statements and type annotations are a syntax error --
+   an inline `for` loop there fails the build with a bare "Unexpected ;". */
+function pagerHref(base: string, n: number): string {
+  return n <= 1 ? base : `${base}page/${n}/`;
+}
+
+/* 1 … 15 16 17 18 19 … 34 — the exact window WordPress's paginate_links()
+   produces for this widget: end_size 1 (first and last page always shown) and
+   mid_size 2 (two either side of the current one). Read off the original's own
+   markup on pages 1, 2, 17 and 34 rather than guessed; a ±1 window looked
+   right on page 17 but showed "1 2 … 34" on page 1 where the original shows
+   "1 2 3 … 34". */
+function pagerSteps(current: number, total: number): (number | string)[] {
+  const steps: (number | string)[] = [];
+  for (let n = 1; n <= total; n++) {
+    if (n === 1 || n === total || Math.abs(n - current) <= 2) steps.push(n);
+    else if (steps[steps.length - 1] !== '…') steps.push('…');
+  }
+  return steps;
+}
+
 /* The live table of contents is built client-side from the page's own
    headings (the widget is configured for h2-h6). Rebuilt here from the same
    source so it lists the same entries.
@@ -231,6 +254,36 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
               {b.title && <T style={b.titleStyle ?? undefined}>{b.title}</T>}
               {b.text && <p style={b.textStyle ?? undefined}>{b.text}</p>}
             </div>
+          );
+        }
+
+        if (b.type === 'pagination') {
+          return (
+            <nav class="elementor-pagination" aria-label="Pagination" data-eid={b.eid}>
+              {b.current > 1 ? (
+                <a class="page-numbers prev" href={pagerHref(b.base, b.current - 1)} rel="prev">« Previous</a>
+              ) : (
+                <span class="page-numbers prev">« Previous</span>
+              )}
+              {pagerSteps(b.current, b.total).map((n) =>
+                n === '…' ? (
+                  <span class="page-numbers dots">…</span>
+                ) : n === b.current ? (
+                  <span class="page-numbers current" aria-current="page">
+                    <span class="elementor-screen-only">Page</span>{n}
+                  </span>
+                ) : (
+                  <a class="page-numbers" href={pagerHref(b.base, n as number)}>
+                    <span class="elementor-screen-only">Page</span>{n}
+                  </a>
+                ),
+              )}
+              {b.current < b.total ? (
+                <a class="page-numbers next" href={pagerHref(b.base, b.current + 1)} rel="next">Next »</a>
+              ) : (
+                <span class="page-numbers next">Next »</span>
+              )}
+            </nav>
           );
         }
 
@@ -500,6 +553,49 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
 <style>
   .sec { padding: 34px 0; }
   .sec:first-child { padding-top: 26px; }
+
+  /* Blog pagination.
+     Values taken from the original's own inline Elementor CSS for this widget
+     (.elementor-18950 .elementor-element-7b1f0d7f .elementor-pagination), not
+     estimated: 18px Poppins 400, centred, 30px above, and 5px of margin either
+     side of each entry — Elementor writes that as calc(10px/2) on
+     :not(:first-child) and :not(:last-child), which is 5px everywhere except
+     the two ends. The three colours are the site's own global palette tokens,
+     so they follow any later change to them. */
+  .elementor-pagination {
+    margin-top: 30px;
+    text-align: center;
+    font-family: 'Poppins', sans-serif;
+    font-size: 18px;
+    font-weight: 400;
+  }
+  .elementor-pagination .page-numbers:not(:first-child) { margin-left: 5px; }
+  .elementor-pagination .page-numbers:not(:last-child) { margin-right: 5px; }
+  .elementor-pagination .page-numbers:not(.dots) {
+    color: var(--e-global-color-d077a13);
+    text-decoration: none;
+  }
+  .elementor-pagination a.page-numbers:hover { color: var(--e-global-color-8c22d81); }
+  .elementor-pagination .page-numbers.current { color: var(--e-global-color-f32bb28); }
+  /* On page 1 "« Previous" and on page 34 "Next »" are spans, not links — the
+     same thing the original renders. Dimming them says so without moving
+     anything, which a display:none would. */
+  .elementor-pagination span.prev,
+  .elementor-pagination span.next { opacity: 0.45; }
+
+  /* "Page" before each number, for screen readers only. Same rule Elementor
+     ships; the numbers alone read as a bare list of digits. */
+  .elementor-screen-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 
   /* Elementor rows. Columns carry their own percentage width, so the row is a
      flex line rather than a fixed grid — 50+50, 33+33+33 and 25x4 all fall out
