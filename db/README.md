@@ -182,14 +182,38 @@ breadcrumb title.
 
 ### Images
 
-Uploads go straight to the B2 bucket under `wp-content/uploads/YYYY/MM/`, so
-they are served from `img.vinylwraptoronto.com` like every other image and need
-no special case anywhere. The declared MIME type is checked against the file's
-actual magic bytes — a `.png` that begins with `<svg` is refused.
+Uploads go straight to the B2 bucket and are served from
+`img.vinylwraptoronto.com` like every other image, needing no special case
+anywhere. The declared MIME type is checked against the file's actual magic
+bytes — a `.png` that begins with `<svg` is refused, as is any type outside
+JPEG, PNG, GIF, WebP and AVIF. The limit is 12MB.
 
-Needs five Worker secrets, and until they are set the editor says so rather
-than failing oddly: `B2_ENDPOINT`, `B2_REGION`, `B2_BUCKET`, `B2_KEY_ID`,
-`B2_APPLICATION_KEY`. Scope the application key to this bucket only.
+**The bucket key has no `/wp-content/uploads/` prefix.** That prefix lives only
+in the database and the ported markup; when the images were copied off
+WordPress they went to the bucket root, so the live files are at keys like
+`2019/02/cropped-gallery-6.jpg` and the image host serves that root directly.
+`src/lib/img.ts` maps between the two. Getting this wrong does not fail loudly:
+the upload succeeds, every status code says so, and the public URL 404s because
+the file is at a key nothing reads.
+
+| | |
+|---|---|
+| bucket key | `2026/09/name-a1b2c3.png` |
+| stored in `media.path` | `/wp-content/uploads/2026/09/name-a1b2c3.png` |
+| public URL | `https://img.vinylwraptoronto.com/2026/09/name-a1b2c3.png` |
+
+Five Worker secrets, and until they are set the editor says so rather than
+failing oddly: `B2_ENDPOINT`, `B2_REGION`, `B2_BUCKET`, `B2_KEY_ID` and
+`B2_APPLICATION_KEY` (`B2_APP_KEY` is accepted too). Currently set to
+`vinylwraptoronto-img` in `us-east-005`.
+
+**Scope the key to this one bucket.** The account-wide key sitting in the build
+environment can read, write and delete every bucket on the Backblaze account —
+including other clients' and the private ones — so it must not be the value in
+this Worker. The key in use is `vwt-admin-uploads`, restricted to
+`vinylwraptoronto-img` with `listBuckets, listFiles, readFiles, writeFiles` and
+no delete or key-management rights. Replacing it means creating another scoped
+key and running `npx wrangler secret put B2_KEY_ID` / `B2_APPLICATION_KEY`.
 
 ### Publishing
 

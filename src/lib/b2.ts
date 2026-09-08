@@ -2,9 +2,10 @@
  * Putting an uploaded image into the Backblaze B2 bucket, from the Worker.
  *
  * Images for this site live in B2 behind Cloudflare and are served from
- * img.vinylwraptoronto.com; the bucket key is the same path the old WordPress
- * uploads had, so a new upload lands beside the imported ones and every
- * existing rule about image paths keeps working.
+ * img.vinylwraptoronto.com, which serves the bucket root. A key is therefore
+ * `YYYY/MM/name.ext` and the public URL is that same string on the image host
+ * — the `/wp-content/uploads/` prefix the database and the ported markup use
+ * exists only on this side, and src/lib/img.ts is what strips it. See mediaKey.
  *
  * B2's S3-compatible API wants AWS Signature V4. There is no AWS SDK here and
  * adding one to a Worker for a single PUT is not worth it, so the signature is
@@ -39,9 +40,20 @@ export function b2ConfigFrom(env: Record<string, string | undefined>): B2Config 
   const region = env.B2_REGION?.trim();
   const bucket = env.B2_BUCKET?.trim();
   const keyId = env.B2_KEY_ID?.trim();
-  const applicationKey = env.B2_APPLICATION_KEY?.trim();
+  /* Both spellings: B2_APPLICATION_KEY matches Backblaze's own naming, while
+     B2_APP_KEY is what the surrounding tooling already uses. Accepting either
+     beats a silent "uploads are not configured" caused by a name mismatch. */
+  const applicationKey = (env.B2_APPLICATION_KEY ?? env.B2_APP_KEY)?.trim();
   if (!endpoint || !region || !bucket || !keyId || !applicationKey) return null;
-  return { endpoint: endpoint.replace(/^https?:\/\//, ''), region, bucket, keyId, applicationKey };
+  /* The endpoint is stored with a scheme in some places and without in others;
+     the signature needs the bare host, since it goes in the Host header. */
+  return {
+    endpoint: endpoint.replace(/^https?:\/\//, '').replace(/\/+$/, ''),
+    region,
+    bucket,
+    keyId,
+    applicationKey,
+  };
 }
 
 /* ------------------------------------------------------------------ *
@@ -155,9 +167,9 @@ export async function uploadObject(
 
   return {
     key,
-    // The key already begins wp-content/uploads/..., and the image host serves
-    // the bucket root, so the public path drops that prefix.
-    url: IMAGE_HOST + '/' + key.replace(/^wp-content\/uploads\//, ''),
+    // The bucket root IS the image host root, so the key and the public path
+    // are the same string. See mediaKey for why there is no prefix.
+    url: IMAGE_HOST + '/' + key,
     bytes: body.byteLength,
   };
 }
@@ -170,6 +182,18 @@ const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif',
 
 /**
  * A dated, sanitised bucket key.
+ *
+ * The key is `YYYY/MM/name.ext`, with NO `wp-content/uploads/` prefix. That
+ * prefix exists only in the database and in the ported markup: when the images
+ * were copied off WordPress they were written to the bucket root, so the live
+ * files are at keys like `2019/02/cropped-gallery-6.jpg`, and
+ * img.vinylwraptoronto.com serves the bucket root directly. src/lib/img.ts is
+ * what maps one to the other.
+ *
+ * Writing the prefixed form here is not a cosmetic mistake — it uploads
+ * successfully to a key nothing ever reads, and the public URL 404s while
+ * every status code along the way says the upload worked. It did exactly that
+ * the first time.
  *
  * The filename arrives from a file picker, so it is attacker-influenced even
  * though only an administrator can reach this: it may contain path separators,
@@ -208,10 +232,17 @@ export function mediaKey(filename: string, when: Date): string {
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 
-  return `wp-content/uploads/${year}/${month}/${safeStem}-${suffix}.${ext}`;
+  return `${year}/${month}/${safeStem}-${suffix}.${ext}`;
 }
 
-/** What mediaKey produces, as the path stored in the media table. */
+/**
+ * The bucket key as the path stored in the media table.
+ *
+ * The database and the ported markup both address images as
+ * /wp-content/uploads/..., which src/lib/img.ts rewrites onto the image host
+ * by stripping that prefix. An uploaded image has to be stored the same way,
+ * or it would be the one image on the site that needs a special case.
+ */
 export function storedPath(key: string): string {
-  return '/' + key;
+  return '/wp-content/uploads/' + key;
 }
