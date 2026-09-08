@@ -12,6 +12,8 @@ import ArchiveList from '../components/ArchiveList.astro';
 import type { PageData } from '../types';
 import posts from '../data/posts.json';
 import additions from '../data/post-additions.json';
+import pageSeo from '../data/page-seo.json';
+import { applyPageSeo, type PageSeoOverride } from '../lib/pageseo';
 
 export const prerender = true;
 
@@ -43,7 +45,17 @@ export async function getStaticPaths() {
   }));
 }
 
-const { page } = Astro.props as { page: PageData };
+const raw = (Astro.props as { page: PageData }).page;
+
+/* SEO set in /admin/pages/ wins over what the page was ported with. Applied
+   here rather than in the layout because it rewrites the ported head tags in
+   place — see src/lib/pageseo.ts for why adding tags beside them would leave
+   the old values rendering. Empty until someone edits a page, so this is a
+   no-op on a fresh checkout. */
+const page = applyPageSeo(
+  raw,
+  (pageSeo as Record<string, PageSeoOverride>)[raw.slug],
+);
 
 /* Every post byline on the original links to that author's archive. Only these
    two archives exist and are linked there; a third author value, "Paolo Leone",

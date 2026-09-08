@@ -170,6 +170,31 @@ try {
   console.warn(`⚠  pull-posts: could not read settings (${e.message || e}); keeping the committed copy.`);
 }
 
+/*
+ * SEO overrides for the site's own pages, set in /admin/pages/.
+ *
+ * Sparse by design: a row exists only for a page somebody edited, and only the
+ * columns they set are non-null. src/lib/pageseo.ts merges them over the head
+ * tags each page was ported with, so an empty table renders the site exactly
+ * as it is today. Pulled separately from the posts so a failure here cannot
+ * take the blog down with it.
+ */
+try {
+  const rows = await d1(
+    `SELECT slug, seo_title, meta_description, canonical_url,
+            robots_index, robots_follow, robots_advanced,
+            og_title, og_description, og_image,
+            twitter_card, twitter_title, twitter_description
+       FROM page_seo`,
+  );
+  const overrides = Object.fromEntries(rows.map((r) => [r.slug, r]));
+  fs.writeFileSync(path.join(ROOT, 'src/data/page-seo.json'), JSON.stringify(overrides));
+  const n = rows.length;
+  console.log(`pull-posts: ${n} page${n === 1 ? '' : 's'} with SEO overrides`);
+} catch (e) {
+  console.warn(`⚠  pull-posts: could not read page SEO (${e.message || e}); keeping the committed copy.`);
+}
+
 const empty = posts.filter((p) => !p.sections?.length).length;
 const prev = existing();
 if (prev && posts.length < prev.length && !process.env.ALLOW_POST_SHRINK) {

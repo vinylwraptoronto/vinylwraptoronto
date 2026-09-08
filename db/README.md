@@ -236,6 +236,44 @@ linked from nowhere. `scripts/pull-posts.mjs` writes
 written here only — which `ArchiveList.astro` and `[...slug].astro` merge in.
 It is empty until the first post is written here, so no existing page changes.
 
+## SEO for the site's own pages
+
+`/admin/pages/` covers the 60 pages that are not blog posts — `/car-wraps/`,
+`/contact/`, the location pages. Migrations 0008 and 0009.
+
+**Content is not editable there, and cannot be.** These pages are ported
+Elementor layouts with no `body_html`; there is nothing to edit that would not
+mean regenerating the design. Only the metadata is editable.
+
+Two tables, and the split is the point:
+
+| | |
+|---|---|
+| `page_seo` | what an editor set. Sparse — a row exists only for an edited page, a null column means "keep what the page has". |
+| `page_index` | derived: each page's title, description and an HTML rendering of its content, so the list has something to show and the analyser something to score. Safe to drop and regenerate. |
+
+`scripts/index-pages.mjs` fills `page_index`. Run it after porting or changing
+page content; it is not part of the build, because the build consumes the
+overrides rather than the index.
+
+`src/lib/pageseo.ts` merges the overrides over the head tags each page was
+ported with. It rewrites the existing `meta` entries **in place, by key** —
+adding tags beside them would leave the old `description` rendering next to the
+new one. Everything not overridden (og:locale, the article dates, the Yoast
+JSON-LD graph, the image dimensions) is left exactly as ported, which is the
+whole reason for having preserved it. An empty `page_seo` renders the site
+byte-for-byte as it is today; clearing a field is a real revert.
+
+Note `page_index.body_html` holds **markup, not stripped text**. It held text
+first, and the score was meaningless: the analyser looks for subheadings,
+links, images and lists, and stripped text has none by construction, so every
+page scored badly and no edit could move it. `/car-wraps/` scored 40 with
+nothing wrong with it; with structure preserved the same inputs score 56 and
+the remaining failures are real facts about the page.
+
+The editor is addressed as `?slug=car-wraps` rather than a path segment,
+because the homepage's slug is the empty string.
+
 ## Settings and team
 
 `/admin/settings/` edits the business details rendered into every page — name,

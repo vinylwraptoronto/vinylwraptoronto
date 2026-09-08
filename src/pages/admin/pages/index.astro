@@ -1,0 +1,145 @@
+---
+/**
+ * SEO for the site's own pages.
+ *
+ * The 60 pages that sell the business — /car-wraps/, /contact/, the location
+ * pages — as opposed to the 478 blog posts, which have their own screen. Their
+ * content is a ported Elementor layout and is not editable here; their
+ * metadata now is.
+ *
+ * The list is driven by page_index, a build-generated copy of each page's
+ * title, description and body text (scripts/index-pages.mjs). If it is empty,
+ * that script has not been run.
+ */
+import Admin from '../../../layouts/Admin.astro';
+import { applyAdminHeaders } from '../../../lib/auth';
+import { guardPage } from '../../../lib/adminroute';
+
+export const prerender = false;
+
+applyAdminHeaders(Astro.response.headers);
+const guard = await guardPage(Astro.locals, Astro.cookies, Astro.url);
+if (!guard.ok) return guard.response;
+const { db, session } = guard.ctx;
+
+const q = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 100);
+
+const rows = await db
+  .prepare(
+    `SELECT i.slug, i.title, i.description, i.words,
+            s.seo_title, s.meta_description, s.focus_keyword, s.seo_score,
+            s.robots_index, s.updated_at
+       FROM page_index i
+       LEFT JOIN page_seo s ON s.slug = i.slug
+      ${q ? 'WHERE i.slug LIKE ? OR i.title LIKE ?' : ''}
+      ORDER BY i.slug`,
+  )
+  .bind(...(q ? [`%${q}%`, `%${q}%`] : []))
+  .all<{
+    slug: string; title: string; description: string | null; words: number;
+    seo_title: string | null; meta_description: string | null;
+    focus_keyword: string | null; seo_score: number | null;
+    robots_index: number | null; updated_at: string | null;
+  }>();
+
+const saved = Astro.url.searchParams.get('saved');
+const band = (n: number | null) => (n === null ? 'none' : n >= 80 ? 'good' : n >= 50 ? 'ok' : 'bad');
+/* What the page will actually serve: the override if set, else what it was
+   ported with. Length is the point of showing it — Google truncates. */
+const effTitle = (r: (typeof rows.results)[number]) => r.seo_title || r.title || '';
+const effDesc = (r: (typeof rows.results)[number]) => r.meta_description || r.description || '';
+const lenClass = (n: number, min: number, max: number) =>
+  n === 0 ? 'bad' : n > max || n < min ? 'ok' : 'good';
+---
+
+<Admin title="Page SEO" user={{ username: session.username, csrfToken: session.csrfToken }}>
+  <h1>Page SEO</h1>
+  <p class="lede">
+    The site's own pages. Their content is the ported design and is not edited
+    here — this is the title, description and social metadata each one serves.
+  </p>
+
+  {saved && (
+    <p class="alert alert--ok" role="status">
+      Saved <strong>/{saved === '_home' ? '' : saved}/</strong>. It reaches the site at the next build.
+    </p>
+  )}
+
+  <form class="filters" method="get" action="/admin/pages/">
+    <input type="search" name="q" value={q} placeholder="Search by address or title" aria-label="Search pages" />
+    <button type="submit" class="primary">Search</button>
+    {q && <a class="clear" href="/admin/pages/">Clear</a>}
+  </form>
+
+  {rows.results.length === 0 ? (
+    <div class="card">
+      <p class="empty">
+        {q
+          ? 'No page matches that.'
+          : 'No pages are indexed yet. Run `node scripts/index-pages.mjs` to populate the list.'}
+      </p>
+    </div>
+  ) : (
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>Page</th><th>Title</th><th>Description</th><th>SEO</th><th></th></tr>
+        </thead>
+        <tbody>
+          {rows.results.map((r) => (
+            <tr>
+              <td>
+                <a class="title" href={`/admin/pages/edit/?slug=${encodeURIComponent(r.slug)}`}>
+                  /{r.slug}/
+                </a>
+                <span class="slug">
+                  {r.words} words
+                  {r.robots_index === 0 && <em class="noindex">noindex</em>}
+                  {r.updated_at && <em class="edited">edited</em>}
+                </span>
+              </td>
+              <td class="cell">
+                <span class={`len len--${lenClass(effTitle(r).length, 15, 60)}`}>{effTitle(r).length}</span>
+                <span class="excerpt">{effTitle(r).slice(0, 60)}</span>
+              </td>
+              <td class="cell">
+                <span class={`len len--${lenClass(effDesc(r).length, 70, 160)}`}>{effDesc(r).length}</span>
+                <span class="excerpt">{effDesc(r).slice(0, 70)}{effDesc(r).length > 70 ? '…' : ''}</span>
+              </td>
+              <td>
+                {r.seo_score === null
+                  ? <span class="score score--none">—</span>
+                  : <span class={`score score--${band(r.seo_score)}`}>{r.seo_score}</span>}
+              </td>
+              <td class="row-actions">
+                <a href={`/admin/pages/edit/?slug=${encodeURIComponent(r.slug)}`}>Edit</a>
+                <a href={`/${r.slug}${r.slug ? '/' : ''}`} target="_blank" rel="noreferrer">View</a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p class="hint">
+        A score appears once a page has a focus keyword. Title and description
+        lengths are what Google has room for: 15–60 and 70–160 characters.
+      </p>
+    </div>
+  )}
+</Admin>
+
+<style is:global>
+  .cell { min-width: 180px; }
+  .len {
+    display: inline-block; min-width: 26px; margin-right: 8px; font-size: 12px;
+    font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+  .len--good { color: #14603f; }
+  .len--ok { color: #8a5a00; }
+  .len--bad { color: var(--danger); }
+  .excerpt { color: var(--muted); font-size: 13px; }
+  .noindex, .edited {
+    font-style: normal; margin-left: 8px; padding: 1px 6px; border-radius: 20px; font-size: 11px;
+  }
+  .noindex { background: #fdf2f1; color: var(--danger); }
+  .edited { background: #eef1f4; color: var(--muted); }
+</style>

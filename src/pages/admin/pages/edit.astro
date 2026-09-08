@@ -1,0 +1,181 @@
+---
+/**
+ * Edit one page's SEO.
+ *
+ * Addressed as ?slug=car-wraps rather than /admin/pages/car-wraps/ because the
+ * homepage's slug is the empty string, which cannot be a path segment, and
+ * some page slugs contain slashes.
+ *
+ * Content is not editable here and there is no body field: these pages are
+ * ported Elementor layouts with no body_html to edit. The analyser still needs
+ * something to score, so the page's text comes from page_index — the copy
+ * scripts/index-pages.mjs made — and is carried in a hidden field for the
+ * browser-side analysis.
+ */
+import Admin from '../../../layouts/Admin.astro';
+import { applyAdminHeaders } from '../../../lib/auth';
+import { guardPage } from '../../../lib/adminroute';
+
+export const prerender = false;
+
+applyAdminHeaders(Astro.response.headers);
+const guard = await guardPage(Astro.locals, Astro.cookies, Astro.url);
+if (!guard.ok) return guard.response;
+const { db, session } = guard.ctx;
+
+if (!Astro.url.searchParams.has('slug')) return Astro.redirect('/admin/pages/', 302);
+const slug = Astro.url.searchParams.get('slug') ?? '';
+
+const row = await db
+  .prepare(
+    `SELECT i.slug, i.title, i.description, i.og_image, i.words, i.body_html,
+            s.seo_title, s.meta_description, s.focus_keyword, s.seo_score,
+            s.canonical_url, s.robots_index, s.robots_follow, s.robots_advanced,
+            s.og_title, s.og_description, s.og_image AS s_og_image,
+            s.twitter_card, s.twitter_title, s.twitter_description, s.updated_at
+       FROM page_index i
+       LEFT JOIN page_seo s ON s.slug = i.slug
+      WHERE i.slug = ?`,
+  )
+  .bind(slug)
+  .first<Record<string, unknown>>();
+if (!row) return Astro.redirect('/admin/pages/?e=gone', 302);
+
+const str = (k: string) => (row[k] == null ? '' : String(row[k]));
+const advanced: string[] = row.robots_advanced ? JSON.parse(String(row.robots_advanced)) : [];
+const address = `/${slug}${slug ? '/' : ''}`;
+const problem = Astro.url.searchParams.get('e');
+---
+
+<Admin title="Page SEO" user={{ username: session.username, csrfToken: session.csrfToken }}>
+  <div class="ed-head">
+    <div>
+      <h1>{str('title') || address}</h1>
+      <p class="lede">
+        <a href={address} target="_blank" rel="noreferrer">{address}</a>
+        · {String(row.words)} words · content comes from the ported design and is not edited here
+      </p>
+    </div>
+    <a class="clear" href="/admin/pages/">← All pages</a>
+  </div>
+
+  {problem && <p class="alert alert--error" role="alert">{problem.slice(0, 300)}</p>}
+  <p id="ed-flash" class="alert" role="status" hidden></p>
+
+  <form id="ps-form" method="post" action="/api/admin/pages/save/">
+    <input type="hidden" name="csrf" value={session.csrfToken} />
+    <input type="hidden" name="slug" value={slug} />
+    <textarea id="ps-body" hidden aria-hidden="true">{str('body_html')}</textarea>
+
+    <div class="card seo">
+      <div class="seo-head">
+        <h2>Search engine optimisation</h2>
+        <div class="seo-score" id="ed-score" data-score="0"><b>0</b><span>/100</span></div>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" class="on" data-tab="general">General</button>
+        <button type="button" role="tab" data-tab="social">Social</button>
+        <button type="button" role="tab" data-tab="advanced">Advanced</button>
+      </div>
+
+      <div class="tab" data-panel="general">
+        <div class="field">
+          <label for="ed-focus">Focus keyword</label>
+          <input type="text" name="focus_keyword" id="ed-focus" value={str('focus_keyword')}
+                 maxlength="120" placeholder="The phrase this page should rank for" autocomplete="off" />
+        </div>
+
+        <div class="serp" aria-label="Google preview">
+          <div class="serp-url">vinylwraptoronto.com › <span id="serp-slug"></span></div>
+          <div class="serp-title" id="serp-title"></div>
+          <div class="serp-desc" id="serp-desc"></div>
+        </div>
+
+        <div class="field">
+          <label for="ed-seotitle">SEO title <span class="count" id="c-seotitle"></span></label>
+          <input type="text" name="seo_title" id="ed-seotitle" value={str('seo_title')}
+                 maxlength="200" placeholder={str('title')} autocomplete="off" />
+          <p class="hint">Blank keeps what the page serves now: <code>{str('title')}</code></p>
+        </div>
+
+        <div class="field">
+          <label for="ed-metadesc">Meta description <span class="count" id="c-metadesc"></span></label>
+          <textarea name="meta_description" id="ed-metadesc" rows="3" maxlength="320"
+                    placeholder={str('description')}>{str('meta_description')}</textarea>
+          <p class="hint">Blank keeps: <code>{str('description').slice(0, 120)}{str('description').length > 120 ? '…' : ''}</code></p>
+        </div>
+
+        <ul class="checks" id="ed-checks"></ul>
+      </div>
+
+      <div class="tab" data-panel="social" hidden>
+        <p class="hint">Blank falls back to the SEO title and description above.</p>
+        <div class="field">
+          <label for="ed-ogtitle">Facebook / OpenGraph title</label>
+          <input type="text" name="og_title" id="ed-ogtitle" value={str('og_title')} maxlength="200" />
+        </div>
+        <div class="field">
+          <label for="ed-ogdesc">Facebook / OpenGraph description</label>
+          <textarea name="og_description" id="ed-ogdesc" rows="2" maxlength="320">{str('og_description')}</textarea>
+        </div>
+        <div class="field">
+          <label for="ed-ogimage">Social image path</label>
+          <input type="text" name="og_image" id="ed-ogimage" value={str('s_og_image')}
+                 placeholder={str('og_image') || '/wp-content/uploads/…'} />
+          <p class="hint">A path beginning /wp-content/uploads/. Blank keeps the page's current image.</p>
+        </div>
+        <div class="field">
+          <label for="ed-twcard">Twitter card</label>
+          <select name="twitter_card" id="ed-twcard">
+            <option value="">Keep as it is</option>
+            <option value="summary_large_image" selected={str('twitter_card') === 'summary_large_image'}>Large image</option>
+            <option value="summary" selected={str('twitter_card') === 'summary'}>Summary</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="ed-twtitle">Twitter title</label>
+          <input type="text" name="twitter_title" id="ed-twtitle" value={str('twitter_title')} maxlength="200" />
+        </div>
+        <div class="field">
+          <label for="ed-twdesc">Twitter description</label>
+          <textarea name="twitter_description" id="ed-twdesc" rows="2" maxlength="320">{str('twitter_description')}</textarea>
+        </div>
+      </div>
+
+      <div class="tab" data-panel="advanced" hidden>
+        <div class="field">
+          <label>Search engines</label>
+          <label class="check"><input type="checkbox" name="robots_index" value="1" checked={row.robots_index !== 0} /> Allow this page to be indexed</label>
+          <label class="check"><input type="checkbox" name="robots_follow" value="1" checked={row.robots_follow !== 0} /> Follow the links on it</label>
+          <label class="check"><input type="checkbox" name="robots_advanced" value="noarchive" checked={advanced.includes('noarchive')} /> No cached copy</label>
+          <label class="check"><input type="checkbox" name="robots_advanced" value="nosnippet" checked={advanced.includes('nosnippet')} /> No snippet in results</label>
+          <label class="check"><input type="checkbox" name="robots_advanced" value="noimageindex" checked={advanced.includes('noimageindex')} /> Do not index its images</label>
+          <p class="hint">
+            Leaving these as they are keeps the page's ported robots tag untouched.
+            Turning indexing off on a page that ranks will remove it from Google.
+          </p>
+        </div>
+        <div class="field">
+          <label for="ed-canonical">Canonical URL</label>
+          <input type="text" name="canonical_url" id="ed-canonical" value={str('canonical_url')}
+                 placeholder="Blank means this page is the canonical version" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="actions" style="margin-top:0">
+        <button type="submit" class="primary">Save SEO</button>
+        <span class="hint" style="margin:0">
+          Stored straight away; the page serves it after the next
+          <a href="/admin/deploy/">build</a>.
+        </span>
+      </div>
+    </div>
+  </form>
+</Admin>
+
+<script>
+  import '../../../scripts/admin-pageseo';
+</script>
