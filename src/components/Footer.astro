@@ -8,37 +8,45 @@
  */
 import QuoteForm from './QuoteForm.astro';
 import { site, social, legalLinks } from '../data/site';
-import { img } from '../lib/img';
 import {
   workflow, fasterProcess, warranty, credit, hours, addressFull,
-  contactIcons, warrantyIcon,
+  contactIcons, warrantyIcon, vinylBrands,
 } from '../data/footer';
 ---
 
+{/* Three columns, matching the live template's own structure: the four we had
+    split Areas/Contact apart and stranded Warranty at the top of the quote
+    column. Widths are the template's — 25% / 41.332% / the remainder — not an
+    even split. */}
 <footer class="site-footer">
   <div class="cols">
-    <!-- #70aa3a51 — navy column -->
-    <section class="col">
+    <!-- #70aa3a51 — 25%, navy -->
+    <section class="col col--areas">
       <h4>Areas We Serve</h4>
       {/* The original serves two heading widgets here and nothing else. The
           seven city links and the /locations-served/ link that used to be in
           this column were invented — the live footer contains no location
           link at all, and "and more..." is plain text, not a link. */}
       <p class="areas-more">and more...</p>
-    </section>
 
-    <!-- #6ef5e811 — contact column, pink icons (#32151746) -->
-    <section class="col">
       <h4>Contact Us</h4>
       <ul class="list list--pink">
         <li><i class={contactIcons.phone} aria-hidden="true"></i><a href={site.phoneHref}>{site.phone}</a></li>
         <li><i class={contactIcons.email} aria-hidden="true"></i><a href={`mailto:${site.email}`}>{site.email}</a></li>
         <li><i class={contactIcons.address} aria-hidden="true"></i><a href={site.mapUrl} rel="noopener">{addressFull}</a></li>
-        <li><i class={contactIcons.hours} aria-hidden="true"></i>{hours}</li>
+        <li>
+          <i class={contactIcons.hours} aria-hidden="true"></i>
+          <span>
+            <strong>{hours.label}</strong><br />
+            {hours.lines[0]}<br />
+            {hours.lines[1]}
+          </span>
+        </li>
       </ul>
     </section>
 
-    <section class="col">
+    <!-- #6ef5e811 — 41.332%, navy -->
+    <section class="col col--process">
       <h4>Workflow</h4>
       <ul class="list">
         {workflow.map((w) => <li><i class={w.icon} aria-hidden="true"></i>{w.text}</li>)}
@@ -47,59 +55,69 @@ import {
       <ul class="list">
         {fasterProcess.map((w) => <li><i class={w.icon} aria-hidden="true"></i>{w.text}</li>)}
       </ul>
-    </section>
-
-    <section class="col">
       <h4>Warranty</h4>
       <ul class="list"><li><i class={warrantyIcon} aria-hidden="true"></i>{warranty}</li></ul>
 
-      <h4>Get a Quote</h4>
-      <!-- The live footer template (18407) carries the quote form itself, which
-           is why a form appears on every page of the site. -->
-      <div class="footform">
-        <QuoteForm id="footer-quote" />
-      </div>
-      <!-- #89ec862 — navy button, green border, green on hover -->
-      <p class="btns">
-        <a class="btn btn--solid" href={site.phoneHref}>Get an Estimate {site.phone}</a>
-        <!-- Opens the Request a Quote popup, as on the live site, rather than
-             navigating away to /contact/. -->
-        <button class="btn btn--ghost" type="button" data-popup="popup-quote">Send a Message</button>
+      <!-- #e8fc75d — icon-box, 30px pink ellipsis, both parts linking to /vinyl/ -->
+      <p class="brands">
+        <a class="brands-icon" href={vinylBrands.href} tabindex="-1" aria-hidden="true">
+          <i class={vinylBrands.icon}></i>
+        </a>
+        <a class="brands-text" href={vinylBrands.href}>{vinylBrands.text}</a>
       </p>
+    </section>
 
-      <ul class="social">
-        {social.map((s) => (
-          <li>
-            <a href={s.href} rel="noopener" aria-label={s.name}>
-              <i class={s.icon} aria-hidden="true"></i>
-            </a>
-          </li>
-        ))}
-      </ul>
+    <!-- #53f81f9 — the remainder; a white card, 25px padding, 5px radius -->
+    <section class="col col--quote">
+      <div class="card">
+        <h4>Get a Quote</h4>
+        <!-- The live footer template (18407) carries the quote form itself,
+             which is why a form appears on every page of the site. -->
+        <QuoteForm id="footer-quote" />
+
+        {/* The "Get an Estimate / Send a Message" pair that used to sit here is
+            not in the live footer at all — it is the sticky bar, which
+            StickyBar.astro already renders. Two copies were showing. */}
+        <ul class="social">
+          {social.map((s) => (
+            <li>
+              <a href={s.href} rel="noopener" aria-label={s.name}>
+                <i class={s.icon} aria-hidden="true"></i>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   </div>
 
-  <!-- #b853c7a — white credit bar -->
+  <!-- #b853c7a — white credit bar. #3aaf8a14 40% / #3ca93c3b 60%. -->
   <div class="credit">
-    <p class="copyright">{credit.copyright}</p>
     <ul class="legal">
       {legalLinks.map((l) => (
-        <li><a href={img(l.href)}>{l.text}</a></li>
+        <li><a href={l.href}>{l.text}</a></li>
       ))}
     </ul>
-    <p>
-      <a href={credit.byHref} rel="noopener">{credit.byText}</a>
-    </p>
+    <div class="by">
+      <p class="copyright">{credit.copyright}</p>
+      <p>
+        {credit.byPrefix}{' '}
+        <a class="byname" href={credit.byHref} target="_blank" rel="noopener">{credit.byName}</a>
+      </p>
+    </div>
   </div>
 </footer>
 
 <style>
   .site-footer { font-family: 'Poppins', sans-serif; }
 
+  /* Three columns at the template's own widths, not an even split:
+     #70aa3a51 is 25%, #6ef5e811 is 41.332%, and #53f81f9 takes the remainder.
+     Below 1025px the template drops to 50/50 with the quote card full width,
+     and below 768px everything stacks. */
   .cols {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 2px;
+    display: flex;
+    flex-wrap: wrap;
     background: var(--e-global-color-d077a13); /* #15334C */
   }
 
@@ -109,6 +127,9 @@ import {
     padding: 15px;
     color: #ffffff;
   }
+  .col--areas { width: 25%; }
+  .col--process { width: 41.332%; }
+  .col--quote { width: 33.668%; }
 
   /* #51a60bc8 / #e935660 / #71701d39 .elementor-heading-title */
   .col h4 {
@@ -160,67 +181,73 @@ import {
   .list a { color: #ffffff; text-decoration: none; }
   .list a:hover { text-decoration: underline; }
 
-  /* The quote form sits on the navy column, so its own dark label and helper
-     text would be unreadable there. */
-  .footform { margin-bottom: 16px; }
-  .footform :global(.checks label),
-  .footform :global(.filelabel),
-  .footform :global(input[type='file']) { color: #ffffff; }
-  .footform :global(.qbtn) {
-    background-color: var(--e-global-color-a8178e9);
-    width: 100%;
-    text-align: center;
+  /* #e8fc75d — 30px pink ellipsis, 15px from the title, both linking to
+     /vinyl/; the title turns pink when either half is hovered. */
+  .brands {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 14px 0 0;
   }
-  .footform :global(.qbtn:hover) { background-color: #ffffff; color: var(--brand-navy); }
-  .footform :global(.qstatus) { color: #ffffff; }
-
-  .btns { display: flex; flex-direction: column; gap: 8px; margin: 0 0 16px; }
-
-  .btn {
-    display: inline-block;
-    width: 100%;
-    font-family: 'Poppins', sans-serif;
+  .brands-icon {
+    font-size: 30px;
+    line-height: 1;
+    color: var(--e-global-color-f32bb28); /* #FF0099 */
+    text-decoration: none;
+  }
+  .brands-text {
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 400;
     color: #ffffff;
     text-decoration: none;
-    border: 1px solid var(--e-global-color-a8178e9); /* #99CC33 */
-    text-align: center;
-    cursor: pointer;
   }
-  /* #89ec862 */
-  .btn--solid {
-    background-color: var(--e-global-color-d077a13);
-    padding: 8px 15px;
-  }
-  /* #556696d — transparent, 0 15px 5px */
-  .btn--ghost {
-    background-color: transparent;
-    padding: 0 15px 5px;
-  }
-  .btn:hover { background-color: var(--e-global-color-a8178e9); }
+  .brands:hover .brands-text { color: var(--e-global-color-f32bb28); }
 
+  /* #53f81f9 — the quote column is a white card, so the form keeps its own
+     colours; the overrides that used to paint its labels white were there
+     because it had been sitting straight on the navy. */
+  .card {
+    background: #ffffff;
+    border-radius: 5px;
+    padding: 25px;
+  }
+  .card h4 { color: var(--e-global-color-d077a13); }
+
+  /* #491c6798 — 20px navy glyphs on white, 12px apart, centred; hovering
+     fills the badge green with a white glyph. */
   .social {
     list-style: none;
     display: flex;
     flex-wrap: wrap;
-    gap: 6px 12px;
-    margin: 0;
-    padding: 0;
-    font-size: 14px;
+    justify-content: center;
+    gap: 10px 12px;
+    margin: 15px 0 0;
+    padding: 0 0 14px;
   }
-  .social a { color: #ffffff; text-decoration: none; font-size: 20px; }
-  .social a:hover { color: var(--e-global-color-f32bb28); }
+  .social a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    padding: 0.3em;
+    border-radius: 50%;
+    color: var(--e-global-color-d077a13);
+    background-color: #ffffff;
+    text-decoration: none;
+  }
+  .social a:hover {
+    background-color: var(--e-global-color-8c22d81); /* #14A278 */
+    color: var(--e-global-color-accent); /* #FFFFFF */
+  }
 
-  /* #b853c7a — white credit bar */
+  /* #b853c7a — white credit bar. The legal menu (#3aaf8a14) takes 40% and the
+     copyright and credit (#3ca93c3b) the other 60%. */
   .credit {
     background-color: #ffffff;
     padding: 12px 15px;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px 20px;
     font-size: 14px;
     color: var(--e-global-color-text);
   }
@@ -231,19 +258,36 @@ import {
     line-height: 1.5;
     font-weight: 300;
     color: var(--brand-navy);
-    text-align: end;
   }
+  .by { width: 60%; text-align: end; font-size: 12px; line-height: 1.5; }
   .legal a { line-height: 20px; }
+  .byname { text-decoration: underline; }
   .credit a { color: var(--e-global-color-d077a13); text-decoration: none; }
   .credit a:hover { color: var(--e-global-color-f32bb28); }
 
-  .legal { display: flex; gap: 16px; list-style: none; margin: 0; padding: 0; }
+  .legal {
+    width: 40%;
+    display: flex;
+    gap: 40px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
 
+  /* The template's own breakpoints: 50/50 with the quote card full width on
+     tablet, everything stacked below that. */
   @media (max-width: 1024px) {
-    .cols { grid-template-columns: repeat(2, 1fr); }
+    .col--areas,
+    .col--process { width: 50%; }
+    .col--quote { width: 100%; }
   }
   @media (max-width: 767px) {
-    .cols { grid-template-columns: 1fr; }
-    .credit { justify-content: flex-start; }
+    .col { width: 100%; }
+    .col--areas,
+    .col--process,
+    .col--quote { width: 100%; }
+    .legal,
+    .by { width: 100%; text-align: start; }
+    .legal { gap: 20px; flex-wrap: wrap; }
   }
 </style>

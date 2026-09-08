@@ -51,13 +51,32 @@ export const areaIcon = 'fas fa-chevron-circle-right';
 export const warranty =
   'We include a 3-year warranty against peeling, bubbling or fading.';
 
-export const hours =
-  'Working Hours: Mon - Fri: 8:30 AM to 5:00 PM Sat: 10:30 AM to 5:00 PM (Appointment Only)';
+/* Three lines, not one string: the original sets "Working Hours:" in bold on
+   its own line and breaks between the weekday and Saturday hours. Run together
+   they read as a single sentence. */
+export const hours = {
+  label: 'Working Hours:',
+  lines: [
+    'Mon - Fri: 8:30 AM to 5:00 PM',
+    'Sat: 10:30 AM to 5:00 PM (Appointment Only)',
+  ],
+};
+
+/* The icon-box that closes the second column: an ellipsis in the site's pink,
+   with the title beside it, both linking to /vinyl/. */
+export const vinylBrands = {
+  text: 'Vinyl Brands',
+  href: '/vinyl/',
+  icon: 'fas fa-ellipsis-h',
+};
 
 export const addressFull = '24 Ronson Dr, Unit 1, Etobicoke ON M9W 1B4';
 
+/* Only the studio's name is the link on the original, and it is underlined;
+   linking the whole sentence made the credit read as one long link. */
 export const credit = {
   copyright: 'Copyright 2026 © Vinyl Wrap Toronto. All rights Reserved.',
-  byText: 'Designed & Developed By Branding Centres',
+  byPrefix: 'Designed & Developed By',
+  byName: 'Branding Centres',
   byHref: 'https://brandingcentres.com',
 };

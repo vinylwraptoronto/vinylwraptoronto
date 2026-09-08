@@ -40,7 +40,7 @@ const vehicleTypes = ['Van', 'Truck', 'Car', 'SUV', 'Trailer', 'Boat',
   </div>
 
   <fieldset class="row checks">
-    <legend class="sr-only">Wrap type</legend>
+    <legend class="sr-only">It is for</legend>
     <label><input type="checkbox" name="wrap_type" value="Business (Commercial)" /> Business (Commercial)</label>
     <label><input type="checkbox" name="wrap_type" value="Personal" /> Personal</label>
   </fieldset>
@@ -64,9 +64,23 @@ const vehicleTypes = ['Van', 'Truck', 'Car', 'SUV', 'Trailer', 'Boat',
     )}
   </div>
 
+  {/* The visible text above the file input is its own field on the live form,
+      not the input's label — that one ("Photos") is screen-only, as every
+      other label here is. The accepted formats are the ones it names, so
+      accept="image/*" was both wider (any image type) and narrower (no PDF)
+      than what the copy promises. */}
   <div class="row">
-    <label class="filelabel" for={`${id}-photos`}>Photos</label>
-    <input id={`${id}-photos`} name="photos" type="file" multiple accept="image/*" />
+    <p class="uploadnote">
+      Upload Photos (<span>If any. Allowed file formats: jpg, jpeg, png, heic &amp; pdf</span>)
+    </p>
+    <label class="sr-only" for={`${id}-photos`}>Photos</label>
+    <input
+      id={`${id}-photos`}
+      name="photos"
+      type="file"
+      multiple
+      accept=".jpg,.jpeg,.png,.heic,.pdf,image/jpeg,image/png,image/heic,application/pdf"
+    />
   </div>
 
   <div class="row">
@@ -121,7 +135,10 @@ const vehicleTypes = ['Van', 'Truck', 'Car', 'SUV', 'Trailer', 'Boat',
     font-size: 14px; line-height: 1; color: #000000;
   }
 
-  .filelabel { font-size: 14px; margin-bottom: 4px; color: var(--ink); }
+  /* The live form sets only the parenthetical smaller, at 12px, and leaves the
+     rest at the form's own size. */
+  .uploadnote { margin: 0 0 4px; font-size: 15px; color: var(--ink); }
+  .uploadnote span { font-size: 12px; }
   .qform input[type='file'] { font-size: 14px; }
 
   .qbtn {
