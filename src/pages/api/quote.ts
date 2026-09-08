@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { originIsSelf } from '../../lib/auth';
 
 /**
  * Quote form endpoint.
@@ -34,7 +35,17 @@ const json = (body: unknown, status: number) =>
     headers: { 'content-type': 'application/json' },
   });
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request, locals, url }) => {
+  /* Astro's built-in origin check is off site-wide — it refuses a same-origin
+     form navigation whose browser omits the Origin header, which broke the
+     admin login. This endpoint had no check of its own and was relying on it,
+     so it does the same check here, in the version that does not reject a
+     legitimate submission. There is no CSRF token on the public quote form, so
+     this is the only thing standing between it and a forged submission. */
+  if (!originIsSelf(request, url)) {
+    return json({ error: 'That request did not come from this site.' }, 403);
+  }
+
   const env = (locals as { runtime?: { env?: Record<string, string> } })?.runtime?.env ?? {};
   const apiKey = env.RESEND_API_KEY;
   const to = env.QUOTE_TO_EMAIL;

@@ -266,10 +266,24 @@ export function cookieOptions(url: URL, maxAgeSeconds?: number): CookieOptions {
 /**
  * Reject a state-changing request that did not originate from our own pages.
  *
- * Belt and braces alongside the CSRF token: `Sec-Fetch-Site` is set by the
- * browser and cannot be forged by page script, and `Origin` is sent on every
- * cross-origin POST. A request with neither header is not a browser form post,
- * so it is refused too.
+ * Belt and braces alongside the CSRF token, and the order matters.
+ *
+ * `Sec-Fetch-Site` is set by the browser, cannot be forged by page script, and
+ * IS sent on navigations — so it is checked first and is the reliable signal.
+ * `Origin` is checked next, and is authoritative when present.
+ *
+ * Neither header present is treated as acceptable, which looks lax and is not.
+ * `Origin` is required by the Fetch spec on every CROSS-origin request, so a
+ * genuine cross-site form post always carries it; what is unreliable is the
+ * SAME-origin top-level form navigation, where Safari and some Chrome
+ * configurations send nothing at all. Refusing that case is what Astro's own
+ * security.checkOrigin does, and it rejected the admin login form outright.
+ * Anything reaching here with neither header is therefore either a same-origin
+ * navigation or a non-browser client — and a non-browser client has none of
+ * the victim's cookies to ride on, which is the whole premise of CSRF.
+ *
+ * The actual gate is the token: a cross-site page cannot read the
+ * `__Host-` cookie it would have to echo, so it cannot forge the field.
  */
 export function originIsSelf(request: Request, url: URL): boolean {
   const fetchSite = request.headers.get('sec-fetch-site');
@@ -282,7 +296,7 @@ export function originIsSelf(request: Request, url: URL): boolean {
       return false;
     }
   }
-  return false;
+  return true;
 }
 
 export function clientIp(request: Request): string | null {
