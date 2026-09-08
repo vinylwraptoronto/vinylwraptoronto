@@ -19,6 +19,9 @@ import {
     column. Widths are the template's — 25% / 41.332% / the remainder — not an
     even split. */}
 <footer class="site-footer">
+  {/* #3f2a4d85 — 50px of breathing room above and below, and the row is boxed
+      at 1400px rather than running to the viewport edges. Without the box the
+      first column started hard against the left of the screen. */}
   <div class="cols">
     <!-- #70aa3a51 — 25%, navy -->
     <section class="col col--areas">
@@ -91,7 +94,9 @@ import {
     </section>
   </div>
 
-  <!-- #b853c7a — white credit bar. #3aaf8a14 40% / #3ca93c3b 60%. -->
+  <!-- #b853c7a — white credit bar. #3aaf8a14 40% / #3ca93c3b 60%. The white
+       bleeds full width; its contents are boxed to match the row above. -->
+  <div class="creditbar">
   <div class="credit">
     <ul class="legal">
       {legalLinks.map((l) => (
@@ -106,6 +111,7 @@ import {
       </p>
     </div>
   </div>
+  </div>
 </footer>
 
 <style>
@@ -115,21 +121,32 @@ import {
      #70aa3a51 is 25%, #6ef5e811 is 41.332%, and #53f81f9 takes the remainder.
      Below 1025px the template drops to 50/50 with the quote card full width,
      and below 768px everything stacks. */
+  /* #3f2a4d85 — the section pads 50px top and bottom and boxes its row at
+     1400px. The navy is on the section so it still bleeds full width. */
+  .site-footer { background: var(--e-global-color-d077a13); /* #15334C */ }
   .cols {
     display: flex;
     flex-wrap: wrap;
-    background: var(--e-global-color-d077a13); /* #15334C */
+    max-width: 1400px;
+    margin-inline: auto;
+    padding: 50px 0;
   }
 
-  /* #70aa3a51 / #6ef5e811 > .elementor-element-populated{padding:15px} */
-  .col {
-    background: var(--e-global-color-d077a13);
-    padding: 15px;
-    color: #ffffff;
-  }
+  /* #70aa3a51 > .elementor-element-populated{padding:15px} */
+  .col { padding: 15px; color: #ffffff; }
   .col--areas { width: 25%; }
-  .col--process { width: 41.332%; }
-  .col--quote { width: 33.668%; }
+  /* #6ef5e811 overrides the 15px with 20px */
+  .col--process { width: 41.332%; padding: 20px; }
+  /* The white card carries #53f81f9's own 25px, so the column adds none. */
+  .col--quote { width: 33.668%; padding: 0; }
+
+  /* Elementor's default gap between widgets in a column is 20px; #70aa3a51
+     overrides it to 10px. Without either, "and more..." sat directly on top of
+     the CONTACT US heading. */
+  .col > * + * { margin-block-start: 20px; }
+  .col--areas > * + * { margin-block-start: 10px; }
+  /* #e935660 — CONTACT US adds 20px of its own on top of that. */
+  .col--areas > .areas-more + h4 { margin-block-start: 30px; }
 
   /* #51a60bc8 / #e935660 / #71701d39 .elementor-heading-title */
   .col h4 {
@@ -152,13 +169,21 @@ import {
     font-weight: 400;
     line-height: 1.5;
   }
+  /* Elementor splits an icon-list's spacing in half either side of each item,
+     so the gap between two rows is the full value. The two lists are set
+     differently and were both rendering at the contact list's half-value: the
+     contact list is 10px, and the three process lists are 3px, opening to 8px
+     under 1025px and 13px under 768px. */
   .list > li {
-    padding-block-end: calc(10px / 2);
     color: #ffffff;
     display: flex;
     gap: 8px;
     align-items: baseline;
   }
+  .list > li:not(:last-child) { padding-block-end: calc(10px / 2); }
+  .list > li:not(:first-child) { margin-block-start: calc(10px / 2); }
+  .col--process .list > li:not(:last-child) { padding-block-end: calc(3px / 2); }
+  .col--process .list > li:not(:first-child) { margin-block-start: calc(3px / 2); }
   /* These were CSS dots standing in for the icons the original actually
      draws — a phone, an envelope, a map pin, a clock, and so on. */
   .list > li > i {
@@ -241,53 +266,69 @@ import {
   }
 
   /* #b853c7a — white credit bar. The legal menu (#3aaf8a14) takes 40% and the
-     copyright and credit (#3ca93c3b) the other 60%. */
+     copyright and credit (#3ca93c3b) the other 60%, boxed to the same 1400px
+     as the row above so the two line up. */
   .credit {
     background-color: #ffffff;
+    max-width: 1400px;
+    margin-inline: auto;
     padding: 12px 15px;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    font-size: 14px;
     color: var(--e-global-color-text);
   }
+  .creditbar { background: #ffffff; }
   .credit p { margin: 0; }
-  /* the original's own rule is line-height:1.5em on a 12px size */
-  .credit .copyright {
+  /* #23c23594 is 15px, #36dbd408 12px, both 25px leading and weight 300. */
+  .credit .copyright { font-size: 15px; }
+  .by {
+    width: 60%;
+    text-align: end;
     font-size: 12px;
-    line-height: 1.5;
+    line-height: 25px;
     font-weight: 300;
     color: var(--brand-navy);
   }
-  .by { width: 60%; text-align: end; font-size: 12px; line-height: 1.5; }
-  .legal a { line-height: 20px; }
   .byname { text-decoration: underline; }
   .credit a { color: var(--e-global-color-d077a13); text-decoration: none; }
   .credit a:hover { color: var(--e-global-color-f32bb28); }
 
+  /* #37ceb7c is a nav menu with align-justify — the three links spread across
+     their column rather than sitting in a tight cluster at its left edge. */
   .legal {
     width: 40%;
     display: flex;
-    gap: 40px;
+    justify-content: space-between;
     list-style: none;
     margin: 0;
     padding: 0;
+    font-size: 14px;
+    line-height: 20px;
   }
 
   /* The template's own breakpoints: 50/50 with the quote card full width on
      tablet, everything stacked below that. */
   @media (max-width: 1024px) {
+    .cols { padding: 10px; }
     .col--areas,
     .col--process { width: 50%; }
     .col--quote { width: 100%; }
+    /* The process lists open up as the columns narrow. */
+    .col--process .list > li:not(:last-child) { padding-block-end: calc(8px / 2); }
+    .col--process .list > li:not(:first-child) { margin-block-start: calc(8px / 2); }
   }
   @media (max-width: 767px) {
-    .col { width: 100%; }
     .col--areas,
     .col--process,
     .col--quote { width: 100%; }
+    .col--areas { padding: 20px 10px; margin: 35px 0; }
+    .col--areas > .areas-more + h4 { margin-block-start: 40px; }
+    .col--quote { margin: 30px 0; }
+    .col--process .list > li:not(:last-child) { padding-block-end: calc(13px / 2); }
+    .col--process .list > li:not(:first-child) { margin-block-start: calc(13px / 2); }
     .legal,
     .by { width: 100%; text-align: start; }
-    .legal { gap: 20px; flex-wrap: wrap; }
+    .legal { justify-content: flex-start; gap: 20px; flex-wrap: wrap; }
   }
 </style>

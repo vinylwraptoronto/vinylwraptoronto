@@ -3,73 +3,135 @@
  * Floating bottom CTA bar — the `sticky: "bottom"` element in footer template
  * 18407. It fades up 1000ms after load on the live site and carries two
  * actions: call for an estimate, and open the Request a Quote popup.
+ *
+ * Every value below is read off the template's own CSS rather than eyeballed.
+ * The shape is a pill, not a full-width strip: an inner container (#1bf9457)
+ * on a 49deg navy-to-green gradient, rounded at the top corners only, with a
+ * drop shadow, sitting inside a wrapper (#b853c7a) that is 30% of the viewport
+ * on desktop and 70% on tablet. The port had it as a full-bleed bar with two
+ * square buttons, which is why it read as a different component entirely.
  */
 import { site } from '../data/site';
 ---
 
-<div class="stickybar" data-sticky-bar>
-  <a class="sb-btn sb-btn--call" href={site.phoneHref}>
-    <i class="sb-ic fas fa-phone-alt" aria-hidden="true"></i>
-    <span class="sb-lead">Get an Estimate</span>
-    <span class="sb-num">{site.phone}</span>
-  </a>
-  <button class="sb-btn sb-btn--msg" type="button" data-popup="popup-quote">
-    <i class="sb-ic far fa-paper-plane" aria-hidden="true"></i>Send a Message
-  </button>
+<div class="sb-wrap" data-sticky-bar>
+  <div class="sb-pill">
+    <!-- #556696d — transparent over the gradient, so it reads navy at the
+         left end; the label sits above the number at 10px. -->
+    <a class="sb-btn sb-btn--call" href={site.phoneHref}>
+      <i class="sb-ic fas fa-phone-alt" aria-hidden="true"></i>
+      <span class="sb-txt">
+        <span class="sb-lead">Get an Estimate</span><br />{site.phone}
+      </span>
+    </a>
+    <!-- #89ec862 — filled navy. -->
+    <button class="sb-btn sb-btn--msg" type="button" data-popup="popup-quote">
+      <i class="sb-ic far fa-paper-plane" aria-hidden="true"></i>
+      <span class="sb-txt">Send a Message</span>
+    </button>
+  </div>
 </div>
 
 <style>
-  /* The original draws an icon on each of these; the port had neither. */
-  .sb-ic { margin-inline-end: 8px; }
-  .stickybar {
+  /* #b853c7a — the wrapper is only as wide as its content width, centred, and
+     transparent: the white background it carries on the live site is the page
+     behind it, not part of the bar. */
+  .sb-wrap {
     position: fixed;
-    left: 0;
-    right: 0;
+    left: 50%;
     bottom: 0;
+    transform: translateX(-50%);
     z-index: 900;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    padding: 10px 14px;
-    background: linear-gradient(180deg, rgba(21, 51, 76, 0.92), rgba(21, 51, 76, 0.98));
-    /* fadeInUp, 1000ms delay — matches the live animation */
+    width: 30%;
+    /* fadeInUp, 1000ms delay — matches the live animation. The translateX is
+       the centring, so the hidden state has to repeat it alongside the lift. */
+    transform: translateX(-50%) translateY(14px);
     opacity: 0;
-    transform: translateY(14px);
-    transition: opacity 0.45s ease, transform 0.45s ease;
     pointer-events: none;
+    transition: opacity 0.45s ease, transform 0.45s ease;
   }
-  .stickybar[data-shown] { opacity: 1; transform: none; pointer-events: auto; }
+  .sb-wrap[data-shown] {
+    opacity: 1;
+    transform: translateX(-50%);
+    pointer-events: auto;
+  }
 
+  /* #1bf9457 */
+  .sb-pill {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 5px 20px;
+    padding: 8px 10px 5px;
+    border-radius: 25px 25px 0 0;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
+    background-image: linear-gradient(
+      49deg,
+      var(--e-global-color-d077a13) 0%,
+      var(--e-global-color-8c22d81) 100%
+    );
+  }
+
+  /* Both buttons are "align: justify" widgets at 47% of the pill, so the
+     anchor fills its share and centres its own content. */
   .sb-btn {
+    width: 47%;
+    max-width: 47%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-family: 'Poppins', sans-serif;
+    font-size: 16px;
     font-weight: 500;
-    font-size: 15px;
-    line-height: 1.2;
-    text-decoration: none;
+    line-height: 1em;
+    color: #ffffff;
     text-align: center;
-    padding: 10px 20px;
-    border: 1px solid var(--e-global-color-a8178e9);
+    text-decoration: none;
+    border-style: solid;
+    border-color: var(--e-global-color-a8178e9); /* #99CC33 */
+    border-radius: 25px;
     cursor: pointer;
   }
-  .sb-btn--call {
-    background: var(--e-global-color-d077a13);
-    color: #fff;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-  .sb-lead { font-size: 12px; opacity: 0.85; }
-  .sb-num { white-space: nowrap; }
-  .sb-btn--msg { background: transparent; color: #fff; }
-  .sb-btn:hover { background: var(--e-global-color-a8178e9); color: #fff; }
+  .sb-ic { margin-inline-end: 8px; }
 
+  /* #556696d — no top border, and the text carries a shadow so it stays
+     legible against the gradient it lets through. */
+  .sb-btn--call {
+    background-color: transparent;
+    border-width: 0 3px 3px 0;
+    padding: 0 15px 5px;
+    text-shadow: 0 0 10px #020101;
+  }
+  .sb-lead { font-size: 10px; }
+
+  /* #89ec862 */
+  .sb-btn--msg {
+    background-color: var(--e-global-color-d077a13);
+    border-width: 1px 3px 3px 0;
+    padding: 8px 15px;
+  }
+
+  .sb-btn:hover,
+  .sb-btn:focus-visible {
+    background-color: var(--e-global-color-a8178e9);
+    color: #ffffff;
+  }
+
+  @media (max-width: 1024px) {
+    .sb-wrap { width: 70%; }
+  }
   @media (max-width: 767px) {
-    .stickybar { padding: 8px 10px; }
-    .sb-btn { flex: 1; padding: 9px 12px; font-size: 14px; }
+    .sb-wrap { width: 100%; }
+    .sb-pill { gap: 5px 10px; border-radius: 10px 10px 0 0; }
+    .sb-btn { width: 48%; max-width: 48%; font-size: 14px; }
+    .sb-btn--call { padding: 5px 10px; }
+    .sb-btn--msg { padding: 10px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .stickybar { transition: none; }
+    .sb-wrap { transition: none; }
   }
 </style>
 
