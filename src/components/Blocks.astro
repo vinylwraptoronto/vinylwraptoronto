@@ -572,6 +572,7 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
                      or not the column sits on a colour of its own. */
                   c.border ? c.border : '',
                   c.shadow ? `box-shadow:${c.shadow}` : '',
+                  c.radius ? `border-radius:${c.radius}` : '',
                 ].filter(Boolean).join(';');
                 return (
                   <div class:list={['col', { 'col--tinted': tinted }]} style={style}>

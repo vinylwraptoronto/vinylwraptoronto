@@ -197,9 +197,11 @@ export type ColumnsBlock = {
     padding?: string | null;
     /** Elementor writes these on `.elementor-element-populated`, which is the
         column box itself here — e.g. the FAQ hero's navy panel carries a 2px
-        pink bottom border and a drop shadow. */
+        pink bottom border and a drop shadow. Backfilled from the original for
+        every page whose columns could be matched to it. */
     border?: string | null;
     shadow?: string | null;
+    radius?: string | null;
   }[];
 };
 
