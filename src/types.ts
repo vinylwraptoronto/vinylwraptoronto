@@ -195,6 +195,11 @@ export type ColumnsBlock = {
     blocks: Block[];
     background?: string | null;
     padding?: string | null;
+    /** Elementor writes these on `.elementor-element-populated`, which is the
+        column box itself here — e.g. the FAQ hero's navy panel carries a 2px
+        pink bottom border and a drop shadow. */
+    border?: string | null;
+    shadow?: string | null;
   }[];
 };
 

@@ -568,6 +568,10 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
                   `--col-w:${c.width}%`,
                   tinted ? `background-color:${c.background}` : '',
                   tinted && c.padding ? `padding:${c.padding}` : '',
+                  /* Not gated on `tinted`: a border or shadow is drawn whether
+                     or not the column sits on a colour of its own. */
+                  c.border ? c.border : '',
+                  c.shadow ? `box-shadow:${c.shadow}` : '',
                 ].filter(Boolean).join(';');
                 return (
                   <div class:list={['col', { 'col--tinted': tinted }]} style={style}>
@@ -666,10 +670,19 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
      flex line rather than a fixed grid — 50+50, 33+33+33 and 25x4 all fall out
      of the same rule. Without this the columns stacked, which made a section
      that is 440px tall on the live site render at 1642px. */
+  /* Columns stretch to the row's height, which is Elementor's default:
+     frontend.min.css sets `.elementor-section .elementor-container{display:flex}`
+     with no align-items, and a section only opts out by carrying
+     elementor-section-items-top / -middle / -bottom. Across every original page
+     captured for this port — 23 sections — not one does.
+
+     This said flex-start, so a column was only ever as tall as its content: on
+     /car-wrap-faqs/ the navy panel beside the diagram stopped after its two
+     lines of heading instead of filling the row. */
   .cols {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 0 20px;
     width: 100%;
   }
