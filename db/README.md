@@ -147,7 +147,46 @@ password in the wrong hands.
 ## Writing posts
 
 `/admin/posts/` lists everything; `/admin/posts/new/` writes one. Migration
-0005 adds the SEO columns and `post_revisions`; 0006 adds `deleted_posts`.
+0005 adds the SEO columns and `post_revisions`; 0006 adds `deleted_posts`; 0012
+adds `faq_json`.
+
+### What the editor sets
+
+| | |
+|---|---|
+| Content | title, permalink, body, excerpt, cover image, author, publish date, status |
+| Body | H1–H4 and paragraph, bold/italic, bulleted and numbered lists, quote, link, **table**, image (alt text is asked for on insert), and a raw-HTML view |
+| Keywords | one focus keyword, plus **secondary keywords** as chips |
+| Metadata | SEO title, meta description, canonical URL, robots flags, breadcrumb title |
+| Social | og title/description/image, Twitter card/title/description |
+| Taxonomy | categories (tick existing or **type a new one**), **tags**, vehicle brands |
+| Schema | article type, and a **FAQ** list that publishes as both an accordion and a `FAQPage` node |
+
+Three notes on the ones that are not obvious:
+
+**Secondary keywords** are scored as a single check, not one per keyword, so
+adding a fifth cannot dilute a post that already covers four. The check does
+not appear at all when none are set — a post that does not use them is not
+doing anything wrong, and the score's denominator should not move.
+
+**H1 is offered but flagged.** `buildSections` already prints an H1 from the
+post title, so an H1 typed into the body is a second one on the page; the
+analyser scores that as a fault. The sanitiser allows `h1` through rather than
+stripping it, because a button that appears to work while its output silently
+vanishes on save is worse than one that works and warns.
+
+**A new category has no archive page.** The `/blogs/…` archives are ported
+pages, so `terms.href` is left null for anything created here: claiming an
+address would publish a link to a 404. The post is filed immediately and its
+card badge shows the name — the badge is text, not a link — but the category
+will not appear in the blog sidebar's dropdown, which is built from terms that
+have an href, until an archive exists.
+
+Tags had a bug worth recording: the save route deletes every `post_terms` row
+and re-inserts what the form submitted, and tags were never rendered as form
+fields, so **saving an imported post through the editor silently dropped its
+tags**. The tags field is populated from the post's existing tags, which is
+what fixes it.
 
 ### How a post becomes a page
 

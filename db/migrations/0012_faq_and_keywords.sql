@@ -1,0 +1,24 @@
+-- FAQ blocks on a post.
+--
+-- The renderer has drawn an `faq` block since the port -- Blocks.astro turns it
+-- into the same <details>/<summary> accordion the original site uses -- but
+-- there was no way to author one and nowhere to keep it. This is that store.
+--
+-- Held as JSON rather than a table of rows because it is an ordered list that
+-- only ever belongs to one post, is always read and written whole, and is never
+-- queried across posts. A post_faqs table would buy nothing and cost a join on
+-- every save.
+--
+-- Shape: [{"q": "...", "a": "..."}], matching the block type in src/types.ts, so
+-- src/lib/postdoc.ts can hand it to the renderer untouched.
+--
+-- src/lib/postdoc.ts also emits a schema.org FAQPage node from it, which is the
+-- part Rank Math charges for and the reason to have it: it is what puts the
+-- expandable questions under a result in Google.
+--
+-- Secondary keywords needed no column: 0005 already added extra_keywords, and
+-- src/lib/seo.ts already declares extraKeywords on its input. Both were dead --
+-- nothing wrote the column and nothing read the field -- so this migration
+-- leaves the schema alone there and the code change wires up what exists.
+
+ALTER TABLE posts ADD COLUMN faq_json TEXT;

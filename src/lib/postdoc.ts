@@ -54,6 +54,22 @@ export interface PostDoc {
   robotsIndex?: boolean;
   robotsFollow?: boolean;
   robotsAdvanced?: string[];
+  /** Question/answer pairs. Rendered as an accordion and as a FAQPage node. */
+  faq?: { q: string; a: string }[];
+}
+
+/**
+ * The FAQ pairs worth publishing: both halves filled, trimmed, and capped.
+ *
+ * Google's FAQPage guidance is that the markup must match what the page shows,
+ * so this one function decides for both the rendered accordion and the schema
+ * — they cannot drift into disagreeing about which questions exist.
+ */
+function faqItems(post: PostDoc): { q: string; a: string }[] {
+  return (post.faq ?? [])
+    .map((f) => ({ q: String(f?.q ?? '').trim(), a: String(f?.a ?? '').trim() }))
+    .filter((f) => f.q && f.a)
+    .slice(0, 30);
 }
 
 const SITE = 'https://vinylwraptoronto.com';
@@ -73,7 +89,12 @@ const IMG_HOST = 'https://img.vinylwraptoronto.com';
  */
 const ALLOWED_TAGS = new Set([
   'p', 'br', 'hr', 'strong', 'b', 'em', 'i', 'u', 's', 'sub', 'sup', 'mark',
-  'h2', 'h3', 'h4', 'h5', 'h6',
+  /* h1 is allowed through because the editor offers an H1 button. It is not
+     advice to use one: the page already prints an H1 built from the title, so
+     a body H1 is a second one, and src/lib/seo.ts scores that as a fault.
+     Stripping it here instead would have been worse — the button would appear
+     to work and the heading would vanish on save with nothing said. */
+  'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
   'ul', 'ol', 'li', 'blockquote', 'pre', 'code',
   'a', 'img', 'figure', 'figcaption',
   'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption',
@@ -233,8 +254,19 @@ export function buildSections(post: PostDoc): Section[] {
     },
   ];
 
+  /* The FAQ sits under the body, inside the same column, so it inherits the
+     body's width and the table of contents keeps its place beside it. The
+     renderer has drawn `faq` blocks since the port -- the same
+     <details>/<summary> accordion the original uses -- so this needs no new
+     rendering, only somewhere to put the block. */
   const bodyBlocks: Block[] = [
     { type: 'text', html: post.bodyHtml, style: BODY_STYLE },
+    ...(faqItems(post).length
+      ? ([
+          { type: 'heading', level: 2, text: 'Frequently Asked Questions' },
+          { type: 'faq', items: faqItems(post) },
+        ] as Block[])
+      : []),
   ];
 
   return [
@@ -407,6 +439,26 @@ function buildLd(post: PostDoc, url: string, image: string | null): unknown {
     });
   }
 
+  /* FAQPage — the node that can put expandable questions under the result.
+     Built from the same faqItems() the accordion renders, because Google
+     requires the markup to match the visible page and drops the rich result
+     (or penalises it) when it does not. The answer is plain text: the
+     accordion may hold markup, but answerText is specified as text and
+     shipping tags in it is the most common way this node gets rejected. */
+  const faq = faqItems(post);
+  if (faq.length) {
+    graph.push({
+      '@type': 'FAQPage',
+      '@id': `${url}#faq`,
+      isPartOf: { '@id': url },
+      mainEntity: faq.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: stripTags(f.a) },
+      })),
+    });
+  }
+
   return { '@context': 'https://schema.org', '@graph': graph };
 }
 
@@ -414,15 +466,24 @@ function buildLd(post: PostDoc, url: string, image: string | null): unknown {
  * Small helpers the editor and the save route share
  * ------------------------------------------------------------------ */
 
-/** First ~155 characters of real text, for an excerpt the author left blank. */
-export function excerptFrom(html: string, limit = 155): string {
-  const text = html
+/** The visible words of a fragment, with the markup taken out. */
+export function stripTags(html: string): string {
+  return html
     .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&nbsp;/gi, ' ')
     .replace(/&amp;/gi, '&')
     .replace(/\s+/g, ' ')
+    /* Tags become spaces, so "years<\/b>." would otherwise read "years ." —
+       visible in an excerpt and in the FAQ answer text that ships in schema. */
+    .replace(/\s+([,.;:!?%)\]])/g, '$1')
+    .replace(/([(\[])\s+/g, '$1')
     .trim();
+}
+
+/** First ~155 characters of real text, for an excerpt the author left blank. */
+export function excerptFrom(html: string, limit = 155): string {
+  const text = stripTags(html);
   if (text.length <= limit) return text;
   const cut = text.slice(0, limit);
   const space = cut.lastIndexOf(' ');

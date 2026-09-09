@@ -314,6 +314,39 @@ export function analyse(input: SeoInput): SeoReport {
         ? 'Every image has alt text.'
         : `${imagesMissingAlt} of ${imgTags.length} images have no alt text.`);
 
+  /* Secondary keywords.
+     One check for the set rather than one per keyword, so adding a fifth
+     keyword cannot dilute the score of a post that already covers four. It is
+     unweighted-neutral when none are set: a post that does not use secondary
+     keywords is not doing anything wrong, so the check does not appear at all
+     and the denominator does not move. */
+  const extras = (input.extraKeywords ?? [])
+    .map((k) => k.trim())
+    .filter(Boolean)
+    .slice(0, 20);
+  if (extras.length) {
+    const covered = extras.filter((k) => {
+      const p = keywordPattern(k);
+      return p ? has(foldedText, p) || has(foldedTitle, p) || has(headingText, p) : false;
+    });
+    const missing = extras.filter((k) => !covered.includes(k));
+    add('kw-secondary', 'additional', 2,
+      covered.length === extras.length ? 'good' : covered.length > 0 ? 'warn' : 'bad',
+      covered.length === extras.length
+        ? `All ${extras.length} secondary keyword${extras.length === 1 ? ' appears' : 's appear'} in the post.`
+        : `${covered.length} of ${extras.length} secondary keywords appear. Missing: ${missing.slice(0, 4).join(', ')}${missing.length > 4 ? '…' : ''}.`);
+  }
+
+  /* The page already prints an H1 built from the title — see buildSections in
+     src/lib/postdoc.ts — so an H1 typed into the body is a second one on the
+     page. The toolbar offers H1 because it was asked for; this is the guard
+     that says when using it costs something. */
+  const bodyH1s = (bodyHtml.match(/<h1\b[^>]*>/gi) ?? []).length;
+  if (bodyH1s > 0) {
+    add('single-h1', 'additional', 2, 'bad',
+      `The body has ${bodyH1s} H1 heading${bodyH1s === 1 ? '' : 's'}. The post title is already the page's H1, so use H2 below it.`);
+  }
+
   /* ---- title readability ---- */
 
   const titleLength = seoTitle.length;

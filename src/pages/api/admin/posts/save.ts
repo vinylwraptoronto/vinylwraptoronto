@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { guardWrite, jsonResponse } from '../../../../lib/adminroute';
-import { analyse } from '../../../../lib/seo';
+import { analyse, slugify } from '../../../../lib/seo';
 import {
   buildHead,
   buildSections,
@@ -129,6 +129,24 @@ export const POST: APIRoute = async ({ request, locals, cookies, url }) => {
     .map(String)
     .filter((f) => ['noarchive', 'nosnippet', 'noimageindex'].includes(f));
 
+  /* Secondary keywords. Deduplicated case-insensitively so "Car Wrap" and
+     "car wrap" cannot both count against the coverage check. */
+  const extraKeywords: string[] = [];
+  for (const raw of form.getAll('extra_keyword').map((k) => String(k).trim().slice(0, 120))) {
+    if (raw && !extraKeywords.some((k) => k.toLowerCase() === raw.toLowerCase())) extraKeywords.push(raw);
+    if (extraKeywords.length >= 20) break;
+  }
+
+  /* FAQ. The two field arrays are positional, so a question and its answer are
+     paired by index; a row with either half blank is dropped rather than
+     published half-written. */
+  const faqQs = form.getAll('faq_q').map((q) => String(q).trim().slice(0, 300));
+  const faqAs = form.getAll('faq_a').map((a) => String(a).trim().slice(0, 2000));
+  const faq = faqQs
+    .map((q, i) => ({ q, a: faqAs[i] ?? '' }))
+    .filter((f) => f.q && f.a)
+    .slice(0, 30);
+
   const doc: PostDoc = {
     slug,
     title,
@@ -153,6 +171,7 @@ export const POST: APIRoute = async ({ request, locals, cookies, url }) => {
     robotsIndex: form.get('robots_index') !== null,
     robotsFollow: form.get('robots_follow') !== null,
     robotsAdvanced: advanced,
+    faq,
   };
 
   // Our own analysis of what was actually submitted.
@@ -163,6 +182,7 @@ export const POST: APIRoute = async ({ request, locals, cookies, url }) => {
     slug,
     bodyHtml,
     focusKeyword,
+    extraKeywords,
   });
 
   const willRelayout = origin === 'authored' || relayout || !existing;
@@ -203,6 +223,8 @@ export const POST: APIRoute = async ({ request, locals, cookies, url }) => {
     doc.schemaType, doc.breadcrumbTitle,
     doc.robotsIndex ? 1 : 0, doc.robotsFollow ? 1 : 0, JSON.stringify(advanced),
     nextOrigin, session.userId,
+    extraKeywords.length ? JSON.stringify(extraKeywords) : null,
+    faq.length ? JSON.stringify(faq) : null,
   ];
 
   let postId = id;
@@ -219,6 +241,7 @@ export const POST: APIRoute = async ({ request, locals, cookies, url }) => {
            schema_type = ?, breadcrumb_title = ?,
            robots_index = ?, robots_follow = ?, robots_advanced = ?,
            origin = ?, updated_by = ?,
+           extra_keywords = ?, faq_json = ?,
            modified_at = datetime('now'), updated_at = datetime('now')
            ${sectionsJson === null ? '' : ', sections_json = ?'}
          WHERE id = ?`,
@@ -238,8 +261,9 @@ export const POST: APIRoute = async ({ request, locals, cookies, url }) => {
            schema_type, breadcrumb_title,
            robots_index, robots_follow, robots_advanced,
            origin, updated_by,
+           extra_keywords, faq_json,
            sections_json, modified_at
-         ) VALUES (${new Array(29).fill('?').join(', ')}, ?, datetime('now'))`,
+         ) VALUES (${new Array(31).fill('?').join(', ')}, ?, datetime('now'))`,
       )
       .bind(...shared, sectionsJson)
       .run();
@@ -251,8 +275,50 @@ export const POST: APIRoute = async ({ request, locals, cookies, url }) => {
   /* ---- taxonomy ---- */
 
   const terms = form.getAll('term').map((t) => Number(String(t))).filter((n) => Number.isInteger(n) && n > 0);
+
+  /* Categories and tags typed rather than ticked.
+   *
+   * Find-or-create by (taxonomy, slug), which is the table's unique key, so
+   * typing an existing name files the post under the existing term instead of
+   * making a near-duplicate. `href` is deliberately left null: it is the
+   * address of the term's archive page, and those are ported pages under
+   * /blogs/. A term created here has no archive yet, so claiming one would
+   * publish a link to a 404. Nothing breaks meanwhile -- the card badge prints
+   * the category name as text, not a link, and the sidebar dropdown is built
+   * from terms that have an href.
+   */
+  const findOrCreateTerm = async (taxonomy: 'category' | 'tag', rawName: string): Promise<number | null> => {
+    const name = rawName.trim().slice(0, 120);
+    if (!name) return null;
+    const slug = slugify(name).slice(0, 120);
+    if (!slug) return null;
+    const found = await db
+      .prepare('SELECT id FROM terms WHERE taxonomy = ? AND slug = ?')
+      .bind(taxonomy, slug)
+      .first<{ id: number }>();
+    if (found) return found.id;
+    await db
+      .prepare('INSERT OR IGNORE INTO terms (taxonomy, slug, name) VALUES (?, ?, ?)')
+      .bind(taxonomy, slug, name)
+      .run();
+    const made = await db
+      .prepare('SELECT id FROM terms WHERE taxonomy = ? AND slug = ?')
+      .bind(taxonomy, slug)
+      .first<{ id: number }>();
+    return made?.id ?? null;
+  };
+
+  for (const raw of form.getAll('new_category').map(String).slice(0, 10)) {
+    const tid = await findOrCreateTerm('category', raw);
+    if (tid) terms.push(tid);
+  }
+  for (const raw of form.getAll('tag').map(String).slice(0, 40)) {
+    const tid = await findOrCreateTerm('tag', raw);
+    if (tid) terms.push(tid);
+  }
+
   await db.prepare('DELETE FROM post_terms WHERE post_id = ?').bind(postId).run();
-  for (const termId of terms.slice(0, 60)) {
+  for (const termId of [...new Set(terms)].slice(0, 80)) {
     await db
       .prepare('INSERT OR IGNORE INTO post_terms (post_id, term_id) VALUES (?, ?)')
       .bind(postId, termId)

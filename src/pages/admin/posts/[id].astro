@@ -40,7 +40,19 @@ interface PostRow {
   twitter_card: string | null; twitter_title: string | null; twitter_description: string | null;
   schema_type: string | null; breadcrumb_title: string | null;
   robots_index: number; robots_follow: number; robots_advanced: string | null;
+  extra_keywords: string | null; faq_json: string | null;
   featured_path: string | null; og_image_path: string | null;
+}
+
+/** A stored JSON column, or the fallback if it is null or was corrupted. */
+function parseJson<T>(raw: string | null | undefined, fallback: T): T {
+  if (!raw) return fallback;
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) === Array.isArray(fallback) ? (v as T) : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 let post: PostRow | null = null;
@@ -58,12 +70,15 @@ if (!isNew) {
   if (!post) return Astro.redirect('/admin/posts/?e=gone', 302);
 }
 
-const [authors, categories, brands, chosen, revisions] = await Promise.all([
+const [authors, categories, brands, tags, chosen, revisions] = await Promise.all([
   db.prepare('SELECT id, name FROM authors ORDER BY name').all<{ id: number; name: string }>(),
   db.prepare("SELECT id, slug, name FROM terms WHERE taxonomy='category' ORDER BY name").all<
     { id: number; slug: string; name: string }
   >(),
   db.prepare("SELECT id, name FROM terms WHERE taxonomy='brand' ORDER BY name").all<
+    { id: number; name: string }
+  >(),
+  db.prepare("SELECT id, name FROM terms WHERE taxonomy='tag' ORDER BY name").all<
     { id: number; name: string }
   >(),
   isNew
@@ -78,7 +93,14 @@ const [authors, categories, brands, chosen, revisions] = await Promise.all([
 ]);
 
 const chosenIds = new Set(chosen.results.map((r) => r.term_id));
-const advanced: string[] = post?.robots_advanced ? JSON.parse(post.robots_advanced) : [];
+const advanced: string[] = parseJson<string[]>(post?.robots_advanced, []);
+const extraKeywords = parseJson<string[]>(post?.extra_keywords, []);
+const faq = parseJson<{ q: string; a: string }[]>(post?.faq_json, []);
+/* Tags come back as names, not ids: the field lets an editor type one that
+   does not exist yet, and the save route finds-or-creates by name. Sending
+   ids for the existing ones and names for the new ones would need two
+   codepaths on both sides for no gain. */
+const chosenTags = tags.results.filter((t) => chosenIds.has(t.id)).map((t) => t.name);
 const saved = Astro.url.searchParams.get('saved') === '1';
 
 /* A new post opens on the defaults from /admin/settings/; an existing one
@@ -157,9 +179,16 @@ const v = {
           <div class="toolbar" role="toolbar" aria-label="Formatting">
             <button type="button" data-cmd="bold" title="Bold"><b>B</b></button>
             <button type="button" data-cmd="italic" title="Italic"><i>I</i></button>
+            {/* H1 is offered because it was asked for, but the page already
+                prints an H1 built from the post title, so using it makes a
+                second one. The SEO panel flags that rather than the toolbar
+                hiding the button. */}
+            <button type="button" data-block="h1" title="Heading 1 — the title is already the page's H1">H1</button>
             <button type="button" data-block="h2" title="Heading 2">H2</button>
             <button type="button" data-block="h3" title="Heading 3">H3</button>
+            <button type="button" data-block="h4" title="Heading 4">H4</button>
             <button type="button" data-block="p" title="Paragraph">¶</button>
+            <button type="button" data-table title="Insert a table">Table</button>
             <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button>
             <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
             <button type="button" data-block="blockquote" title="Quote">❝</button>
@@ -180,6 +209,26 @@ const v = {
           <h2>Excerpt</h2>
           <textarea name="excerpt" id="ed-excerpt" rows="3" maxlength="320"
                     placeholder="Left blank, the first sentences of the post are used.">{v.excerpt}</textarea>
+        </div>
+
+        <div class="card">
+          <h2>FAQ</h2>
+          <p class="hint">
+            Questions are published under the post as an accordion and as FAQPage structured
+            data — the markup that can put expandable questions under the Google result. Both
+            come from this one list, because Google requires the schema to match what the page
+            actually shows. A row needs both halves to be published.
+          </p>
+          <div id="ed-faq" class="faqrows">
+            {faq.map((f) => (
+              <div class="faqrow">
+                <input type="text" name="faq_q" value={f.q} maxlength="300" placeholder="Question" />
+                <textarea name="faq_a" rows="3" maxlength="2000" placeholder="Answer">{f.a}</textarea>
+                <button type="button" class="faqdel" aria-label="Remove this question">Remove</button>
+              </div>
+            ))}
+          </div>
+          <button type="button" id="ed-faq-add" class="ghost">Add a question</button>
         </div>
 
         <!-- The SEO panel, in Rank Math's shape: a score, a SERP preview, and
@@ -204,6 +253,23 @@ const v = {
               <input type="text" name="focus_keyword" id="ed-focus" value={v.focus} maxlength="120"
                      placeholder="The phrase this post should rank for" autocomplete="off" />
               <p class="hint">One phrase. Everything below is measured against it.</p>
+            </div>
+
+            <div class="field">
+              <label for="ed-kw2-input">Secondary keywords</label>
+              <input type="text" id="ed-kw2-input" maxlength="120" autocomplete="off"
+                     placeholder="Type a phrase and press Enter"
+                     data-chip-input="ed-kw2" data-chip-name="extra_keyword" />
+              <div class="chips" id="ed-kw2">
+                {extraKeywords.map((k) => (
+                  <span class="chip">{k}<input type="hidden" name="extra_keyword" value={k} /><button type="button" aria-label={`Remove ${k}`}>×</button></span>
+                ))}
+              </div>
+              <p class="hint">
+                Related phrases the post should also cover. They are checked against the body,
+                the SEO title and the subheadings, and reported as one score line — adding more
+                does not dilute a post that already covers the rest.
+              </p>
             </div>
 
             <div class="serp" aria-label="Google preview">
@@ -354,6 +420,30 @@ const v = {
               </label>
             ))}
           </div>
+          <input type="text" id="ed-newcat-input" maxlength="120" autocomplete="off"
+                 placeholder="New category, then Enter"
+                 data-chip-input="ed-newcat" data-chip-name="new_category" />
+          <div class="chips" id="ed-newcat"></div>
+          <p class="hint">
+            A new category files the post immediately. Its archive page under /blogs/ is not
+            generated, so it will not appear in the blog sidebar's category dropdown until one
+            exists — the badge on the post card still shows the name.
+          </p>
+        </div>
+
+        <div class="card">
+          <h2>Tags</h2>
+          <input type="text" id="ed-tag-input" list="ed-tags" maxlength="120" autocomplete="off"
+                 placeholder="Type a tag, then Enter" data-chip-input="ed-tagchips" data-chip-name="tag" />
+          <datalist id="ed-tags">
+            {tags.results.map((t) => <option value={t.name}></option>)}
+          </datalist>
+          <div class="chips" id="ed-tagchips">
+            {chosenTags.map((t) => (
+              <span class="chip">{t}<input type="hidden" name="tag" value={t} /><button type="button" aria-label={`Remove ${t}`}>×</button></span>
+            ))}
+          </div>
+          <p class="hint">Pick from the {tags.results.length} existing tags or type a new one.</p>
         </div>
 
         <div class="card">
@@ -484,6 +574,34 @@ const v = {
   .check input { width: auto; }
 
   .termlist { max-height: 220px; overflow-y: auto; padding-right: 4px; }
+
+  /* One FAQ row: question, answer, and a way out. The Remove button sits at
+     the end rather than beside the question so it cannot be hit while reaching
+     for the field. */
+  .faqrows { display: flex; flex-direction: column; gap: 14px; margin: 12px 0; }
+  .faqrow {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fafbfc;
+  }
+  .faqrow input,
+  .faqrow textarea { width: 100%; }
+  .faqdel {
+    align-self: flex-start;
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .faqdel:hover { color: #b3261e; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; background: #eef1f4; border-radius: 20px; font-size: 13px; }
   .chip button { background: none; border: 0; cursor: pointer; font-size: 15px; line-height: 1; color: var(--muted); padding: 0; }
