@@ -238,6 +238,34 @@ import {
   }
   .card h4 { color: var(--e-global-color-d077a13); }
 
+  /* #4b3afc2 — the footer form's own submit button: green, white, and the
+     full width of the card, because its field group is elementor-col-100.
+     Hover goes pink, not lighter.
+
+     This had been removed when the quote column became a white card, on the
+     reading that the overrides beside it existed only to make dark labels
+     legible on navy. Two of them did; this one is the button's actual styling,
+     and dropping it left a narrow navy button where the original has a green
+     bar. The form's own .qbtn is navy and auto-width because that is right in
+     the popup and on /contact/ — this is the footer instance only. */
+  .card :global(.qbtn) {
+    align-self: stretch;
+    width: 100%;
+    text-align: center;
+    background-color: var(--e-global-color-a8178e9); /* #99CC33 */
+    color: #ffffff;
+  }
+  .card :global(.qbtn:hover) {
+    background-color: var(--e-global-color-f32bb28); /* #FF0099 */
+    color: #ffffff;
+  }
+
+  /* #3a97c8c6 — the heading is left-aligned at 20px on desktop, and centred at
+     24px once the card goes full width below 1025px. */
+  @media (max-width: 1024px) {
+    .card h4 { text-align: center; font-size: 24px; }
+  }
+
   /* #491c6798 — 20px navy glyphs on white, 12px apart, centred; hovering
      fills the badge green with a white glyph. */
   .social {
