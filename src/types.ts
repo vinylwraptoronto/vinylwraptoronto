@@ -120,17 +120,17 @@ export type Block = (
   | { type: 'map'; src: string }
   /* Elementor's filterable gallery. It ships no <img>; the picture URLs are the
      lightbox anchor hrefs and `tag` indexes into `filters`. */
-  | {
+  | ({
       type: 'filtergallery';
       filters: { index: string; label: string }[];
       items: { src: string; title: string; tag: string; alt?: string }[];
-    }
+    } & GalleryGrid)
   | {
       type: 'postnav';
       prev?: { href: string; text: string };
       next?: { href: string; text: string };
     }
-  | { type: 'gallery'; images: { src: string; alt: string }[] }
+  | ({ type: 'gallery'; images: { src: string; alt: string }[] } & GalleryGrid)
   /* A real carousel. Timing and slides-per-view come from the widget's own
      data-settings, not from CSS. */
   | {
@@ -180,6 +180,24 @@ export type Block = (
       Elementor expresses these as a class acted on by its global stylesheet,
       which the port never carried, so hidden widgets showed everywhere. */
   hide?: string[];
+};
+
+/** Grid settings an Elementor gallery widget declares for itself: how many
+    columns at each breakpoint, the crop each tile is shown in, and the gutter.
+    The port read none of these and rendered every gallery through one auto-fill
+    rule at 4:3 with a 14px gap, which put four tiles across where the original
+    puts three and cut the sides off every photograph. They vary per widget —
+    of 42 galleries, 24 are 3-up at 16:9 and the rest are 4- or 5-up, several at
+    3:2 — so they are carried per block rather than set once in CSS. */
+export type GalleryGrid = {
+  cols?: number | null;
+  colsTablet?: number | null;
+  colsMobile?: number | null;
+  /** Elementor's own notation, e.g. "16:9". */
+  aspect?: string | null;
+  gap?: number | null;
+  gapTablet?: number | null;
+  gapMobile?: number | null;
 };
 
 /** An Elementor row: columns side by side, each with its own percentage width.

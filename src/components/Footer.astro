@@ -103,12 +103,16 @@ import {
         <li><a href={l.href}>{l.text}</a></li>
       ))}
     </ul>
+    {/* Both lines are heading widgets on the live site (#23c23594, #36dbd408)
+        and render as h5, not paragraphs. They carry no visual weight of their
+        own — the styling below restates what the two element rules set — but
+        the tags are part of the page's outline, so they match the original. */}
     <div class="by">
-      <p class="copyright">{credit.copyright}</p>
-      <p>
+      <h5 class="copyright">{credit.copyright}</h5>
+      <h5>
         {credit.byPrefix}{' '}
         <a class="byname" href={credit.byHref} target="_blank" rel="noopener">{credit.byName}</a>
-      </p>
+      </h5>
     </div>
   </div>
   </div>
@@ -307,8 +311,11 @@ import {
     color: var(--e-global-color-text);
   }
   .creditbar { background: #ffffff; }
-  .credit p { margin: 0; }
-  /* #23c23594 is 15px, #36dbd408 12px, both 25px leading and weight 300. */
+  .credit p,
+  .credit h5 { margin: 0; }
+  /* #23c23594 is 15px, #36dbd408 12px, both 25px leading and weight 300. The
+     h5s take their size and weight from here, not from the heading default. */
+  .credit h5 { font-size: inherit; font-weight: inherit; line-height: inherit; }
   .credit .copyright { font-size: 15px; }
   .by {
     width: 60%;

@@ -13,8 +13,11 @@ export const wantToPopup = {
   title: 'I want to',
   columns: [
     {
-      /* Title Case on the live template: "Get A Wrap", not "Get a wrap". */
-      heading: 'Get A Wrap',
+      /* Sentence case in the markup. It *reads* as "Get A Wrap" only because
+         the live kit puts text-transform:capitalize on every h3; hard-coding
+         the capitals here and turning that rule off produced the same picture
+         by the wrong means, and diverged from the source text. */
+      heading: 'Get a wrap',
       links: [
         { text: 'Get a car wrap', href: '/car-wraps/' },
         { text: 'Get a boat wrap', href: '/boat-wrap-toronto/' },
@@ -58,13 +61,21 @@ export const quotePopup = {
   id: 'popup-quote',
   title: 'Request a Quote',
   orLabel: 'OR',
+  /* Each contact is an Elementor icon-box on the live template — a 35px icon
+     above a 10px label, both linked — not a bordered pill with a chevron. The
+     icons are the widget's own, one per channel; the port used the same
+     chevron-circle-right for all three. */
   contacts: [
-    { text: 'Call Us', href: 'tel:416-746-1381' },
+    { text: 'Call Us', href: 'tel:416-746-1381', icon: 'fas fa-phone-alt' },
     {
+      /* 416-746-1381, the number the live site sends WhatsApp to and the same
+         one behind every tel: link on the site. The port had 416-822-3232 here,
+         so this button opened a chat with the wrong number on every page. */
       text: 'WhatsApp Us',
-      href: 'https://api.whatsapp.com/send/?phone=14168223232&text=Hi,%20I%27m%20looking%20for%20a%20quote',
+      href: 'https://api.whatsapp.com/send/?phone=14167461381&text=Hi,%20I%27m%20looking%20for%20a%20quote',
+      icon: 'fab fa-whatsapp-square',
     },
-    { text: 'Email Us', href: 'mailto:info@VinylWrapToronto.com' },
+    { text: 'Email Us', href: 'mailto:info@VinylWrapToronto.com', icon: 'fas fa-envelope' },
   ],
 } as const;
 

@@ -9,7 +9,7 @@
 import Base from '../layouts/Base.astro';
 import Blocks from '../components/Blocks.astro';
 import ArchiveList from '../components/ArchiveList.astro';
-import type { PageData } from '../types';
+import type { Block, PageData } from '../types';
 import posts from '../data/posts.json';
 import additions from '../data/post-additions.json';
 import pageSeo from '../data/page-seo.json';
@@ -103,6 +103,20 @@ const extraMembers =
   (additions as { members?: Record<string, string[]> }).members?.[page.slug] ?? [];
 const archiveMembers = [...new Set([...(page.members ?? []), ...extraMembers])];
 
+/* The Limited Time Offer popup (Elementor template 22055) is not site-wide on
+   the original — it is emitted only on the addresses whose "Claim Now" button
+   opens it, which is 402 posts and a single page. The port put its markup
+   inside every page, so a hidden offer panel, and the 76 words in it, rode
+   along on all 676 addresses. Buttons can sit inside a columns block, so the
+   search has to descend into those. */
+const opensPopup = (blocks: Block[], id: string): boolean =>
+  blocks.some((b) =>
+    b.type === 'columns'
+      ? b.cols.some((c) => opensPopup(c.blocks, id))
+      : b.type === 'button' && b.popup === id,
+  );
+const needsOffer = page.sections.some((s) => opensPopup(s.blocks, 'popup-limited-offer'));
+
 const dateLabel = page.published
   ? new Date(page.published).toLocaleDateString('en-CA', {
       year: 'numeric',
@@ -120,6 +134,7 @@ const dateLabel = page.published
   robots={page.robots}
   head={page.head}
   pageCss={page.css}
+  offer={needsOffer}
 >
   {page.kind === 'post' && dateLabel && (
     <div class="postmeta">

@@ -10,6 +10,15 @@
 import QuoteForm from './QuoteForm.astro';
 import { wantToPopup, quotePopup, offerPopup } from '../data/popups';
 import { img } from '../lib/img';
+
+export interface Props {
+  /** The offer popup rides on the page only where a button opens it, which is
+      what the original does — 402 posts and one page, not all 676 addresses.
+      The other two are triggered from the header, sticky bar and footer, so
+      they belong on every page. */
+  offer?: boolean;
+}
+const { offer = false } = Astro.props;
 ---
 
 <div class="pop" id={wantToPopup.id} hidden role="dialog" aria-modal="true" aria-label={wantToPopup.title}>
@@ -35,43 +44,54 @@ import { img } from '../lib/img';
   </div>
 </div>
 
-<div class="pop" id={quotePopup.id} hidden role="dialog" aria-modal="true" aria-label={quotePopup.title}>
+<div class="pop pop--sheet" id={quotePopup.id} hidden role="dialog" aria-modal="true" aria-label={quotePopup.title}>
   <div class="pop-back" data-close></div>
-  <div class="pop-box">
-    <button class="pop-x" type="button" data-close aria-label="Close">&times;</button>
-    <h2 class="pop-title">{quotePopup.title}</h2>
+  <div class="pop-box pop-box--sheet">
+    <button class="pop-x pop-x--filled" type="button" data-close aria-label="Close">&times;</button>
+    <h4 class="pop-title">{quotePopup.title}</h4>
     <QuoteForm variant="popup" id="popup-quote-form" />
-    <p class="pop-or">{quotePopup.orLabel}</p>
+    <h4 class="pop-or">{quotePopup.orLabel}</h4>
     <ul class="pop-contacts">
       {quotePopup.contacts.map((c) => (
         <li>
-          <a href={img(c.href)} rel={c.href.startsWith('http') ? 'noopener' : undefined}>
-            <i class="fas fa-chevron-circle-right" aria-hidden="true"></i>{c.text}
+          <a
+            class="ic-icon"
+            href={img(c.href)}
+            tabindex="-1"
+            aria-hidden="true"
+            rel={c.href.startsWith('http') ? 'noopener' : undefined}
+          >
+            <i class={c.icon} aria-hidden="true"></i>
           </a>
+          <h4 class="ic-title">
+            <a href={img(c.href)} rel={c.href.startsWith('http') ? 'noopener' : undefined}>{c.text}</a>
+          </h4>
         </li>
       ))}
     </ul>
   </div>
 </div>
 
-<div class="pop" id={offerPopup.id} hidden role="dialog" aria-modal="true" aria-label={offerPopup.title}>
-  <div class="pop-back" data-close></div>
-  <div class="pop-box">
-    <button class="pop-x" type="button" data-close aria-label="Close">&times;</button>
-    <h2 class="pop-title">{offerPopup.title}</h2>
-    <ul class="offer-tiers">
-      {offerPopup.tiers.map((t) => (
-        <li>
-          <h3>{t.name}</h3>
-          <p class="offer-price">
-            <s>{t.was}</s> <strong>{t.now}</strong>
-          </p>
-        </li>
-      ))}
-    </ul>
-    <QuoteForm variant="popup" id="offer-form" products={offerPopup.products} />
+{offer && (
+  <div class="pop" id={offerPopup.id} hidden role="dialog" aria-modal="true" aria-label={offerPopup.title}>
+    <div class="pop-back" data-close></div>
+    <div class="pop-box">
+      <button class="pop-x" type="button" data-close aria-label="Close">&times;</button>
+      <h2 class="pop-title">{offerPopup.title}</h2>
+      <ul class="offer-tiers">
+        {offerPopup.tiers.map((t) => (
+          <li>
+            <h3>{t.name}</h3>
+            <p class="offer-price">
+              <s>{t.was}</s> <strong>{t.now}</strong>
+            </p>
+          </li>
+        ))}
+      </ul>
+      <QuoteForm variant="popup" id="offer-form" products={offerPopup.products} />
+    </div>
   </div>
-</div>
+)}
 
 <style>
   .offer-tiers { list-style: none; margin: 0 0 18px; padding: 0; }
@@ -84,6 +104,36 @@ import { img } from '../lib/img';
   .pop { position: fixed; inset: 0; z-index: 1000; display: flex; }
   .pop[hidden] { display: none; }
   .pop-back { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.6); }
+
+  /* Popup 17564, "Request a Quote". It is not a centred modal on a dimmed page,
+     which is what the port built. The live template is a bottom sheet:
+
+       #elementor-popup-modal-17564 { background-color:#F6C10000;
+                                      justify-content:center;
+                                      align-items:flex-end }
+       .dialog-widget-content { background:#FFFFFF; border-radius:5px 5px 0 0;
+                                box-shadow:2px 8px 23px 3px rgba(0,0,0,.2) }
+       .dialog-message { width:380px }   (100vw below 768px)
+       #47c1777 { flex column; gap:10px; padding:35px 10px 10px }
+
+     The overlay colour ends in 00 — it is fully transparent, so the page behind
+     is never dimmed. The top-only corner radius is what makes it read as a
+     sheet rising from the bottom edge. */
+  .pop--sheet { justify-content: center; align-items: flex-end; }
+  .pop--sheet .pop-back { background: transparent; }
+
+  .pop-box--sheet {
+    margin: 0;
+    width: min(380px, 100vw);
+    max-height: calc(100vh - 24px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 35px 10px 10px;
+    border-radius: 5px 5px 0 0;
+    border-bottom: 0;
+    box-shadow: 2px 8px 23px 3px rgba(0, 0, 0, 0.2);
+  }
 
   .pop-box {
     position: relative;
@@ -118,16 +168,42 @@ import { img } from '../lib/img';
   }
   #popup-want-to .pop-back { background: rgba(0, 0, 0, 0.8); }
 
+  /* Both templates set the close button to 25px; 18856 paints the glyph
+     #353535 and leaves it bare. Elementor's own dialog CSS gives it no padding
+     — the background, where one is set, hugs the glyph box. */
   .pop-x {
     position: absolute; top: 8px; right: 12px;
-    background: none; border: 0; cursor: pointer;
-    font-size: 30px; line-height: 1; color: var(--ink);
+    background: none; border: 0; cursor: pointer; padding: 0;
+    font-size: 25px; line-height: 1;
+    color: var(--e-global-color-f4d2693); /* #353535 */
   }
   .pop-x:hover { color: var(--brand-pink); }
+
+  /* 17564 puts it on a #14A278 ground with a white glyph, inset from the
+     panel by 3% / 4% rather than a fixed pixel offset. */
+  .pop-x--filled {
+    top: 3%; right: 4%;
+    display: flex; align-items: center; justify-content: center;
+    width: 1em; height: 1em;
+    background-color: var(--e-global-color-8c22d81); /* #14A278 */
+    color: var(--e-global-color-accent); /* #FFFFFF */
+  }
+  .pop-x--filled:hover { color: var(--e-global-color-accent); opacity: 0.85; }
 
   .pop-title {
     font-size: 26px; font-weight: 600; margin: 0 0 18px;
     color: var(--brand-navy); text-transform: none;
+  }
+
+  /* #d7bfa34 — centred, uppercase, weight 600, #353535, at the kit's h4 size
+     of 18px. The port had it left-aligned, sentence case and navy. */
+  .pop-box--sheet .pop-title {
+    margin: 0;
+    text-align: center;
+    text-transform: uppercase;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--e-global-color-f4d2693); /* #353535 */
   }
 
   /* #d996c21 — the title is centred, uppercase, weight 500 and pink. Ours was
@@ -146,7 +222,10 @@ import { img } from '../lib/img';
   .pop-col h3 {
     font-size: 20px; font-weight: 600; margin: 0 0 10px;
     color: var(--e-global-color-d077a13); /* #15334C */
-    text-transform: none;
+    /* Not "none": .elementor-kit-25 h3 capitalizes every h3 site-wide, and
+       these headings inherit it — which is why "Get a wrap" reads as
+       "Get A Wrap" on the live site. */
+    text-transform: capitalize;
   }
 
   /* #3b3eae4 / #b63873f / #44aa9a7 — identical icon lists: a 14px icon in
@@ -177,28 +256,97 @@ import { img } from '../lib/img';
   }
   .pop-col li:hover a { color: var(--e-global-color-f32bb28); }
 
-  .pop-or { text-align: center; margin: 18px 0 10px; font-weight: 500; color: var(--ink); }
+  /* #e76c4aa — an h4 at 14px/600 in #353535, centred, with 10px above it.
+     It was a 500-weight body-ink paragraph. */
+  .pop-or {
+    margin: 10px 0 0;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--e-global-color-f4d2693); /* #353535 */
+    text-transform: none;
+  }
 
+  /* #2aaba06 — a flex row of three equal icon-boxes, each one a 35px green
+     icon stacked above a 10px label, with no gap between them (#34d86b6,
+     #089b01c, #e922e17 are identical). The port rendered them as a wrapped row
+     of bordered 15px pills with a shared chevron icon. */
   .pop-contacts {
     list-style: none; margin: 0; padding: 0;
-    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+    display: flex; flex-direction: row;
   }
-  .pop-contacts a {
-    display: inline-block;
-    padding: 10px 18px;
-    border: 1px solid var(--e-global-color-a8178e9);
-    color: var(--brand-navy);
+  .pop-contacts li {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0;
+  }
+  .pop-contacts .ic-icon {
+    display: block;
+    font-size: 35px;
+    line-height: 1;
+    color: var(--e-global-color-a8178e9); /* #99CC33 */
     text-decoration: none;
-    font-weight: 500;
-    font-size: 15px;
+    transition: color 0.3s;
   }
-  .pop-contacts a:hover { background: var(--e-global-color-a8178e9); color: #fff; }
+  .pop-contacts .ic-title {
+    margin: 0;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: none;
+    color: #000000;
+  }
+  .pop-contacts .ic-title a { color: inherit; text-decoration: none; }
+  /* The live rule is :has(:hover) on the whole box, so hovering the label
+     recolours the icon too. */
+  .pop-contacts li:hover .ic-icon,
+  .pop-contacts li:focus-within .ic-icon {
+    color: var(--e-global-color-d077a13); /* #15334C */
+  }
+
+  /* #7b930b2 — the form inside this popup is styled by the template, not by
+     the site-wide form CSS: 25px pills with a heavier bottom border and no
+     left border, and a navy submit that turns pink rather than green. */
+  .pop-box--sheet :global(.qform) { gap: 0; }
+  .pop-box--sheet :global(.qform .row),
+  .pop-box--sheet :global(.qform .checks) { margin-bottom: 12px; padding-inline: 5px; }
+  .pop-box--sheet :global(.qform input[type='text']),
+  .pop-box--sheet :global(.qform input[type='email']),
+  .pop-box--sheet :global(.qform input[type='tel']),
+  .pop-box--sheet :global(.qform select),
+  .pop-box--sheet :global(.qform textarea) {
+    font-size: 14px;
+    color: #000000;
+    background-color: #ffffff;
+    border-color: #c7c7c7;
+    border-width: 1px 1px 2px 0;
+    border-style: solid;
+    border-radius: 25px;
+  }
+  .pop-box--sheet :global(.qform .qbtn) {
+    font-size: 16px;
+    font-weight: 500;
+    text-transform: uppercase;
+    border-radius: 25px;
+    background-color: var(--e-global-color-d077a13); /* #15334C */
+    color: #ffffff;
+  }
+  .pop-box--sheet :global(.qform .qbtn:hover) {
+    background-color: var(--e-global-color-f32bb28); /* #FF0099 */
+    color: #ffffff;
+  }
 
   @media (max-width: 767px) {
     .pop-cols { grid-template-columns: 1fr; gap: 18px; }
     .pop-title { font-size: 22px; }
     /* #5708039 drops its side and bottom padding on mobile. */
     .pop-box--wide { padding: 25px 0 0; }
+    /* Both templates restate .dialog-message below 768px: 18856 narrows to a
+       fixed 300px, 17564 goes edge to edge. */
+    .pop-box--wide { width: min(300px, calc(100vw - 32px)); }
+    .pop-box--sheet { width: 100vw; }
   }
 </style>
 

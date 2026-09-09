@@ -151,6 +151,32 @@ const tocEntries: TocEntry[] =
 /** eid -> anchor id, so a heading and its TOC entry always agree. */
 const tocIds = new Map<string, string>();
 for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
+
+/* A gallery's grid comes from the widget, not from one site-wide rule: the
+   column count per breakpoint, the tile crop and the gutter are all declared
+   per instance. Each becomes a custom property on the grid element, and the
+   stylesheet falls back to the old fixed values where a gallery declares
+   nothing. The whole track list travels in one property so the fallback can
+   stay an auto-fill rule rather than a column count. */
+const track = (n?: number | null) => (n && n > 0 ? `repeat(${n}, minmax(0, 1fr))` : null);
+
+const galleryStyle = (b: {
+  cols?: number | null; colsTablet?: number | null; colsMobile?: number | null;
+  aspect?: string | null;
+  gap?: number | null; gapTablet?: number | null; gapMobile?: number | null;
+}) => {
+  const parts: string[] = [];
+  const put = (k: string, v: string | null) => v && parts.push(`${k}:${v}`);
+  put('--fg-track', track(b.cols));
+  put('--fg-track-t', track(b.colsTablet));
+  put('--fg-track-m', track(b.colsMobile));
+  // Elementor writes the ratio as "16:9"; CSS wants "16 / 9".
+  put('--fg-aspect', b.aspect ? b.aspect.replace(':', ' / ') : null);
+  put('--fg-gap', typeof b.gap === 'number' ? `${b.gap}px` : null);
+  put('--fg-gap-t', typeof b.gapTablet === 'number' ? `${b.gapTablet}px` : null);
+  put('--fg-gap-m', typeof b.gapMobile === 'number' ? `${b.gapMobile}px` : null);
+  return parts.length ? parts.join(';') : undefined;
+};
 ---
 
 {groups.map((group) => {
@@ -512,7 +538,7 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
                   ))}
                 </div>
               )}
-              <div class="fgal-grid">
+              <div class="fgal-grid" style={galleryStyle(b)}>
                 {b.items.map((it) => (
                   <figure class="fgal-item" data-tag={it.tag}>
                     {/* The original wraps every gallery item in a link to the
@@ -1298,24 +1324,40 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
     border-bottom-color: var(--brand-green);
   }
 
+  /* Columns, crop and gutter come from each gallery widget as custom
+     properties (see galleryStyle above). The values here are only the fallback
+     for a gallery that declares none — which is why the track list travels as
+     one property: the fallback is an auto-fill rule, not a column count. */
   .fgal-grid {
+    --fg-track: repeat(auto-fill, minmax(260px, 1fr));
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 14px;
+    grid-template-columns: var(--fg-track);
+    gap: var(--fg-gap, 14px);
   }
   .fgal-item { margin: 0; }
   .fgal-item[hidden] { display: none; }
   .fgal-item img {
     width: 100%;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: var(--fg-aspect, 4 / 3);
     object-fit: cover;
     display: block;
     border-radius: 4px;
     cursor: zoom-in;
   }
 
+  /* Elementor's own breakpoints: tablet at 1024px, mobile at 767px. */
+  @media (max-width: 1024px) {
+    .fgal-grid {
+      grid-template-columns: var(--fg-track-t, var(--fg-track));
+      gap: var(--fg-gap-t, var(--fg-gap, 14px));
+    }
+  }
+
   @media (max-width: 767px) {
-    .fgal-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+    .fgal-grid {
+      grid-template-columns: var(--fg-track-m, repeat(auto-fill, minmax(150px, 1fr)));
+      gap: var(--fg-gap-m, 8px);
+    }
     .fgal-tabs { gap: 4px 14px; }
     .fgal-tab { font-size: 14px; }
   }
@@ -1334,7 +1376,9 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
   }
 
   @media (max-width: 767px) {
-    .fgal-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    /* .fgal-grid's mobile columns are set above, from the widget's own
+       columns_mobile. Restating the auto-fill fallback here would win on
+       source order and undo it. */
     .sec { padding: 24px 0; }
     .gallery { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
     .compare-pair { grid-template-columns: 1fr; }

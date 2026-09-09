@@ -22,9 +22,14 @@ export interface Props {
   head?: HeadData;
   /** The page's own responsive rules, keyed by each block's data-eid. */
   pageCss?: string;
+  /** Whether this address actually holds a button that opens the Limited Time
+      Offer popup. The original emits that template only where it is used. */
+  offer?: boolean;
 }
 
-const { title, description = '', canonical, ogImage, robots, head, pageCss } = Astro.props;
+const {
+  title, description = '', canonical, ogImage, robots, head, pageCss, offer = false,
+} = Astro.props;
 const canonicalUrl = canonical ?? new URL(Astro.url.pathname, site.url).href;
 const ogImageUrl = ogImage ? new URL(img(ogImage), site.url).href : undefined;
 
@@ -137,7 +142,7 @@ const iconHref = new URL(img(site.favicon), site.url).href;
     </main>
     <Footer />
     <StickyBar />
-    <Popups />
+    <Popups offer={offer} />
     <Interactions />
     <ClickSparks />
 
