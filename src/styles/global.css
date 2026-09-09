@@ -70,8 +70,28 @@ label { display: inline-block; line-height: 1; vertical-align: middle; }
   padding-inline: var(--gutter);
 }
 
-/* .elementor-widget:not(:last-child){margin-block-end:20px} */
-.stack > * + * { margin-block-start: var(--widget-gap); }
+/* Elementor's widget rhythm: `.elementor-widget:not(:last-child)` carries
+   margin-block-end:20px, and the widgets sit inside `.elementor-widget-wrap`,
+   which frontend.min.css makes `display:flex`.
+
+   That flex matters. A widget's own margin — the one Elementor writes as
+   `> .elementor-widget-container{margin:…}` and this port carries as a block's
+   `box` — is therefore ADDED to the 20px, never collapsed with it.
+
+   This was `.stack > * + * { margin-block-start: 20px }`, which the ported
+   `box` margin overrode outright, because `box` and the block's own style are
+   merged into one inline `style` attribute and inline always wins. 3,667 blocks
+   carry a margin that way, and on every one of them the 20px vanished: on
+   /car-wrap-about-vinyl-wrap-toronto/ the subtitle's `margin:-5px` left it sat
+   directly under the title instead of 20px below it.
+
+   A flex gap cannot be overridden by a child's margin, and the two add — which
+   is exactly what the original does. */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--widget-gap);
+}
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
