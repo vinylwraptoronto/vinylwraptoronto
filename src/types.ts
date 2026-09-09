@@ -208,6 +208,11 @@ export type ColumnsBlock = {
 export type Section = {
   id?: string | null;
   blocks: Block[];
+  /** Where a column's widgets sit in a column taller than they are. Elementor
+      writes this on the section as elementor-section-content-top / -middle /
+      -bottom; the site is in bc-flex-widget mode, where those set align-items
+      on each column's widget wrap. Absent means top, Elementor's default. */
+  contentAlign?: 'top' | 'middle' | 'bottom' | null;
   padding?: string | null;
   maxWidth?: string | null;
   /** The section's own background. Most are #ffffff and match the default, but

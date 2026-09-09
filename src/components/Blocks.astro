@@ -602,7 +602,7 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
 
   return group.bare ? inner : (
     <section
-      class="sec"
+      class:list={['sec', section?.contentAlign ? `sec--${section.contentAlign}` : null]}
       data-eid={section?.id ?? undefined}
       style={secStyle || undefined}
     >
@@ -705,6 +705,21 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
   /* The first widget in a column takes no gap above it, and must not re-inherit
      the section's own vertical rhythm either. */
   .cols > .col > :global(:first-child) { margin-top: 0; }
+
+  /* Where the widgets sit in a column taller than they are. Elementor puts this
+     on the section (elementor-section-content-middle and friends) and, in the
+     bc-flex-widget mode this site runs in, it becomes align-items on each
+     column's widget wrap. A column here IS that wrap and is a flex column, so
+     the vertical axis is the main one and justify-content is what moves them.
+
+     Only a section's own columns, never a nested row's — the original's rule is
+     `> .elementor-container > .elementor-column > .elementor-widget-wrap`.
+
+     Without this the FAQ hero's heading sat at the top of its navy panel
+     instead of centred in it. It is not a rare setting: 4 of the 6 sections on
+     that page use middle, and 2 or 3 on every other page captured. */
+  .sec--middle > .container > .cols > .col { justify-content: center; }
+  .sec--bottom > .container > .cols > .col { justify-content: flex-end; }
 
   /* Elementor collapses rows to full width at its tablet breakpoint. */
   /* Elementor stacks columns at its mobile breakpoint, not its tablet one:
