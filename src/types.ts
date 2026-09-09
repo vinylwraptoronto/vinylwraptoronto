@@ -147,6 +147,14 @@ export type Block = (
       dots: boolean;
     }
   | { type: 'faq'; items: { q: string; a: string }[] }
+  | {
+      /* Elementor Pro's share-buttons widget: one full-width row per network,
+         icon and label, in each network's own brand colour. `url` is the page
+         being shared, baked in at port time — a static page cannot ask the
+         browser for its own canonical address at build. */
+      type: 'share';
+      url: string;
+    }
   | { type: 'video'; src: string }
   | {
       /* The jet-image-comparison before/after slider on wraps-before-after. */

@@ -47,6 +47,29 @@ function catOption(name: string, count: number, level: number): string {
   return `${' '.repeat(level * 3)}${name}  (${count})`;
 }
 
+/* The share widget's six networks, in the original's order, each with the
+   icon it uses and its official brand colour (the colours live in the style
+   block below).
+
+   The original renders these as <div role="button"> and opens a popup from
+   JavaScript. These are real links instead: same destinations, but they work
+   with JS off, and can be middle-clicked, copied or opened in a new tab —
+   which a div cannot. */
+const SHARE_NETWORKS = [
+  { id: 'facebook', label: 'Facebook', icon: 'fab fa-facebook',
+    href: (u: string) => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(u)}` },
+  { id: 'twitter', label: 'Twitter', icon: 'fab fa-twitter',
+    href: (u: string) => `https://twitter.com/intent/tweet?url=${encodeURIComponent(u)}` },
+  { id: 'linkedin', label: 'LinkedIn', icon: 'fab fa-linkedin',
+    href: (u: string) => `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(u)}` },
+  { id: 'whatsapp', label: 'WhatsApp', icon: 'fab fa-whatsapp',
+    href: (u: string) => `https://api.whatsapp.com/send?text=${encodeURIComponent(u)}` },
+  { id: 'pinterest', label: 'Pinterest', icon: 'fab fa-pinterest',
+    href: (u: string) => `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(u)}` },
+  { id: 'email', label: 'Email', icon: 'fas fa-envelope',
+    href: (u: string) => `mailto:?body=${encodeURIComponent(u)}` },
+];
+
 /* Pagination for the blog index.
    Computed here rather than in the template: the block below renders inside a
    JSX expression, where statements and type annotations are a syntax error --
@@ -427,6 +450,26 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
                   <summary>{qa.q}</summary>
                   <div class="rt" set:html={imgHtml(qa.a)} />
                 </details>
+              ))}
+            </div>
+          );
+        }
+
+        if (b.type === 'share') {
+          return (
+            <div class="share" role="list">
+              {SHARE_NETWORKS.map((n) => (
+                <a
+                  class={`share-btn share-btn--${n.id}`}
+                  role="listitem"
+                  href={n.href(b.url)}
+                  target="_blank"
+                  rel="noopener"
+                  aria-label={`Share on ${n.label}`}
+                >
+                  <span class="share-ic"><i class={n.icon} aria-hidden="true"></i></span>
+                  <span class="share-tx">{n.label}</span>
+                </a>
               ))}
             </div>
           );
@@ -1072,6 +1115,38 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
     gap: 16px;
   }
   .gallery img { width: 100%; display: block; border-radius: 4px; }
+
+  /* Share buttons — Elementor Pro's widget as this page configures it:
+     elementor-grid-1 (one per row), view icon-text, shape square, and
+     color-official, whose brand colours these are. The 10px row gap and the
+     20px above the block are the widget's own values. */
+  .share {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .share-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    color: #ffffff;
+    text-decoration: none;
+    font-family: 'Poppins', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+  .share-ic { font-size: 18px; line-height: 1; width: 20px; text-align: center; }
+  .share-btn:hover { filter: brightness(1.08); }
+
+  .share-btn--facebook { background-color: #3b5998; }
+  .share-btn--twitter { background-color: #1da1f2; }
+  .share-btn--linkedin { background-color: #0077b5; }
+  .share-btn--whatsapp { background-color: #25d366; }
+  .share-btn--pinterest { background-color: #bd081c; }
+  .share-btn--email { background-color: #ea4335; }
 
   .faq details {
     border-bottom: 1px solid var(--rule);
