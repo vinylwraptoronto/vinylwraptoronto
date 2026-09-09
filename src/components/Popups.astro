@@ -23,7 +23,10 @@ import { img } from '../lib/img';
           <h3>{col.heading}</h3>
           <ul>
             {col.links.map((l) => (
-              <li><a href={img(l.href)}>{l.text}</a></li>
+              <li>
+                <i class="fas fa-chevron-circle-right" aria-hidden="true"></i>
+                <a href={img(l.href)}>{l.text}</a>
+              </li>
             ))}
           </ul>
         </div>
@@ -95,7 +98,25 @@ import { img } from '../lib/img';
     padding: 26px 26px 30px;
     font-family: 'Poppins', sans-serif;
   }
-  .pop-box--wide { width: min(940px, calc(100vw - 32px)); }
+  /* Popup 18856, "I want to". Every value below is read off the live
+     template's own CSS rather than approximated:
+
+       #elementor-popup-modal-18856 .dialog-message { width: 830px }
+       .dialog-widget-content { border-radius:10px;
+                                box-shadow:2px 8px 23px 3px rgba(0,0,0,.2) }
+       #elementor-popup-modal-18856 { background-color: rgba(0,0,0,.8) }
+       #5708039 { padding:25px }  (25px 0 0 0 below 768px)
+
+     The 2px green bottom border this used to carry is not in the template at
+     all; it was invented. The quote popup (17564) is a different template with
+     its own width, radius and placement, so none of this is shared with it. */
+  .pop-box--wide {
+    width: min(830px, calc(100vw - 32px));
+    padding: 25px;
+    border-bottom: 0;
+    box-shadow: 2px 8px 23px 3px rgba(0, 0, 0, 0.2);
+  }
+  #popup-want-to .pop-back { background: rgba(0, 0, 0, 0.8); }
 
   .pop-x {
     position: absolute; top: 8px; right: 12px;
@@ -109,15 +130,52 @@ import { img } from '../lib/img';
     color: var(--brand-navy); text-transform: none;
   }
 
-  .pop-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-  .pop-col h3 {
-    font-size: 18px; font-weight: 500; margin: 0 0 10px;
-    color: var(--brand-green); text-transform: none;
+  /* #d996c21 — the title is centred, uppercase, weight 500 and pink. Ours was
+     left-aligned, sentence case, weight 600 and navy: wrong on all four. */
+  .pop-box--wide .pop-title {
+    text-align: center;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--e-global-color-f32bb28); /* #FF0099 */
   }
+
+  .pop-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+
+  /* #1a62ace / #ec3a5ba / #a9f6467 — all three column headings are 20px,
+     weight 600, navy. Ours were 18px, 500 and green. */
+  .pop-col h3 {
+    font-size: 20px; font-weight: 600; margin: 0 0 10px;
+    color: var(--e-global-color-d077a13); /* #15334C */
+    text-transform: none;
+  }
+
+  /* #3b3eae4 / #b63873f / #44aa9a7 — identical icon lists: a 14px icon in
+     #353535, 15px/400 body-ink text that turns pink on hover, and 5px between
+     rows, which Elementor splits either side as calc(5px/2). The icon was
+     missing here entirely. */
   .pop-col ul { list-style: none; margin: 0; padding: 0; }
-  .pop-col li { margin-bottom: 7px; }
-  .pop-col a { color: var(--brand-navy); text-decoration: none; font-size: 15px; }
-  .pop-col a:hover { color: var(--brand-pink); }
+  .pop-col li {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 0;
+  }
+  .pop-col li:not(:last-child) { padding-block-end: calc(5px / 2); }
+  .pop-col li:not(:first-child) { margin-block-start: calc(5px / 2); }
+  .pop-col li i {
+    flex: 0 0 auto;
+    font-size: 14px;
+    color: var(--e-global-color-f4d2693); /* #353535 */
+    transition: color 0.3s;
+  }
+  .pop-col a {
+    color: var(--e-global-color-text); /* #444444 */
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 400;
+    transition: color 0.3s;
+  }
+  .pop-col li:hover a { color: var(--e-global-color-f32bb28); }
 
   .pop-or { text-align: center; margin: 18px 0 10px; font-weight: 500; color: var(--ink); }
 
@@ -139,6 +197,8 @@ import { img } from '../lib/img';
   @media (max-width: 767px) {
     .pop-cols { grid-template-columns: 1fr; gap: 18px; }
     .pop-title { font-size: 22px; }
+    /* #5708039 drops its side and bottom padding on mobile. */
+    .pop-box--wide { padding: 25px 0 0; }
   }
 </style>
 

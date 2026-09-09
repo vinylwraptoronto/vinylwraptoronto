@@ -13,7 +13,8 @@ export const wantToPopup = {
   title: 'I want to',
   columns: [
     {
-      heading: 'Get a wrap',
+      /* Title Case on the live template: "Get A Wrap", not "Get a wrap". */
+      heading: 'Get A Wrap',
       links: [
         { text: 'Get a car wrap', href: '/car-wraps/' },
         { text: 'Get a boat wrap', href: '/boat-wrap-toronto/' },
