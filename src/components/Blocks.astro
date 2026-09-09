@@ -673,13 +673,24 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
     gap: 0 20px;
     width: 100%;
   }
+  /* A column is Elementor's `.elementor-widget-wrap`, which frontend.min.css
+     makes display:flex, with each widget carrying margin-block-end:20px. The
+     same gap the section stack uses, and for the same reason: a widget's own
+     ported margin (its `box`) is merged into one inline style attribute, so a
+     margin-based rule here would be overridden outright and the spacing would
+     vanish. It had no rule at all, which is why the sidebar's PDF captions sat
+     flush against their logos — their box sets margin:-3px, and -3px was the
+     whole of the gap. */
   .cols > .col {
     flex: 1 1 calc(var(--col-w, 100%) - 20px);
     max-width: calc(var(--col-w, 100%) - 20px);
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--widget-gap);
   }
-  /* Blocks inside a column stack normally and must not re-inherit the
-     section's own vertical rhythm. */
+  /* The first widget in a column takes no gap above it, and must not re-inherit
+     the section's own vertical rhythm either. */
   .cols > .col > :global(:first-child) { margin-top: 0; }
 
   /* Elementor collapses rows to full width at its tablet breakpoint. */
