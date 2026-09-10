@@ -91,8 +91,8 @@
     cursor: ew-resize;
   }
   :global(.compare-pair[data-juxtapose] figure) { margin: 0; }
-  :global(.compare-pair[data-juxtapose] figure:first-child) { position: relative; }
-  :global(.compare-pair[data-juxtapose] figure:last-child) {
+  :global(.compare-pair[data-juxtapose] figure:nth-of-type(1)) { position: relative; }
+  :global(.compare-pair[data-juxtapose] figure:nth-of-type(2)) {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -112,8 +112,8 @@
     margin: 0;
     pointer-events: none;
   }
-  :global(.compare-pair[data-juxtapose] figure:first-child figcaption) { left: 10px; }
-  :global(.compare-pair[data-juxtapose] figure:last-child figcaption) { right: 10px; }
+  :global(.compare-pair[data-juxtapose] figure:nth-of-type(1) figcaption) { left: 10px; }
+  :global(.compare-pair[data-juxtapose] figure:nth-of-type(2) figcaption) { right: 10px; }
 
   /* The gallery link must not change how the grid lays out. */
   :global(a.lb-link) {

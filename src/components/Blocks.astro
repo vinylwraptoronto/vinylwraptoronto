@@ -710,7 +710,12 @@ const galleryStyle = (b: {
     display: flex;
     flex-wrap: wrap;
     align-items: stretch;
-    gap: 0 20px;
+    /* A row gap, not just a column gap. It is inert for a row that fits on one
+       line, which is most of them, and only shows where columns wrap: the
+       69-item grid on /our-work/, and the five-across rows the Tesla pages
+       declare at 30% each. Elementor gives those a gap too, so rows touching
+       was the port's own doing. */
+    gap: 20px;
     width: 100%;
   }
   /* A column is Elementor's `.elementor-widget-wrap`, which frontend.min.css
@@ -1229,14 +1234,20 @@ const galleryStyle = (b: {
 
   /* before/after pairs, shown side by side rather than as a drag slider */
   .compare { display: grid; gap: 20px; }
-  .compare-pair {
+  /* The two-up layout is only the no-JS fallback. Once the slider script marks
+     a pair with data-juxtapose it becomes one overlaid image, and these rules
+     have to stop applying — scoped with :not() rather than left to fight on
+     specificity, which they were winning: both selectors landed on 0,2,0 and
+     Astro's scoping attribute put this file last, so the overlay never engaged
+     and every before/after on the site rendered as two half-width images. */
+  .compare-pair:not([data-juxtapose]) {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
   .compare-pair figure { margin: 0; }
   .compare-pair img { width: 100%; display: block; border-radius: 4px; }
-  .compare-pair figcaption {
+  .compare-pair:not([data-juxtapose]) figcaption {
     margin-top: 6px;
     font-family: 'Poppins', sans-serif;
     font-size: 13px;
@@ -1381,6 +1392,6 @@ const galleryStyle = (b: {
        source order and undo it. */
     .sec { padding: 24px 0; }
     .gallery { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-    .compare-pair { grid-template-columns: 1fr; }
+    .compare-pair:not([data-juxtapose]) { grid-template-columns: 1fr; }
   }
 </style>
