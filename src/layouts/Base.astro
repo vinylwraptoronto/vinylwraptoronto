@@ -36,11 +36,16 @@ export interface Props {
       Rendering the full header and the 856px footer on them put 904px on /lp/
       that the original does not have, which was most of its height gap. */
   chrome?: 'full' | 'bare' | 'none';
+  /** Elementor's scrolling progress tracker: a 5px bar stuck to the top that
+      fills as the reader moves down. It is on the same 402 post pages as the
+      Limited Time Offer panel, so the caller decides from the page's own
+      blocks rather than from a field nothing else would set. */
+  progress?: boolean;
 }
 
 const {
   title, description = '', canonical, ogImage, robots, head, pageCss, offer = false,
-  chrome = 'full',
+  chrome = 'full', progress = false,
 } = Astro.props;
 const canonicalUrl = canonical ?? new URL(Astro.url.pathname, site.url).href;
 const ogImageUrl = ogImage ? new URL(img(ogImage), site.url).href : undefined;
@@ -148,6 +153,9 @@ const iconHref = new URL(img(site.favicon), site.url).href;
 
   <body>
     <a class="skip" href="#main">Skip to content</a>
+    {progress && (
+      <div class="readbar" aria-hidden="true"><span class="readbar-fill"></span></div>
+    )}
     {chrome === 'full' && <Header />}
     <main id="main">
       <slot />
@@ -159,6 +167,29 @@ const iconHref = new URL(img(site.favicon), site.url).href;
     <ClickSparks />
 
     <style is:global>
+      /* The reading progress bar: 5px, stuck to the top, 3px radius, the fill
+         in the kit's green over a transparent track — the values the widget
+         declares. It sits above the sticky header, which is z-index 100. */
+      .readbar {
+        position: fixed;
+        inset-block-start: 0;
+        inset-inline: 0;
+        height: 5px;
+        z-index: 120;
+        pointer-events: none;
+        background: transparent;
+      }
+      .readbar-fill {
+        display: block;
+        height: 100%;
+        width: 0;
+        border-radius: 3px;
+        background: var(--e-global-color-a8178e9);
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .readbar-fill { transition: width 0.1s linear; }
+      }
+
       .skip {
         position: absolute;
         left: -9999px;

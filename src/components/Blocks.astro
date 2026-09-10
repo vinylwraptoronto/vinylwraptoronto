@@ -535,6 +535,28 @@ const galleryStyle = (b: {
           );
         }
 
+        if (b.type === 'divider') {
+          return <hr class="wdivider" data-eid={b.eid} />;
+        }
+
+        if (b.type === 'countdown') {
+          /* Rendered with the digits blank and the whole thing hidden until the
+             script fills it in: an evergreen countdown has no server-side value,
+             and four zeroes flashing before it starts would read as expired. */
+          return (
+            <div class="cdown" data-eid={b.eid} data-countdown={b.interval} hidden>
+              {[['days', 'Days'], ['hours', 'Hours'], ['minutes', 'Minutes'], ['seconds', 'Seconds']].map(
+                ([k, label]) => (
+                  <div class="cdown-item">
+                    <span class="cdown-digits" data-unit={k}>&nbsp;</span>
+                    <span class="cdown-label">{label}</span>
+                  </div>
+                ),
+              )}
+            </div>
+          );
+        }
+
         if (b.type === 'share') {
           return (
             <div class="share" role="list">
@@ -1173,6 +1195,36 @@ const galleryStyle = (b: {
     color: #333;
     margin: 0 0 14.4px;
   }
+
+  /* Elementor's divider as this widget declares it: a 1px rule in the kit's
+     green, full width, with 15px of padding above and below — the 31px the
+     original measures between the post body and the post navigation. */
+  .wdivider {
+    border: 0;
+    border-top: 1px solid var(--e-global-color-a8178e9);
+    margin: 15px 0;
+    width: 100%;
+  }
+
+  /* Elementor's countdown, as this widget configures it: items padded
+     10px/5px on the kit's teal, 3px radius, 2.5px of gutter each side, the
+     digits Poppins 20px over a 10px label. That comes to the 50px the original
+     measures. */
+  .cdown { display: flex; max-width: 100%; }
+  .cdown-item {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 10px 5px;
+    background: var(--e-global-color-8c22d81);
+    border-radius: 3px;
+    text-align: center;
+    color: #fff;
+  }
+  .cdown-item + .cdown-item { margin-left: 5px; }
+  .cdown-digits,
+  .cdown-label { display: block; font-family: 'Poppins', sans-serif; font-weight: 400; }
+  .cdown-digits { font-size: 20px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .cdown-label { font-size: 10px; line-height: 1.2; }
 
   /* related / looped post grids */
   /* The count comes from the widget; auto-fill gave three or more columns

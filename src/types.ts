@@ -136,6 +136,17 @@ export type Block = (
       /** Page 1 is the bare address; later pages are <base>page/N/. */
       base: string;
     }
+  /* Elementor's countdown widget, on the Limited Time Offer panel of 403 post
+     pages. It is an *evergreen* countdown: `data-date` is empty and
+     `data-evergreen-interval` holds a span in seconds (475200 — 132 hours)
+     that starts on a visitor's first sight of it and hides the widget when it
+     runs out. There is no fixed deadline to go stale, which is why it can be
+     reproduced honestly rather than baked to a date that has passed. */
+  | { type: 'countdown'; interval: number }
+  /* Elementor's divider, between the post body and the post navigation on 402
+     post pages: a 1px rule in the kit's green with 15px above and below, which
+     is the 31px the original measures. */
+  | { type: 'divider' }
   | { type: 'toc'; title: string }
   | { type: 'categories'; title: string }
   /* The Elementor Pro quote form; fields are fixed site-wide, so only its

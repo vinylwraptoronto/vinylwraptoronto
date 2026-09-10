@@ -346,3 +346,95 @@
     });
   })();
 </script>
+
+<script>
+  /* The Limited Time Offer countdown on the post pages.
+
+     Elementor runs this one in "evergreen" mode: the widget carries no date,
+     only an interval (132 hours), which starts the first time a given visitor
+     sees it and hides the widget when it runs out. So the deadline is per
+     visitor and kept in localStorage — there is no fixed date to go stale, and
+     nothing to reproduce wrongly by baking one in.
+
+     Its own IIFE: the block above returns early when a page has no lightbox,
+     which would otherwise take this with it. */
+  (() => {
+    const els = document.querySelectorAll<HTMLElement>('[data-countdown]');
+    if (!els.length) return;
+
+    const pad = (n: number) => String(n).padStart(2, '0');
+
+    els.forEach((el) => {
+      const seconds = Number(el.dataset.countdown);
+      if (!Number.isFinite(seconds) || seconds <= 0) return;
+
+      /* Keyed by the widget so two countdowns on a page keep their own clocks.
+         Storage can throw outright (private mode, blocked site data), in which
+         case the countdown simply starts fresh on each page view. */
+      const key = `vwt:cd:${el.dataset.eid ?? 'default'}`;
+      let start = 0;
+      try { start = Number(window.localStorage.getItem(key)) || 0; } catch { /* no storage */ }
+      if (!start || !Number.isFinite(start) || start > Date.now()) {
+        start = Date.now();
+        try { window.localStorage.setItem(key, String(start)); } catch { /* no storage */ }
+      }
+      const end = start + seconds * 1000;
+
+      const units = {
+        days: el.querySelector<HTMLElement>('[data-unit="days"]'),
+        hours: el.querySelector<HTMLElement>('[data-unit="hours"]'),
+        minutes: el.querySelector<HTMLElement>('[data-unit="minutes"]'),
+        seconds: el.querySelector<HTMLElement>('[data-unit="seconds"]'),
+      };
+
+      let timer = 0;
+      const tick = () => {
+        const left = end - Date.now();
+        if (left <= 0) {
+          /* The widget's own expire action is "hide". */
+          el.hidden = true;
+          window.clearInterval(timer);
+          return;
+        }
+        const s = Math.floor(left / 1000);
+        if (units.days) units.days.textContent = pad(Math.floor(s / 86400));
+        if (units.hours) units.hours.textContent = pad(Math.floor(s / 3600) % 24);
+        if (units.minutes) units.minutes.textContent = pad(Math.floor(s / 60) % 60);
+        if (units.seconds) units.seconds.textContent = pad(s % 60);
+        el.hidden = false;
+      };
+
+      tick();
+      timer = window.setInterval(tick, 1000);
+    });
+  })();
+</script>
+
+<script>
+  /* Elementor's scrolling progress tracker, on the post pages that carry the
+     Limited Time Offer panel. Its own IIFE, for the same reason as above. */
+  (() => {
+    const fill = document.querySelector<HTMLElement>('.readbar-fill');
+    if (!fill) return;
+
+    let queued = false;
+    const paint = () => {
+      queued = false;
+      const doc = document.documentElement;
+      /* How far the reader can actually travel; a page shorter than the
+         viewport has nowhere to go and stays at zero rather than dividing by it. */
+      const travel = doc.scrollHeight - window.innerHeight;
+      const pct = travel > 0 ? Math.min(100, Math.max(0, (window.scrollY / travel) * 100)) : 0;
+      fill.style.width = `${pct}%`;
+    };
+    const onScroll = () => {
+      if (queued) return;
+      queued = true;
+      window.requestAnimationFrame(paint);
+    };
+
+    paint();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+  })();
+</script>

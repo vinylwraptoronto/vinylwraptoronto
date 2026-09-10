@@ -117,6 +117,13 @@ const opensPopup = (blocks: Block[], id: string): boolean =>
   );
 const needsOffer = page.sections.some((s) => opensPopup(s.blocks, 'popup-limited-offer'));
 
+/* The scrolling progress tracker is on exactly the pages that carry the
+   Limited Time Offer panel, so it is decided from the page's own blocks rather
+   than from a field that nothing else would set. */
+const hasBlock = (blocks: Block[], type: string): boolean =>
+  blocks.some((b) => (b.type === 'columns' ? b.cols.some((c) => hasBlock(c.blocks, type)) : b.type === type));
+const needsProgress = page.sections.some((s) => hasBlock(s.blocks, 'countdown'));
+
 const dateLabel = page.published
   ? new Date(page.published).toLocaleDateString('en-CA', {
       year: 'numeric',
@@ -136,6 +143,7 @@ const dateLabel = page.published
   pageCss={page.css}
   offer={needsOffer}
   chrome={page.chrome ?? 'full'}
+  progress={needsProgress}
 >
   {page.kind === 'post' && dateLabel && (
     <div class="postmeta">
