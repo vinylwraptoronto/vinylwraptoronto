@@ -64,6 +64,31 @@ which is finding 2.
 Reference hosts on the new build: 7,168 `img.vinylwraptoronto.com`, 678 relative,
 1 `images.unsplash.com` (an allowed third party — worth confirming it is deliberate).
 
+## Internal links — the one finding that was real, and is now fixed
+
+The internal-link count flagged **84** addresses as down more than 10%. **82 are a
+measurement artefact**: the crawl counts an anchor as internal by hostname, and a gallery
+lightbox anchor that used to point at `vinylwraptoronto.com/wp-content/uploads/…` now
+points at the image host, so it stopped counting. Splitting file anchors from page links
+shows the page links on those 82 are unchanged — `/vinyl-car-wrap-our-portfolio/`, the
+worst of them at −74%, goes from 129 page links to 123 once its 343 lightbox anchors are
+set aside.
+
+**Two were real, and both were the same defect.** `/our-work/` linked 52 projects where
+the original links 69, and `/tesla-vinyl-wraps/` 11 where the original links 12. Elementor
+renders a loop grid by stamping one template per post, so every card carries the
+*template's* element id — all 69 cards on `/our-work/` share the eid `56a8ead`. The
+extractor keyed on that id, kept each card's title and dropped its href. **17 portfolio
+pages were built as routes with nothing on the site linking to them.**
+
+Fixed in `d2a69c0`: cards are matched to the original by position inside the loop
+container and verified by title before any href is written. Both pages now link exactly
+the set the original links, every target resolves to a built route, and no
+`/wraps-before-after/` route is unlinked. The guard refused `/lp/` and `/lp-truck-wraps/`
+on a title mismatch and left them untouched.
+
+**This fix is committed but not yet deployed — `staging` still serves the previous build.**
+
 ## Not established
 
 - **Search Console** and **GA4** were not available in this environment, so the address
