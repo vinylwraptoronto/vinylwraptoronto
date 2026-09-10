@@ -83,11 +83,35 @@ export type Block = (
         /** The card's term pill. Rendered as an ordinary link, it lost the
             9px white-on-pink badge the original paints. */
         badge?: string | null;
+        /* The three below apply only to a `stacked` theme archive. */
+        /** hello-elementor sizes the featured image through `.wp-post-image`,
+            and the WebP plugin moves that class onto a `<picture>` wrapper —
+            so a converted entry keeps its intrinsic size while an unconverted
+            one runs the full content width. Same template, two widths, and
+            nothing in our markup carries the class to reproduce it. */
+        natural?: boolean;
+        /** The original's intrinsic size, needed because the image host serves
+            a different variant of the same photograph. */
+        w?: number;
+        h?: number;
+        /** A web story embeds a player below its featured image, which declares
+            its own box. Dropping it took 600px off each of the two entries. */
+        story?: { w: number; h: number };
       }[];
       /* Elementor styles every posts-widget instance separately — the same
          "Read More" is Poppins 12px green on the blog index and Roboto 14px
          pink on a post page — so these come from the widget rather than from
          one hard-coded rule in the component. */
+      /** Four addresses — /locations-served/, /wraps-before-after/,
+          /pages_type/vehicle-wraps/ and /web-stories/ — are rendered by the
+          theme's archive template rather than by Elementor, and it stacks its
+          entries full width: an h2 title link, then the featured image at the
+          container's own width, then the excerpt. The port sent every archive
+          through the Elementor posts-widget card grid, which on
+          /locations-served/ took 2,733px off the page and demoted every entry
+          title from h2 to h3. Taxonomy archives really are Elementor grids, so
+          this is carried per block rather than switched on `kind`. */
+      stacked?: boolean;
       /** Elementor declares the grid's column count per breakpoint; the port
           used a CSS auto-fill, which gave three or more where the original
           gives two and never stacked to one on a phone. */

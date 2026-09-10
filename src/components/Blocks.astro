@@ -358,6 +358,55 @@ const galleryStyle = (b: {
           );
         }
 
+        /* The theme's archive template, not Elementor's posts widget: entries
+           stacked full width, each an h2 title link over the featured image
+           over the excerpt. Measured on the original at 1440: main 1140px,
+           .page-content display:block, h2 28px/33.6 Poppins 600 capitalize
+           with a #FF0099 link, the image at the container's width and its own
+           ratio, the excerpt 16px/24. */
+        if (b.type === 'cards' && b.stacked) {
+          return (
+            <div class="arch" data-eid={b.eid} data-hide={b.hide?.join(' ')}>
+              {b.cards.map((c) => (
+                <article class="arch-post">
+                  <h2><a href={c.href}>{c.title}</a></h2>
+                  {c.image && (
+                    <a
+                      class:list={['arch-thumb', { 'arch-thumb--natural': c.natural }]}
+                      href={c.href}
+                      tabindex="-1"
+                    >
+                      <img
+                        src={img(c.image)}
+                        alt={c.alt ?? c.title}
+                        width={c.natural ? c.w : undefined}
+                        height={c.natural ? c.h : undefined}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </a>
+                  )}
+                  {/* The story player. It is an AMP component on the original;
+                      what it shows at rest is the story's poster at the box it
+                      declares, so that is what is drawn, as a link into the
+                      story rather than a dead frame. */}
+                  {c.story && c.image && (
+                    <a
+                      class="arch-story"
+                      href={c.href}
+                      style={`width:${c.story.w}px;height:${c.story.h}px`}
+                      aria-label={`Open the story: ${c.title}`}
+                    >
+                      <img src={img(c.image)} alt="" loading="lazy" decoding="async" />
+                    </a>
+                  )}
+                  {c.desc && <p class="arch-excerpt">{c.desc}</p>}
+                </article>
+              ))}
+            </div>
+          );
+        }
+
         if (b.type === 'cards') {
           return (
             <ul
@@ -1030,6 +1079,51 @@ const galleryStyle = (b: {
     max-width: 320px;
     border-radius: 4px;
     margin-bottom: 12px;
+  }
+
+  /* hello-elementor's archive template. Every value here was measured on the
+     original at 1440 rather than guessed, because this layout shares nothing
+     with the Elementor card grid below it: entries are stacked blocks with no
+     card, no border and no gutter between them. */
+  .arch { display: block; max-width: 1140px; margin-inline: auto; }
+  .arch-post { display: block; }
+  .arch-post h2 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-transform: capitalize;
+    color: #333;
+    margin: 8px 0 16px;
+  }
+  /* The theme paints the title link pink and drops it back to regular weight,
+     so the h2's own 600 never applies to the text a reader actually sees. */
+  .arch-post h2 a { color: var(--brand-pink, #ff0099); font-weight: 400; text-decoration: none; }
+  .arch-post h2 a:hover { text-decoration: underline; }
+  /* The image runs the full content width at its own ratio — height:auto, not
+     a fixed aspect box, or a portrait story image is cropped to a letterbox. */
+  .arch-thumb { display: block; }
+  .arch-thumb img { display: block; width: 100%; height: auto; }
+  /* Plugin-converted entries keep the intrinsic size the original served. */
+  .arch-thumb--natural img { width: auto; height: auto; max-width: 100%; }
+
+  /* The story player's resting frame. */
+  .arch-story { display: block; max-width: 100%; overflow: hidden; }
+  .arch-story img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+  /* The theme's archive text is NOT the site's body font — it falls back to the
+     system stack, which is narrower. Inheriting the body font instead wrapped a
+     56-word excerpt onto a third line and added 24px to every entry. */
+  .arch-post h1,
+  .arch-excerpt {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+      'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  }
+  .arch-excerpt {
+    font-size: 16px;
+    line-height: 1.5;
+    color: #333;
+    margin: 0 0 14.4px;
   }
 
   /* related / looped post grids */
