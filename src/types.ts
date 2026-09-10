@@ -229,8 +229,15 @@ export type GalleryGrid = {
   cols?: number | null;
   colsTablet?: number | null;
   colsMobile?: number | null;
-  /** Elementor's own notation, e.g. "16:9". */
+  /** Elementor's own notation, e.g. "16:9". Absent on a masonry gallery, whose
+      whole point is that a tile keeps its own shape. */
   aspect?: string | null;
+  /** The widget's declared `gallery_layout`. 304 of the site's 361 galleries
+      are "grid" and every one of those declares a ratio; 55 are "masonry" and
+      2 "justified", and none of those do. The port rendered all of them as a
+      fixed-ratio grid, which crops every photograph to a common shape and, on
+      the 341-tile portfolio, made the section 2,487px too tall. */
+  masonry?: boolean;
   gap?: number | null;
   gapTablet?: number | null;
   gapMobile?: number | null;

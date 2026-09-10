@@ -170,6 +170,11 @@ const galleryStyle = (b: {
   put('--fg-track', track(b.cols));
   put('--fg-track-t', track(b.colsTablet));
   put('--fg-track-m', track(b.colsMobile));
+  /* Masonry is laid out with CSS columns, which want the count itself rather
+     than a grid track list. */
+  put('--fg-cols', b.cols ? String(b.cols) : null);
+  put('--fg-cols-t', b.colsTablet ? String(b.colsTablet) : null);
+  put('--fg-cols-m', b.colsMobile ? String(b.colsMobile) : null);
   // Elementor writes the ratio as "16:9"; CSS wants "16 / 9".
   put('--fg-aspect', b.aspect ? b.aspect.replace(':', ' / ') : null);
   put('--fg-gap', typeof b.gap === 'number' ? `${b.gap}px` : null);
@@ -587,7 +592,7 @@ const galleryStyle = (b: {
                   ))}
                 </div>
               )}
-              <div class="fgal-grid" style={galleryStyle(b)}>
+              <div class:list={['fgal-grid', { 'fgal-grid--masonry': b.masonry }]} style={galleryStyle(b)}>
                 {b.items.map((it) => (
                   <figure class="fgal-item" data-tag={it.tag}>
                     {/* The original wraps every gallery item in a link to the
@@ -1488,12 +1493,34 @@ const galleryStyle = (b: {
     cursor: zoom-in;
   }
 
+  /* A masonry gallery keeps each photograph's own shape — that is the whole
+     difference between it and the grid above, and forcing one ratio on 341
+     tiles both crops them all and makes the section 2,487px too tall. CSS
+     columns give the same shape without the original's layout script; the one
+     thing they do differently is fill column by column rather than row by row,
+     so the tiles read down each column instead of across. */
+  .fgal-grid--masonry {
+    display: block;
+    column-count: var(--fg-cols, 3);
+    column-gap: var(--fg-gap, 14px);
+  }
+  .fgal-grid--masonry .fgal-item {
+    break-inside: avoid;
+    margin-bottom: var(--fg-gap, 14px);
+  }
+  .fgal-grid--masonry .fgal-item img { aspect-ratio: auto; height: auto; }
+
   /* Elementor's own breakpoints: tablet at 1024px, mobile at 767px. */
   @media (max-width: 1024px) {
     .fgal-grid {
       grid-template-columns: var(--fg-track-t, var(--fg-track));
       gap: var(--fg-gap-t, var(--fg-gap, 14px));
     }
+    .fgal-grid--masonry {
+      column-count: var(--fg-cols-t, var(--fg-cols, 3));
+      column-gap: var(--fg-gap-t, var(--fg-gap, 14px));
+    }
+    .fgal-grid--masonry .fgal-item { margin-bottom: var(--fg-gap-t, var(--fg-gap, 14px)); }
   }
 
   @media (max-width: 767px) {
@@ -1501,6 +1528,11 @@ const galleryStyle = (b: {
       grid-template-columns: var(--fg-track-m, repeat(auto-fill, minmax(150px, 1fr)));
       gap: var(--fg-gap-m, 8px);
     }
+    .fgal-grid--masonry {
+      column-count: var(--fg-cols-m, 1);
+      column-gap: var(--fg-gap-m, 8px);
+    }
+    .fgal-grid--masonry .fgal-item { margin-bottom: var(--fg-gap-m, 8px); }
     .fgal-tabs { gap: 4px 14px; }
     .fgal-tab { font-size: 14px; }
   }
