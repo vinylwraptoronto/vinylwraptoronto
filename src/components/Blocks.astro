@@ -913,7 +913,11 @@ const galleryStyle = (b: {
   .rt :global(p:last-child) { margin-bottom: 0; }
   .rt :global(ul),
   .rt :global(ol) { margin: 0 0 16px; padding-inline-start: 22px; }
-  .rt :global(li) { margin-bottom: 6px; }
+  /* The original puts no margin on a list item — checked on its rich-text
+     lists across several pages and on the sitemap's 400-item list, all
+     margin-top and margin-bottom 0. The 6px invented here added six pixels per
+     item, which on /sitemap/ alone was 2,394px. */
+  .rt :global(li) { margin-bottom: 0; }
   /* Gutenberg in-body images (figure.wp-block-image) inside post content. */
   .rt :global(img) {
     display: block;
