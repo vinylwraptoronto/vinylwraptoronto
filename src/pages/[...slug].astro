@@ -135,6 +135,7 @@ const dateLabel = page.published
   head={page.head}
   pageCss={page.css}
   offer={needsOffer}
+  chrome={page.chrome ?? 'full'}
 >
   {page.kind === 'post' && dateLabel && (
     <div class="postmeta">

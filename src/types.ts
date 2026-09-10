@@ -139,8 +139,20 @@ export type Block = (
   | { type: 'toc'; title: string }
   | { type: 'categories'; title: string }
   /* The Elementor Pro quote form; fields are fixed site-wide, so only its
-     position on the page is recorded. */
-  | { type: 'form' }
+     position on the page is recorded. `style` carries the widget's own width
+     where it declares one — the landing pages put this form at 50% of the
+     section, and rendering it full width made the section 331px taller than
+     the original's. */
+  | {
+      type: 'form';
+      style?: string | null;
+      /** The landing pages carry a different Elementor form from the site-wide
+          one — name, phone, email and a requirements box. Names the fields and
+          their order; absent means the site-wide set. */
+      fields?: string[];
+      placeholders?: Record<string, string>;
+      submit?: string;
+    }
   | { type: 'map'; src: string }
   /* Elementor's filterable gallery. It ships no <img>; the picture URLs are the
      lightbox anchor hrefs and `tag` indexes into `filters`. */
@@ -318,6 +330,11 @@ export type PageData = {
   robots?: string | null;
   head?: HeadData;
   kind: PageKind;
+  /** How much site chrome the original serves here. Absent means the theme's
+      header and footer, which is 674 of the 678 addresses; the two landing
+      pages are Elementor Canvas ("bare") and the two web stories are AMP
+      pages with no chrome at all ("none"). */
+  chrome?: 'full' | 'bare' | 'none';
   sections: Section[];
   published?: string | null;
   modified?: string | null;

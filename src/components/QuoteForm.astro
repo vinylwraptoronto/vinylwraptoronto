@@ -17,78 +17,114 @@ export interface Props {
   /** The Limited Time Offer form asks which wrap, where the site-wide form
       asks the vehicle type. Passing the list swaps that one field. */
   products?: readonly string[];
+  /** The landing pages carry a *different* Elementor form from the site-wide
+      one: name, phone, email and a requirements box, and nothing else. The
+      port rendered the site-wide field set everywhere, which made that
+      section 311px taller than the original's and asked for a vehicle type
+      the original never asks for here. Naming the fields renders only those,
+      in the order given. */
+  fields?: readonly string[];
+  /** The same form also writes its own placeholders and submit label. */
+  placeholders?: Readonly<Record<string, string>>;
+  submit?: string;
 }
-const { variant = 'inline', id = 'quote', products } = Astro.props;
+const { variant = 'inline', id = 'quote', products, fields, placeholders, submit } = Astro.props;
 const vehicleTypes = ['Van', 'Truck', 'Car', 'SUV', 'Trailer', 'Boat',
   'Motorcycle', 'Jet Ski', 'Windows', 'Walls', 'Object', 'Other'];
+
+/** The site-wide form's own order. With no field list this is what renders,
+    which keeps every existing instance byte-for-byte as it was. */
+const SITE_ORDER = ['name', 'email', 'phone', 'wrap_type', 'vehicle', 'photos', 'message'] as const;
+/* A given list also sets the order: the landing pages ask name, phone, email —
+   not the site-wide name, email, phone. */
+const order: readonly string[] = fields ?? SITE_ORDER;
+const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
 ---
 
 <form class={`qform qform--${variant}`} method="post" action="/api/quote" enctype="multipart/form-data" novalidate>
-  <div class="row">
-    <label class="sr-only" for={`${id}-name`}>Name</label>
-    <input id={`${id}-name`} name="name" type="text" placeholder="Name*" required autocomplete="name" />
-  </div>
+  {order.map((f) => (
+    <>
+      {f === 'name' && (
+        <div class="row">
+          <label class="sr-only" for={`${id}-name`}>Name</label>
+          <input id={`${id}-name`} name="name" type="text" placeholder={ph('name', 'Name*')} required autocomplete="name" />
+        </div>
+      )}
 
-  <div class="row">
-    <label class="sr-only" for={`${id}-email`}>Email</label>
-    <input id={`${id}-email`} name="email" type="email" placeholder="Email*" required autocomplete="email" />
-  </div>
+      {f === 'email' && (
+        <div class="row">
+          <label class="sr-only" for={`${id}-email`}>Email</label>
+          <input id={`${id}-email`} name="email" type="email" placeholder={ph('email', 'Email*')} required autocomplete="email" />
+        </div>
+      )}
 
-  <div class="row">
-    <label class="sr-only" for={`${id}-phone`}>Phone</label>
-    <input id={`${id}-phone`} name="phone" type="tel" placeholder="Phone*" required autocomplete="tel" />
-  </div>
+      {f === 'phone' && (
+        <div class="row">
+          <label class="sr-only" for={`${id}-phone`}>Phone</label>
+          <input id={`${id}-phone`} name="phone" type="tel" placeholder={ph('phone', 'Phone*')} required autocomplete="tel" />
+        </div>
+      )}
 
-  <fieldset class="row checks">
-    <legend class="sr-only">It is for</legend>
-    <label><input type="checkbox" name="wrap_type" value="Business (Commercial)" /> Business (Commercial)</label>
-    <label><input type="checkbox" name="wrap_type" value="Personal" /> Personal</label>
-  </fieldset>
+      {f === 'wrap_type' && (
+        <fieldset class="row checks">
+          <legend class="sr-only">It is for</legend>
+          <label><input type="checkbox" name="wrap_type" value="Business (Commercial)" /> Business (Commercial)</label>
+          <label><input type="checkbox" name="wrap_type" value="Personal" /> Personal</label>
+        </fieldset>
+      )}
 
-  <div class="row">
-    {products ? (
-      <>
-        <label class="sr-only" for={`${id}-product`}>Product</label>
-        <select id={`${id}-product`} name="product" required>
-          {products.map((v, i) => <option value={i === 0 ? '' : v}>{v}</option>)}
-        </select>
-      </>
-    ) : (
-      <>
-        <label class="sr-only" for={`${id}-vehicle`}>Vehicle Type</label>
-        <select id={`${id}-vehicle`} name="vehicle_type">
-          <option value="">Select Vehicle Type</option>
-          {vehicleTypes.map((v) => <option value={v}>{v}</option>)}
-        </select>
-      </>
-    )}
-  </div>
+      {f === 'vehicle' && (
+        <div class="row">
+          {products ? (
+            <>
+              <label class="sr-only" for={`${id}-product`}>Product</label>
+              <select id={`${id}-product`} name="product" required>
+                {products.map((v, i) => <option value={i === 0 ? '' : v}>{v}</option>)}
+              </select>
+            </>
+          ) : (
+            <>
+              <label class="sr-only" for={`${id}-vehicle`}>Vehicle Type</label>
+              <select id={`${id}-vehicle`} name="vehicle_type">
+                <option value="">Select Vehicle Type</option>
+                {vehicleTypes.map((v) => <option value={v}>{v}</option>)}
+              </select>
+            </>
+          )}
+        </div>
+      )}
 
-  {/* The visible text above the file input is its own field on the live form,
-      not the input's label — that one ("Photos") is screen-only, as every
-      other label here is. The accepted formats are the ones it names, so
-      accept="image/*" was both wider (any image type) and narrower (no PDF)
-      than what the copy promises. */}
-  <div class="row">
-    <p class="uploadnote">
-      Upload Photos (<span>If any. Allowed file formats: jpg, jpeg, png, heic &amp; pdf</span>)
-    </p>
-    <label class="sr-only" for={`${id}-photos`}>Photos</label>
-    <input
-      id={`${id}-photos`}
-      name="photos"
-      type="file"
-      multiple
-      accept=".jpg,.jpeg,.png,.heic,.pdf,image/jpeg,image/png,image/heic,application/pdf"
-    />
-  </div>
+      {/* The visible text above the file input is its own field on the live form,
+          not the input's label — that one ("Photos") is screen-only, as every
+          other label here is. The accepted formats are the ones it names, so
+          accept="image/*" was both wider (any image type) and narrower (no PDF)
+          than what the copy promises. */}
+      {f === 'photos' && (
+        <div class="row">
+          <p class="uploadnote">
+            Upload Photos (<span>If any. Allowed file formats: jpg, jpeg, png, heic &amp; pdf</span>)
+          </p>
+          <label class="sr-only" for={`${id}-photos`}>Photos</label>
+          <input
+            id={`${id}-photos`}
+            name="photos"
+            type="file"
+            multiple
+            accept=".jpg,.jpeg,.png,.heic,.pdf,image/jpeg,image/png,image/heic,application/pdf"
+          />
+        </div>
+      )}
 
-  <div class="row">
-    <label class="sr-only" for={`${id}-message`}>Message</label>
-    <textarea id={`${id}-message`} name="message" rows="4" placeholder="Message"></textarea>
-  </div>
+      {f === 'message' && (
+        <div class="row">
+          <label class="sr-only" for={`${id}-message`}>Message</label>
+          <textarea id={`${id}-message`} name="message" rows="4" placeholder={ph('message', 'Message')}></textarea>
+        </div>
+      )}
+    </>
+  ))}
 
-  <button type="submit" class="qbtn">Send Message</button>
+  <button type="submit" class="qbtn">{submit ?? 'Send Message'}</button>
   <p class="qstatus" role="status" aria-live="polite"></p>
 </form>
 

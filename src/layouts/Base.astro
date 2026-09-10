@@ -25,10 +25,22 @@ export interface Props {
   /** Whether this address actually holds a button that opens the Limited Time
       Offer popup. The original emits that template only where it is used. */
   offer?: boolean;
+  /** How much site chrome the original serves on this address.
+
+      Four of the 678 are not served with the theme's header and footer at all.
+      The two landing pages use Elementor's Canvas template: they carry their
+      own logo bar and a one-line copyright as page content, and keep the
+      sticky bar and the popups. The two web stories are AMP pages with no
+      chrome of any kind — no header, footer, sticky bar or popup.
+
+      Rendering the full header and the 856px footer on them put 904px on /lp/
+      that the original does not have, which was most of its height gap. */
+  chrome?: 'full' | 'bare' | 'none';
 }
 
 const {
   title, description = '', canonical, ogImage, robots, head, pageCss, offer = false,
+  chrome = 'full',
 } = Astro.props;
 const canonicalUrl = canonical ?? new URL(Astro.url.pathname, site.url).href;
 const ogImageUrl = ogImage ? new URL(img(ogImage), site.url).href : undefined;
@@ -136,13 +148,13 @@ const iconHref = new URL(img(site.favicon), site.url).href;
 
   <body>
     <a class="skip" href="#main">Skip to content</a>
-    <Header />
+    {chrome === 'full' && <Header />}
     <main id="main">
       <slot />
     </main>
-    <Footer />
-    <StickyBar />
-    <Popups offer={offer} />
+    {chrome === 'full' && <Footer />}
+    {chrome !== 'none' && <StickyBar />}
+    {chrome !== 'none' && <Popups offer={offer} />}
     <Interactions />
     <ClickSparks />
 

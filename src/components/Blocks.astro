@@ -603,7 +603,17 @@ const galleryStyle = (b: {
           );
         }
 
-        if (b.type === 'form') return <QuoteForm id={`f-${section?.id ?? 's'}`} />;
+        if (b.type === 'form') {
+          const form = (
+            <QuoteForm
+              id={`f-${section?.id ?? 's'}`}
+              fields={b.fields}
+              placeholders={b.placeholders}
+              submit={b.submit}
+            />
+          );
+          return b.style ? <div class="formwrap" style={b.style}>{form}</div> : form;
+        }
 
         if (b.type === 'map') {
           return (
