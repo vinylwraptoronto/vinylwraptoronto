@@ -118,6 +118,12 @@ export type Block = (
       cols?: number | null;
       colsTablet?: number | null;
       colsMobile?: number | null;
+      /** The widget's own `--grid-column-gap` and `--grid-row-gap`. They are
+          not one value and not the same across the site: the related-post
+          grids on post pages declare 28/28, the archive listings 30/35 and
+          eight widgets 15/35. The port used a flat 18px for all 570. */
+      gapCol?: number | null;
+      gapRow?: number | null;
       titleStyle?: string | null;
       metaStyle?: string | null;
       moreStyle?: string | null;

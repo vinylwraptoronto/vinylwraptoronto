@@ -422,6 +422,8 @@ const galleryStyle = (b: {
                 b.cols ? `--cards-d:${b.cols}` : '',
                 b.colsTablet ? `--cards-t:${b.colsTablet}` : '',
                 b.colsMobile ? `--cards-m:${b.colsMobile}` : '',
+                typeof b.gapCol === 'number' ? `--cards-gap-c:${b.gapCol}px` : '',
+                typeof b.gapRow === 'number' ? `--cards-gap-r:${b.gapRow}px` : '',
               ].filter(Boolean).join(';') || undefined}
             >
               {b.cards.map((c) => (
@@ -1236,7 +1238,10 @@ const galleryStyle = (b: {
     padding: 0;
     display: grid;
     grid-template-columns: repeat(var(--cards-d, auto-fill), minmax(0, 1fr));
-    gap: 18px;
+    /* The widget declares its own row and column gutters and they differ by
+       instance — 28/28 on a related-post grid, 30/35 on an archive listing.
+       The 18px here is only the fallback for a grid that declares neither. */
+    gap: var(--cards-gap-r, 18px) var(--cards-gap-c, 18px);
   }
   .cards:not([style*='--cards-d']) {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
