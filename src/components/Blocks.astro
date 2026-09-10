@@ -923,6 +923,35 @@ const galleryStyle = (b: {
      margin-top and margin-bottom 0. The 6px invented here added six pixels per
      item, which on /sitemap/ alone was 2,394px. */
   .rt :global(li) { margin-bottom: 0; }
+  /* A WordPress gallery block inside post copy.
+     The original nests its images in a figure.wp-block-gallery and lays them
+     out with flex — measured on the original at 1440, the container is
+     flex/wrap with a 24px gap and each child 270px, three across, with a
+     trailing short row growing to fill. The sanitiser strips the classes but
+     keeps the nesting, so the gallery survives as a bare <figure> holding the
+     image figures, and every one of them stacked full width: eight images on
+     /custom-helmet-wraps-toronto-savio/ came to a single 4,972px column.
+     A figure that directly holds other figures is that gallery — no other
+     construct in this copy nests figures — so it needs no class of its own and
+     no change to the stored content. */
+  .rt :global(figure:has(> figure)) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin: 0 0 16px;
+  }
+  .rt :global(figure:has(> figure) > figure) {
+    /* A third of the row, growing to fill a short last row, which is what puts
+       two on the final line at 417px where three sit at 270px above it. */
+    flex: 1 1 calc(33.333% - 16px);
+    min-width: 0;
+    margin: 0;
+  }
+  .rt :global(figure:has(> figure) > figure img) { width: 100%; height: auto; display: block; }
+  @media (max-width: 767px) {
+    .rt :global(figure:has(> figure) > figure) { flex-basis: calc(50% - 12px); }
+  }
+
   /* Gutenberg in-body images (figure.wp-block-image) inside post content. */
   .rt :global(img) {
     display: block;
