@@ -248,6 +248,12 @@ export type Section = {
   bgRepeat?: string | null;
   /** Declared on the inner container, so a restored banner has a height. */
   minHeight?: string | null;
+  /** Elementor's `elementor-section-full_width`: the row runs edge to edge
+      instead of being boxed to the content width, and its inner wrapper carries
+      no horizontal inset. The port boxed these to the 1200px default, which on
+      /commercial-vehicle-wraps/ narrowed a four-gallery section from 1440px to
+      1200px and took 1,964px off its height. */
+  fullWidth?: boolean;
 };
 
 /** page | post | archive | story — archives carry the slugs they list. */

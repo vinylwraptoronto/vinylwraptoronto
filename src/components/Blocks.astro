@@ -634,7 +634,7 @@ const galleryStyle = (b: {
       style={secStyle || undefined}
     >
       <div
-        class="container stack"
+        class:list={['container', 'stack', { 'container--full': section?.fullWidth }]}
         style={[
           section?.maxWidth ? `max-width:${section.maxWidth}` : '',
           section?.minHeight ? `min-height:${section.minHeight}` : '',
@@ -648,6 +648,9 @@ const galleryStyle = (b: {
 
 <style>
   .sec { padding: 34px 0; }
+  /* elementor-section-full_width: edge to edge, and no gutter on the inner
+     wrapper — the section's own padding is the only inset. */
+  .container--full { max-width: none; padding-inline: 0; }
   .sec:first-child { padding-top: 26px; }
 
   /* Blog pagination.
