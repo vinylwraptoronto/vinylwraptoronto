@@ -629,10 +629,25 @@ const galleryStyle = (b: {
 
   return group.bare ? inner : (
     <section
-      class:list={['sec', section?.contentAlign ? `sec--${section.contentAlign}` : null]}
+      class:list={[
+        'sec',
+        section?.contentAlign ? `sec--${section.contentAlign}` : null,
+        { 'sec--overlaid': section?.overlay },
+      ]}
       data-eid={section?.id ?? undefined}
       style={secStyle || undefined}
     >
+      {section?.overlay && (
+        <div
+          class="sec-ovl"
+          aria-hidden="true"
+          style={[
+            section.overlay.color ? `background-color:${section.overlay.color}` : '',
+            section.overlay.image ? `background-image:${section.overlay.image}` : '',
+            section.overlay.opacity ? `opacity:${section.overlay.opacity}` : '',
+          ].filter(Boolean).join(';') || undefined}
+        />
+      )}
       <div
         class:list={['container', 'stack', { 'container--full': section?.fullWidth }]}
         style={[
@@ -651,6 +666,12 @@ const galleryStyle = (b: {
   /* elementor-section-full_width: edge to edge, and no gutter on the inner
      wrapper — the section's own padding is the only inset. */
   .container--full { max-width: none; padding-inline: 0; }
+
+  /* Elementor's background overlay sits between the section's own background
+     and its content, so the content has to be lifted above it. */
+  .sec--overlaid { position: relative; }
+  .sec-ovl { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+  .sec--overlaid > .container { position: relative; z-index: 1; }
   .sec:first-child { padding-top: 26px; }
 
   /* Blog pagination.

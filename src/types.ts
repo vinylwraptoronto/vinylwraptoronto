@@ -248,6 +248,18 @@ export type Section = {
   bgRepeat?: string | null;
   /** Declared on the inner container, so a restored banner has a height. */
   minHeight?: string | null;
+  /** Elementor's `.elementor-background-overlay`: a tint or gradient painted
+      between the section's background image and its content. The thank-you
+      hero fades its photograph into navy this way, which the port dropped, so
+      the white heading sat on the unmuted picture. Only carried where the
+      overlay actually paints — most sections declare the layer and leave it
+      empty or at zero opacity. */
+  overlay?: {
+    color?: string | null;
+    /** A gradient, when the overlay is one rather than a flat tint. */
+    image?: string | null;
+    opacity?: string | null;
+  } | null;
   /** Elementor's `elementor-section-full_width`: the row runs edge to edge
       instead of being boxed to the content width, and its inner wrapper carries
       no horizontal inset. The port boxed these to the 1200px default, which on
