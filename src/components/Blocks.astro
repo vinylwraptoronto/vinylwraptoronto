@@ -1103,10 +1103,7 @@ const galleryStyle = (b: {
   .btn-ic { margin-inline-end: 8px; }
   .feature-ic {
     display: block;
-    /* Elementor's icon-box puts 15px between the icon and the content, not 10:
-       measured on 10 of the 12 icon-boxes across five pages, the other two
-       being boxes with no icon at all. */
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     font-size: 28px;
     color: var(--brand-green);
     text-decoration: none;
@@ -1135,13 +1132,9 @@ const galleryStyle = (b: {
      used to be here was one page's declared value: pages whose boxes declare
      nothing render at the kit's h3 — 22px in black — and got 17px green
      instead. Size and colour now come from the kit or from the widget. */
-  /* The title's own margins are the same on every icon-box on the site — 8px
-     above, 16px below, on h3 and h4 alike, measured across five pages. The
-     8/0 here was 16px short on each of the 1,178 boxes. */
   .feature h3,
   .feature h4 {
-    margin-top: 8px;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
     line-height: 1.2;
     font-weight: 600;
   }
