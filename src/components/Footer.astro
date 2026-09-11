@@ -224,9 +224,11 @@ import {
     color: var(--e-global-color-f32bb28); /* #FF0099 */
     text-decoration: none;
   }
+  /* 500 on the original, not 400 — checked against the live footer on every
+     page it appears, which is all 678. */
   .brands-text {
     font-size: 16px;
-    font-weight: 400;
+    font-weight: 500;
     color: #ffffff;
     text-decoration: none;
   }
@@ -313,19 +315,32 @@ import {
   .creditbar { background: #ffffff; }
   .credit p,
   .credit h5 { margin: 0; }
-  /* #23c23594 is 15px, #36dbd408 12px, both 25px leading and weight 300. The
-     h5s take their size and weight from here, not from the heading default. */
-  .credit h5 { font-size: inherit; font-weight: inherit; line-height: inherit; }
-  .credit .copyright { font-size: 15px; }
+  /* The credit line, re-measured against the original element by element:
+     12px on 18px leading, weight 400, in the brand navy. What was here — 15px
+     on 25px at weight 300 — was wrong on every one of the 678 addresses.
+
+     `color: inherit` is the load-bearing one. global.css sets a colour on
+     h1..h6 directly, and a direct rule beats an inherited one however specific
+     the ancestor, so .by's navy never reached these two h5s and the credit
+     rendered black. */
+  .credit h5 {
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    color: inherit;
+  }
   .by {
     width: 60%;
     text-align: end;
     font-size: 12px;
-    line-height: 25px;
+    line-height: 18px;
     font-weight: 300;
     color: var(--brand-navy);
   }
-  .byname { text-decoration: underline; }
+  /* The two are not the same weight on the original: the credit lines are 300
+     and the link inside them is 400. Setting the whole block to 400 fixed the
+     link and broke both h5s, which is how the difference showed up. */
+  .byname { text-decoration: underline; font-weight: 400; }
   .credit a { color: var(--e-global-color-d077a13); text-decoration: none; }
   .credit a:hover { color: var(--e-global-color-f32bb28); }
 
