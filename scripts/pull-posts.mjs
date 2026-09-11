@@ -110,6 +110,41 @@ const posts = rows.map((r) => ({
   origin: r.origin || 'imported',
 }));
 
+/**
+ * A post's own title — its H1 — which is not what `title` holds.
+ *
+ * Both `title` and `seo_title` in D1 carry the Yoast search-result title, the
+ * one that belongs in <title>. The post's real heading survives only inside
+ * sections_json, and on 383 of the 402 listed posts the two differ: "Knifeless
+ * Tape Wraps: Perfect Edges, Zero Paint Damage" against a heading of
+ * "Knifeless Tape Technology: How We Wrap Your Car Without Touching the Paint".
+ *
+ * The original's listing cards carry the heading — checked on /blog/ and on
+ * both author archives — so that is what a card here has to say. Falls back to
+ * the stored title for anything with no H1.
+ */
+function postHeading(sections, fallback) {
+  const find = (blocks) => {
+    for (const b of blocks ?? []) {
+      if (b.type === 'columns') {
+        for (const c of b.cols ?? []) {
+          const found = find(c.blocks);
+          if (found) return found;
+        }
+      }
+      if (b.type === 'heading' && b.level === 1 && b.text) return b.text;
+    }
+    return undefined;
+  };
+  for (const s of sections ?? []) {
+    const found = find(s.blocks);
+    if (found) return found;
+  }
+  return fallback;
+}
+
+const headingBySlug = new Map(posts.map((p) => [p.slug, postHeading(p.sections, p.title)]));
+
 /*
  * Getting a newly written post into the blog listing.
  *
@@ -179,7 +214,8 @@ try {
 
   const index = rows.map((r) => ({
     slug: r.slug,
-    title: r.title,
+    // The post's heading, not its search-result title — see postHeading above.
+    title: headingBySlug.get(r.slug) ?? r.title,
     image: r.image ?? null,
     author: r.author ?? null,
     published: r.published_at ?? null,
