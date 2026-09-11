@@ -65,6 +65,19 @@ p { margin: 0 0 16px; }
 label { display: inline-block; line-height: 1; vertical-align: middle; }
 
 .container {
+  /* Elementor's --content-width is the width of the CONTENT, not of a box the
+     gutter is then taken out of: its .elementor-container measures 1200 wide
+     with no horizontal padding, because the gutter lives inside the columns.
+     With the page's border-box reset, max-width:1200 minus a 20px gutter each
+     side left every boxed row 1160 — 40px narrower than the original on every
+     section of every page. That is not a cosmetic 3%: it shortens every image
+     it constrains and wraps every paragraph one line sooner, which is why some
+     sections measured short and others tall.
+
+     content-box restores the meaning of the value rather than adding 40px to
+     it, so the 70 sections that carry their own width — 1400px, 1300px, 80vw —
+     come out right too, and the gutter still protects a narrow viewport. */
+  box-sizing: content-box;
   max-width: var(--container-max-width);
   margin-inline: auto;
   padding-inline: var(--gutter);
