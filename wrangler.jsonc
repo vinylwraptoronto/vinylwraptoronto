@@ -7,7 +7,7 @@
   // The adapter's generated entry. Every content page still carries
   // `export const prerender = true` and is served as a static file; this exists
   // so a later gate can add the on-demand contact-form route.
-  "main": "./dist/_worker.js/index.js",
+  "main": "./worker-entry.mjs",
 
   // Both default to true when absent, which published the whole site at
   // vinylwraptoronto.ash-47a.workers.dev — a guessable public address serving
@@ -23,19 +23,25 @@
     "binding": "ASSETS",
     // Workers does not infer 404 handling the way Pages did. Without this an
     // unknown path returns a bare 404 with no page around it.
-    "not_found_handling": "404-page",
+    // "none", not "404-page": a path with no matching file must reach the
+    // Worker rather than being answered by the asset server, because
+    // worker-entry.mjs lowercases it and redirects when that address is real —
+    // the original answers 200 for any capitalisation and a static host does
+    // not. The adapter still renders the 404 page when nothing matches, so an
+    // address that is genuinely gone looks exactly as it did before.
+    "not_found_handling": "none",
     // The default, set explicitly so nobody has to wonder.
     "html_handling": "auto-trailing-slash",
 
     // The on-demand routes, named explicitly.
     //
-    // Static assets are matched before the Worker runs, and with
-    // not_found_handling "404-page" a path with no matching file is answered
-    // with the 404 page rather than being passed on. Nothing under /admin or
-    // /api exists as a file, so without this the admin would be a 404 and the
-    // quote form would silently stop posting. These are the only paths the
-    // Worker needs to see first; everything else stays a static file served
-    // without invoking it.
+    // Static assets are matched before the Worker runs, so a path that does
+    // exist as a file is served without the Worker ever seeing it. Nothing
+    // under /admin or /api exists as a file, and both need the Worker to run
+    // before anything else looks at the request — /api/quote is a POST, which
+    // no asset lookup can answer. These are the only paths that need to jump
+    // the queue; every other request stays a static file served directly, and
+    // reaches the Worker only when there is no file for it.
     "run_worker_first": ["/admin", "/admin/*", "/api/*"]
   },
 
