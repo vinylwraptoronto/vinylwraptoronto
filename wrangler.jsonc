@@ -33,16 +33,29 @@
     // The default, set explicitly so nobody has to wonder.
     "html_handling": "auto-trailing-slash",
 
-    // The on-demand routes, named explicitly.
+    // Which requests the Worker sees before the asset server answers them.
     //
-    // Static assets are matched before the Worker runs, so a path that does
-    // exist as a file is served without the Worker ever seeing it. Nothing
-    // under /admin or /api exists as a file, and both need the Worker to run
-    // before anything else looks at the request — /api/quote is a POST, which
-    // no asset lookup can answer. These are the only paths that need to jump
-    // the queue; every other request stays a static file served directly, and
-    // reaches the Worker only when there is no file for it.
-    "run_worker_first": ["/admin", "/admin/*", "/api/*"]
+    // /admin and /api have to be here: neither exists as a file, and
+    // /api/quote is a POST, which no asset lookup can answer.
+    //
+    // Documents are here for one reason — worker-entry.mjs stamps
+    // X-Robots-Tag: noindex on anything served from the preview hostname, and
+    // it cannot stamp a response the asset server returned without it. The
+    // preview is a byte-identical copy of the client's site and was fully
+    // indexable; a duplicate site in the index is worth a Worker invocation
+    // per page view. Once the apex is attached and the preview retired, this
+    // can go back to just /admin and /api.
+    //
+    // The pages themselves are still static files: the Worker reads them
+    // through the ASSETS binding rather than rendering anything.
+    "run_worker_first": [
+      "/*",
+      // The two big static trees stay on the fast path: hashed build output and
+      // the self-hosted font files. Between them they are most of the requests
+      // a page makes and none of them is a document anyone could index.
+      "!/_astro/*",
+      "!/fonts/*"
+    ]
   },
 
   // Preview hostname: staging.vinylwraptoronto.com, attached to this Worker as

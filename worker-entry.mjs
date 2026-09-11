@@ -36,6 +36,37 @@
  */
 import astro from './dist/_worker.js/index.js';
 
+/**
+ * Hostnames that must never be indexed.
+ *
+ * The preview serves a byte-identical copy of the client's site, and it was
+ * serving it with `index, follow` and a robots.txt that allows everything — a
+ * complete duplicate of the site, eligible for the index, pointed at the same
+ * domain it is a copy of. The canonical tags point at the production domain,
+ * which helps, but a canonical is a hint and this is a whole site.
+ *
+ * A header rather than robots.txt, for two reasons. Cloudflare injects its own
+ * managed robots.txt at the edge with `User-agent: * / Allow: /` in it, so a
+ * Disallow served from here would sit in the same file arguing with it. And
+ * Disallow is the wrong instruction anyway: it stops the crawl, which stops
+ * Google ever reading the noindex, and a disallowed address that someone links
+ * to can still be indexed URL-only. noindex with crawling allowed is what
+ * actually keeps a preview out.
+ *
+ * Keyed on the exact preview hostname, so attaching the apex to this Worker at
+ * cutover cannot pick it up by accident.
+ */
+const NEVER_INDEX = new Set(['staging.vinylwraptoronto.com']);
+
+function withNoindex(response, hostname) {
+  if (!NEVER_INDEX.has(hostname)) return response;
+  // A response from the asset server has immutable headers; re-wrapping it is
+  // the only way to add one.
+  const copy = new Response(response.body, response);
+  copy.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  return copy;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -64,6 +95,6 @@ export default {
       }
     }
 
-    return astro.fetch(request, env, ctx);
+    return withNoindex(await astro.fetch(request, env, ctx), url.hostname);
   },
 };
