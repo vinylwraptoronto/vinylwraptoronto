@@ -1046,11 +1046,33 @@ const galleryStyle = (b: {
     font-size: 13px;
     color: #767676;
   }
+  /* A standalone body figure's caption: 16px on 22px leading in #333, measured
+     against the original on the 50 pages that carry one. The 13px/#767676 here
+     was invented. */
   .rt :global(figcaption) {
     margin-top: 6px;
-    font-size: 13px;
-    color: #767676;
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 400;
+    color: #333333;
     text-align: center;
+  }
+
+  /* A caption inside a gallery is a different thing entirely, and sharing one
+     selector with the above is why both were wrong. The original lays it over
+     the bottom of its own image — absolutely positioned, white, 13px on 18.2,
+     no scrim — rather than placing it in the flow underneath. 11 pages. */
+  .rt :global(figure:has(> figure) > figure) { position: relative; }
+  .rt :global(figure:has(> figure) > figure > figcaption) {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    margin: 0;
+    padding: 8px 10px;
+    font-size: 13px;
+    line-height: 18.2px;
+    font-weight: 400;
+    color: #ffffff;
   }
   /* Measured pink and unlined on the live site, not green. Corrected here
      rather than by adding a second rule: the two had equal specificity and the
@@ -1425,6 +1447,18 @@ const galleryStyle = (b: {
     color: var(--brand-green);
   }
   .postnav .t { font-family: 'Poppins', sans-serif; font-weight: 500; font-size: 15px; }
+
+  /* The before/after template styles its own post navigation differently: 16px
+     on 24 at weight 500 in grey, where every other post gives 18px on 27 at
+     400 in the brand green. Both are the original's, so this is scoped to that
+     template rather than fought over globally — section 153256c is on exactly
+     the 69 wraps-before-after pages and nothing else. */
+  .sec[data-eid='153256c'] .postnav .dir {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+    color: #818181;
+  }
 
 
   /* Carousel: slides-per-view and gap come from the widget's own settings. */
