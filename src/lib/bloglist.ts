@@ -133,17 +133,29 @@ export function blogSections(
  * that, and it does not cost anything: every post is still linked, so they are
  * still crawled.
  */
-export function blogPageMeta(page: PageData, pageNum: number, total: number): PageData {
+/**
+ * Head for page 2 and beyond of a paginated listing.
+ *
+ * `base` is the listing's own address with a trailing slash — '/blog/', or
+ * '/author/masoud/'. It defaults to the blog index, which is what this was
+ * written for; the author archives paginate the same way and reuse it.
+ */
+export function blogPageMeta(
+  page: PageData,
+  pageNum: number,
+  total: number,
+  base = '/blog/',
+): PageData {
   if (pageNum <= 1) return page;
 
   const title = `${page.title} — Page ${pageNum} of ${total}`;
-  const url = `https://vinylwraptoronto.com/blog/page/${pageNum}/`;
+  const url = `https://vinylwraptoronto.com${base}page/${pageNum}/`;
   const robots = 'noindex, follow';
 
-  /* The ported head carries /blog/'s own robots, og:title and og:url. Setting
-     the fields on the page object alone would leave those rendering the page-1
-     values beside the new ones -- the same trap src/lib/pageseo.ts documents --
-     so they are rewritten in place by key. */
+  /* The ported head carries the listing's own robots, og:title and og:url.
+     Setting the fields on the page object alone would leave those rendering
+     the page-1 values beside the new ones -- the same trap src/lib/pageseo.ts
+     documents -- so they are rewritten in place by key. */
   const head: HeadData = { ...(page.head ?? {}) };
   const meta = [...(((page.head?.meta as unknown as MetaTag[]) ?? []))].map(
     (t) => [...t] as MetaTag,
@@ -154,12 +166,12 @@ export function blogPageMeta(page: PageData, pageNum: number, total: number): Pa
   setMeta(meta, 'og:url', url, true);
   head.meta = meta as unknown as HeadData['meta'];
 
-  /* The ported Yoast graph describes /blog/ itself: its WebPage node is
-     @id ".../blog/#webpage", and the breadcrumb, isPartOf and
+  /* The ported Yoast graph describes the page-1 address itself: its WebPage
+     node is @id ".../#webpage", and the breadcrumb, isPartOf and
      primaryImageOfPage nodes all reference that id. Rewriting the id would
-     mean rewriting every reference to it, and leaving it means every one of
-     the 33 later pages claims to be /blog/. Since they are noindex, structured
-     data on them is ignored anyway, so the honest answer is to serve none. */
+     mean rewriting every reference to it, and leaving it means every later
+     page claims to be page 1. Since they are noindex, structured data on them
+     is ignored anyway, so the honest answer is to serve none. */
   delete head.ld;
 
   return { ...page, title, url, robots, head };

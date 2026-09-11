@@ -15,7 +15,8 @@ import additions from '../data/post-additions.json';
 import pageSeo from '../data/page-seo.json';
 import blogIndex from '../data/blog-index.json';
 import { applyPageSeo, type PageSeoOverride } from '../lib/pageseo';
-import { blogPageMeta, blogSections, pageCount, type BlogEntry } from '../lib/bloglist';
+import { blogPageMeta, blogSections, pageCount, PER_PAGE, type BlogEntry } from '../lib/bloglist';
+import { membersOf } from '../lib/archive';
 
 export const prerender = true;
 
@@ -58,6 +59,19 @@ export async function getStaticPaths() {
       paths.push({ params: { slug: `blog/page/${n}` }, props: { page: blog, pageNum: n } });
     }
   }
+
+  /* /author/<name>/page/2/ …
+     The two author archives are the only listings on the site that carry their
+     membership as data, and they were rendering all of it at once: 347 entries
+     on one page, 50,623px against the original's 3,755. The original paginates
+     them twelve at a time like the blog, so they do too. */
+  for (const page of notPosts) {
+    if (page.kind !== 'archive') continue;
+    const total = pageCount(membersOf(page).length);
+    for (let n = 2; n <= total; n++) {
+      paths.push({ params: { slug: `${page.slug}/page/${n}` }, props: { page, pageNum: n } });
+    }
+  }
   return paths;
 }
 
@@ -77,12 +91,22 @@ const withSeo = applyPageSeo(
    ported: see src/lib/bloglist.ts. Everything else renders exactly as before. */
 const isBlogIndex = raw.slug === 'blog';
 const blogTotal = pageCount((blogIndex as BlogEntry[]).length);
+
+/* A paginated archive's later pages need the same head treatment the blog's
+   do: their own title and canonical, noindex so the site does not offer Google
+   thirty near-identical listings, and no structured data, because the ported
+   graph describes page 1 by @id and every node in it references that id. */
+const archivePages = pageCount(membersOf(raw).length);
+const isPagedArchive = raw.kind === 'archive' && archivePages > 1;
+
 const page = isBlogIndex
   ? {
       ...blogPageMeta(withSeo, pageNum, blogTotal),
       sections: blogSections(withSeo, pageNum, blogIndex as BlogEntry[]),
     }
-  : withSeo;
+  : isPagedArchive
+    ? blogPageMeta(withSeo, pageNum, archivePages, `/${raw.slug}/`)
+    : withSeo;
 
 /* Every post byline on the original links to that author's archive. Only these
    two archives exist and are linked there; a third author value, "Paolo Leone",
@@ -98,10 +122,17 @@ const authorHref = page.author ? AUTHOR_ARCHIVES[page.author] : undefined;
    carries zero members and renders its listing from ported Elementor markup
    instead, so without this a newly written post would be live at its own
    address and linked from nowhere. The additions are empty until the first
-   post is written here, so no existing page changes. */
-const extraMembers =
-  (additions as { members?: Record<string, string[]> }).members?.[page.slug] ?? [];
-const archiveMembers = [...new Set([...(page.members ?? []), ...extraMembers])];
+   post is written here, so no existing page changes.
+
+   Only the two author archives carry members at all, and they are paginated:
+   the original serves twelve at a time, where this rendered the whole 347 in
+   one column. */
+const allMembers = membersOf(raw);
+const archiveTotal = pageCount(allMembers.length);
+/* A plain slice, not bloglist's pageSlice: that one lifts WordPress's sticky
+   posts onto page 1, which is a property of the blog index and not of an
+   author archive, and it takes entries rather than slugs. */
+const archiveMembers = allMembers.slice((pageNum - 1) * PER_PAGE, pageNum * PER_PAGE);
 
 /* The Limited Time Offer popup (Elementor template 22055) is not site-wide on
    the original — it is emitted only on the addresses whose "Claim Now" button
@@ -168,6 +199,24 @@ const dateLabel = page.published
 
   {page.kind === 'archive' && archiveMembers.length > 0 && (
     <ArchiveList members={archiveMembers} />
+  )}
+
+  {/* The pager goes after the listing, and only when there is more than one
+      page of it. It reuses the blog's control, which is the same Elementor
+      pagination the original renders on these archives. */}
+  {isPagedArchive && archiveMembers.length > 0 && (
+    <div class="container">
+      <Blocks
+        sections={[
+          {
+            id: 'archive-pager',
+            blocks: [
+              { type: 'pagination', current: pageNum, total: archivePages, base: `/${raw.slug}/` },
+            ],
+          },
+        ]}
+      />
+    </div>
   )}
 
 </Base>
