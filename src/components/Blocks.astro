@@ -1002,7 +1002,10 @@ const galleryStyle = (b: {
     height: auto;
     border-radius: 4px;
   }
-  .rt :global(figure) { margin: 20px 0; }
+  /* Measured on the original's in-body figures across several posts: margin-top
+     0, margin-bottom 18px. The 20px on both sides invented here added 22px to
+     every figure on the page — 286px on a post carrying thirteen of them. */
+  .rt :global(figure) { margin: 0 0 18px; }
 
   /* Gutenberg comparison tables (figure.wp-block-table). The extractor used to
      unwrap these into a run of loose words; they carry real content. */
