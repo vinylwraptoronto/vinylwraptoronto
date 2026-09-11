@@ -173,7 +173,9 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
 
   /* The live form sets only the parenthetical smaller, at 12px, and leaves the
      rest at the form's own size. */
-  .uploadnote { margin: 0 0 4px; font-size: 15px; color: var(--ink); }
+  /* #000 on the original, not the body ink — checked on all 270 pages that
+     carry the upload field. */
+  .uploadnote { margin: 0 0 4px; font-size: 15px; color: #000000; }
   .uploadnote span { font-size: 12px; }
   .qform input[type='file'] { font-size: 14px; }
 

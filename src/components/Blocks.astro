@@ -191,8 +191,13 @@ const galleryStyle = (b: {
         if (b.type === 'heading') {
           const Tag = (b.tag ?? `h${Math.min(Math.max(b.level, 1), 6)}`) as 'h1';
           const id = b.eid ? tocIds.get(b.eid) : undefined;
+          /* `hd` carries the heading widget's leading to the blocks that are
+             not rendered as h1..h6. Elementor lets a heading choose its tag,
+             and "Share This Post" is one of 402 that pick <p> — which then took
+             the paragraph's 1.5 instead of the heading's 1, so it set 18px text
+             on 27px leading against the original's 18. */
           return (
-            <Tag id={id} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
+            <Tag class:list={[{ hd: !!b.tag }]} id={id} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
               {b.href ? <a class="hlink" href={img(b.href)}>{b.text}</a> : b.text}
             </Tag>
           );
@@ -1010,11 +1015,14 @@ const galleryStyle = (b: {
   /* Gutenberg comparison tables (figure.wp-block-table). The extractor used to
      unwrap these into a run of loose words; they carry real content. */
   .rt :global(figure.wp-block-table) { overflow-x: auto; }
+  /* 16px on 24px leading, measured against the original on the 114 pages that
+     carry a table — one combination, no exceptions. 15px on 1.45 was invented
+     and came out 15/22. */
   .rt :global(table) {
     width: 100%;
     border-collapse: collapse;
-    font-size: 15px;
-    line-height: 1.45;
+    font-size: 16px;
+    line-height: 24px;
   }
   .rt :global(th),
   .rt :global(td) {
@@ -1023,10 +1031,13 @@ const galleryStyle = (b: {
     text-align: left;
     vertical-align: top;
   }
+  /* The header row is bold and centred there, not semibold and left: 90 pages
+     agree and the one that differs is already at 700. */
   .rt :global(thead th) {
     background: #f6f7f8;
     font-family: 'Poppins', sans-serif;
-    font-weight: 600;
+    font-weight: 700;
+    text-align: center;
   }
   .rt :global(tbody tr:nth-child(even)) { background: #fafafa; }
   .rt :global(caption) {
@@ -1053,7 +1064,12 @@ const galleryStyle = (b: {
   .rt :global(h3),
   .rt :global(h4) { margin-top: 24px; }
 
-  .hlink { color: inherit; text-decoration: none; }
+  /* A link inside a heading is weight 400 on the original — 64 heading-sized
+     anchors across the site, no exceptions. Ours inherited whatever the
+     heading default gave it, so the same link came out 400 on some pages, 500
+     on others and 600 on one. `font-weight` rather than `inherit` for exactly
+     that reason. */
+  .hlink { color: inherit; font-weight: 400; text-decoration: none; }
   .hlink:hover { color: var(--brand-pink); }
 
   .fig { margin: 0; }
@@ -1088,7 +1104,13 @@ const galleryStyle = (b: {
   .btnrow[style*='right'] { justify-content: flex-end; }
 
   /* Button styling follows the header CTA: navy, green on hover, square. */
-  .btnrow button.btn { border: 0; cursor: pointer; font: inherit; }
+  /* Not `font: inherit`. That shorthand also sets line-height, to the body's
+     1.5, and at 0,2,1 it out-specifies `.btn { line-height: 1 }` — so every
+     popup trigger rendered 14px text on 21px leading where the original gives
+     14 on 14, on 402 pages. The family and size the button needs are already
+     set by .btn, and an author rule beats the user agent's button font
+     without any help. */
+  .btnrow button.btn { border: 0; cursor: pointer; }
   .btn {
     display: inline-block;
     background-color: var(--e-global-color-d077a13);
@@ -1254,8 +1276,10 @@ const galleryStyle = (b: {
   .cdown-item + .cdown-item { margin-left: 5px; }
   .cdown-digits,
   .cdown-label { display: block; font-family: 'Poppins', sans-serif; font-weight: 400; }
-  .cdown-digits { font-size: 20px; line-height: 1.2; font-variant-numeric: tabular-nums; }
-  .cdown-label { font-size: 10px; line-height: 1.2; }
+  /* Leading is 1, not 1.2: the original's digits are 20px on 20 and its labels
+     10px on 10, measured on all 402 pages carrying the countdown. */
+  .cdown-digits { font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .cdown-label { font-size: 10px; line-height: 1; }
 
   /* related / looped post grids */
   /* The count comes from the widget; auto-fill gave three or more columns
@@ -1515,11 +1539,20 @@ const galleryStyle = (b: {
     border-radius: 6px;
     padding: 16px 20px;
   }
+  /* 22px leading in the kit green, measured against the original on all 402
+     pages that carry a table of contents — one combination, no exceptions.
+     Size and weight were already right; the colour was navy and the leading
+     fell back to the font size. */
+  /* A heading widget that chose a tag outside h1..h6 still leads like a
+     heading: 1, not the paragraph's 1.5. */
+  .hd { line-height: 1; }
+
   .toc-title {
     font-family: 'Poppins', sans-serif;
     font-size: 18px;
+    line-height: 22px;
     font-weight: 500;
-    color: var(--brand-navy);
+    color: var(--e-global-color-a8178e9); /* #99CC33 */
     margin: 0 0 10px;
   }
   .toc ol { margin: 0; padding-inline-start: 20px; }

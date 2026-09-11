@@ -106,8 +106,13 @@
     padding: 4px 9px;
     background: rgba(0, 0, 0, 0.62);
     color: #fff;
-    font-size: 12px;
-    letter-spacing: 0.04em;
+    /* 16px on 18px leading at weight 500, with no extra tracking — measured
+       against the original's Before/After labels on all 68 pages that carry a
+       slider. 12px with 0.04em was invented. */
+    font-size: 16px;
+    line-height: 18px;
+    font-weight: 500;
+    letter-spacing: normal;
     border-radius: 3px;
     margin: 0;
     pointer-events: none;
