@@ -47,14 +47,44 @@ echo "==> Building"
 npm run build
 
 echo "==> Uploading version"
-npx wrangler deploy
+# Keep wrangler's own output on screen and capture it: the id it prints is the
+# version THIS run uploaded, which is the only one it is correct to promote.
+UPLOAD_LOG=$(mktemp)
+trap 'rm -f "$UPLOAD_LOG"' EXIT
+npx wrangler deploy 2>&1 | tee "$UPLOAD_LOG"
 
-echo "==> Promoting the newest version to 100%"
-VERSION_ID=$(curl -sS --max-time 60 -H "Authorization: Bearer $TOKEN" "$API/versions" \
-  | python3 -c 'import sys,json; print((json.load(sys.stdin)["result"]["items"] or [{}])[0].get("id",""))')
+echo "==> Promoting this run's version to 100%"
+# Promote the version just uploaded, NOT "the newest".
+#
+# Those differ whenever two deploys overlap — a push to main has CI deploying
+# while someone runs this from a workstation — and reading "newest" from the
+# API then promotes the other run's build. Both were the same commit the day
+# this was found, so nothing broke; the next time they would not be, and the
+# failure is a deploy that reports success having shipped code nobody in the
+# room wrote.
+VERSION_ID=$(grep -oE 'Current Version ID: *[0-9a-f-]{36}' "$UPLOAD_LOG" | tail -1 | grep -oE '[0-9a-f-]{36}$' || true)
 
 if [ -z "$VERSION_ID" ]; then
-  echo "Could not read the newest version id." >&2
+  # wrangler changed its output, so fall back to the API. Defensive, because on
+  # an error payload result is null and indexing into it died with a bare
+  # "TypeError: 'NoneType' object is not subscriptable" and no hint of what the
+  # API had actually said.
+  echo "    wrangler printed no version id; falling back to the API" >&2
+  VERSION_ID=$(curl -sS --max-time 60 -H "Authorization: Bearer $TOKEN" "$API/versions" \
+    | python3 -c 'import sys, json
+try:
+    d = json.load(sys.stdin)
+except ValueError:
+    print("    the versions endpoint did not return JSON", file=sys.stderr); raise SystemExit(0)
+for e in d.get("errors") or []:
+    print("    ERR", e.get("code"), e.get("message"), file=sys.stderr)
+items = ((d.get("result") or {}).get("items")) or []
+print(items[0].get("id", "") if items else "")')
+fi
+
+if [ -z "$VERSION_ID" ]; then
+  echo "Could not determine which version to promote — nothing was promoted," >&2
+  echo "and the hostname is still serving whatever it served before this run." >&2
   exit 1
 fi
 echo "    version $VERSION_ID"
