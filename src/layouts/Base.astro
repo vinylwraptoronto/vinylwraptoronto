@@ -98,8 +98,15 @@ if (!source.length) {
   carriedTags.push(['twitter:card', false, 'summary_large_image']);
 }
 
-// JSON.stringify does not escape "</script>", which would close the block early.
-const ld = head?.ld ? JSON.stringify(head.ld).replace(/</g, '\\u003c') : null;
+/* JSON.stringify does not escape "</script>", which would close the block early.
+
+   An array means several blocks rather than one block holding a list: the two
+   landing pages serve Yoast's @graph and a separate FAQPage, as the original
+   does. Every other address carries a single object and renders exactly as
+   before. */
+const ldBlocks = (head?.ld == null ? [] : Array.isArray(head.ld) ? head.ld : [head.ld])
+  .filter(Boolean)
+  .map((block) => JSON.stringify(block).replace(/</g, '\\u003c'));
 
 const iconHref = new URL(img(site.favicon), site.url).href;
 ---
@@ -126,7 +133,7 @@ const iconHref = new URL(img(site.favicon), site.url).href;
         ? <meta property={key} content={value} />
         : <meta name={key} content={value} />)}
 
-    {ld && <script type="application/ld+json" set:html={ld} />}
+    {ldBlocks.map((block) => <script type="application/ld+json" set:html={block} />)}
 
     <!-- Self-hosted, exactly the faces the live site serves. "Roboto Slab" is
          declared in the Elementor kit but loads no face there, so it is not

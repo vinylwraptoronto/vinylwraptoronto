@@ -338,6 +338,10 @@ export type PageKind = 'page' | 'post' | 'archive' | 'story';
     versions, which an Astro build cannot truthfully claim. */
 export type HeadData = {
   meta?: Record<string, string>;
+  /** The page's JSON-LD. An object is one `<script>` block, which is what 1,937
+      of the 1,939 addresses carry. An array is several, in order: the two
+      landing pages serve Yoast's `@graph` and a separate FAQPage block, and
+      merging those into one would not be what the original publishes. */
   ld?: unknown;
 };
 
