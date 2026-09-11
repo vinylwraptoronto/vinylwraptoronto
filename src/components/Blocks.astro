@@ -9,6 +9,7 @@
 import type { Block, Section } from '../types';
 import categories from '../data/categories.json';
 import imgDims from '../data/img-dims.json';
+import galleryThumbs from '../data/gallery-thumbs.json';
 import QuoteForm from './QuoteForm.astro';
 import { img, imgHtml } from '../lib/img';
 
@@ -49,6 +50,29 @@ const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined
  *  Run `node scripts/img-dims.mjs --write` after adding uploads. */
 const dimsOf = (src: string): [number, number] | undefined =>
   (imgDims as Record<string, [number, number]>)[src.split('?')[0]];
+
+/** What a gallery tile should actually request, and at what size.
+ *
+ *  The original never puts a full photograph in its grid: Elementor's Gallery
+ *  widget asks for WordPress's "medium" (inside 300x300) in a masonry gallery
+ *  and "medium_large" (768 wide) in a grid one, and keeps the upload for the
+ *  lightbox the tile links to. The port asked for the upload in both places,
+ *  which on the portfolio meant fetching 341 full photographs to draw 341
+ *  thumbnails.
+ *
+ *  src/data/gallery-thumbs.json holds the resized name for every tile, each one
+ *  fetched from the image host before being recorded. A tile with no entry --
+ *  an image already smaller than the target, or one added since the manifest
+ *  was built -- falls back to the upload, which is what happened before.
+ *
+ *  Run `node scripts/gallery-thumbs.mjs --write` after adding gallery images. */
+const tileOf = (src: string, masonry?: boolean): { src: string; w?: number; h?: number } => {
+  const box = masonry ? 300 : 768;
+  const hit = (galleryThumbs as Record<string, [string, number, number]>)[`${box}:${src}`];
+  if (hit) return { src: hit[0], w: hit[1], h: hit[2] };
+  const d = dimsOf(src);
+  return { src, w: d?.[0], h: d?.[1] };
+};
 
 /** Stable anchor id from heading text, so the table of contents can link to it. */
 const slugify = (t: string) =>
@@ -645,12 +669,13 @@ const galleryStyle = (b: {
               )}
               <div class:list={['fgal-grid', { 'fgal-grid--masonry': b.masonry }]} style={galleryStyle(b)}>
                 {b.items.map((it) => {
-                  const d = dimsOf(it.src);
+                  const t = tileOf(it.src, b.masonry);
                   return (
                   <figure class="fgal-item" data-tag={it.tag}>
-                    {/* The original wraps every gallery item in a link to the
-                        full-size file and opens its lightbox from there. The
-                        link is what makes the picture reachable with JS off. */}
+                    {/* The link carries the full-size upload, as the original's
+                        does: it is what the lightbox opens, and what makes the
+                        picture reachable with JS off. Only the tile itself is
+                        served at thumbnail size. */}
                     <a class="lb-link" href={img(it.src)} title={it.title}>
                       {/* The ratio has to be inline: the masonry rule sets
                           `aspect-ratio: auto`, which also discards the ratio a
@@ -659,11 +684,11 @@ const galleryStyle = (b: {
                           so it keeps that and only the shape-preserving
                           masonry variant gets the file's own. */}
                       <img
-                        src={img(it.src)}
+                        src={img(t.src)}
                         alt={it.alt ?? it.title}
-                        width={d?.[0]}
-                        height={d?.[1]}
-                        style={b.masonry && d ? `aspect-ratio:${d[0]}/${d[1]}` : undefined}
+                        width={t.w}
+                        height={t.h}
+                        style={b.masonry && t.w && t.h ? `aspect-ratio:${t.w}/${t.h}` : undefined}
                         loading="lazy"
                         decoding="async"
                       />
