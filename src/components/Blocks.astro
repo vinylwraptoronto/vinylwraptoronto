@@ -775,11 +775,15 @@ const galleryStyle = (b: {
      :not(:first-child) and :not(:last-child), which is 5px everywhere except
      the two ends. The three colours are the site's own global palette tokens,
      so they follow any later change to them. */
+  /* 20px on 30px leading, measured against the original's pager on /blog/.
+     18px here left every page number, the ellipsis and both arrows a size
+     small across the index and its 33 pagination pages. */
   .elementor-pagination {
     margin-top: 30px;
     text-align: center;
     font-family: 'Poppins', sans-serif;
-    font-size: 18px;
+    font-size: 20px;
+    line-height: 30px;
     font-weight: 400;
   }
   .elementor-pagination .page-numbers:not(:first-child) { margin-left: 5px; }
