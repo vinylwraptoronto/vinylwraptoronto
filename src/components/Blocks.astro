@@ -673,7 +673,7 @@ const galleryStyle = (b: {
 
         if (b.type === 'columns') {
           return (
-            <div class="cols">
+            <div class="cols" style={b.margin ? `margin:${b.margin}` : undefined}>
               {b.cols.map((c) => {
                 /* Only a column that sits on a colour of its own gets one; a
                    declared #ffffff is the page background already. */

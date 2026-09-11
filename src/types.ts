@@ -281,6 +281,15 @@ export type ColumnsBlock = {
     shadow?: string | null;
     radius?: string | null;
   }[];
+  /** The row's own outer margin.
+   *
+   * Elementor builds a row like this as an *inner section*, which can carry a
+   * margin of its own — the brand archives put 40px above the one holding the
+   * post grid and its sidebar. The extractor flattens an inner section into
+   * this block and the margin went with it, so 91 pages lost 40px each. Carried
+   * verbatim as the original's declaration rather than as a number, because
+   * Elementor writes all four sides. */
+  margin?: string | null;
 };
 
 /** Sections carry the live template's own padding and container width; the
