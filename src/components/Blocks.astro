@@ -976,6 +976,25 @@ const galleryStyle = (b: {
     .rt :global(figure:has(> figure) > figure) { flex-basis: calc(50% - 12px); }
   }
 
+  /* Gutenberg's columns block (div.wp-block-columns), which three posts use to
+     put a pair of images side by side. The extractor kept the figures and
+     dropped the wrapper, so they stacked at full width — 566px each where the
+     original's pair is 278px. The wrapper is restored in the stored content as
+     .wpcols; the geometry here is read off the original: flex, 24px gap, and
+     each column flex: 1 1 0, which divides its 857px into two at 416.7px.
+
+     A column can hold more than its image — one of the three has a
+     "Before & After" line above it — so the child is a column, not a figure. */
+  .rt :global(.wpcols) { display: flex; gap: 24px; margin: 0 0 16px; }
+  .rt :global(.wpcols > .wpcol) { flex: 1 1 0; min-width: 0; }
+  .rt :global(.wpcols > .wpcol > figure) { margin: 0; }
+  .rt :global(.wpcols > .wpcol > figure img) { width: 100%; }
+  /* WordPress stacks a columns block below 782px. */
+  @media (max-width: 781px) {
+    .rt :global(.wpcols) { flex-wrap: wrap; }
+    .rt :global(.wpcols > .wpcol) { flex-basis: 100%; }
+  }
+
   /* Gutenberg in-body images (figure.wp-block-image) inside post content. */
   .rt :global(img) {
     display: block;
