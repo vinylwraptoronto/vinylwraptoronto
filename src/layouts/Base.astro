@@ -41,11 +41,22 @@ export interface Props {
       Limited Time Offer panel, so the caller decides from the page's own
       blocks rather than from a field nothing else would set. */
   progress?: boolean;
+  /** Whether this address asks for Montserrat.
+   *
+   * The two landing pages are Elementor Canvas templates and the original
+   * loads Montserrat for them; four addresses here carry the family in their
+   * ported inline styles. Nothing ever loaded the face, so those pages
+   * rendered in whatever generic sans the browser fell back to — invisible to
+   * a comparison of declared families, because both sides say "Montserrat".
+   *
+   * Requested only where it is used: the other 1,683 addresses would be paying
+   * for a stylesheet and a font file they never reference. */
+  montserrat?: boolean;
 }
 
 const {
   title, description = '', canonical, ogImage, robots, head, pageCss, offer = false,
-  chrome = 'full', progress = false,
+  chrome = 'full', progress = false, montserrat = false,
 } = Astro.props;
 const canonicalUrl = canonical ?? new URL(Astro.url.pathname, site.url).href;
 const ogImageUrl = ogImage ? new URL(img(ogImage), site.url).href : undefined;
@@ -140,6 +151,9 @@ const iconHref = new URL(img(site.favicon), site.url).href;
          requested here either. -->
     <link rel="stylesheet" href="/fonts/poppins.css" />
     <link rel="stylesheet" href="/fonts/roboto.css" />
+    {/* Self-hosted like the other two, and requested only on the four
+        addresses whose ported styles name it. */}
+    {montserrat && <link rel="stylesheet" href="/fonts/montserrat.css" />}
     {/* The original draws 66 icons on the homepage alone — in the nav carets,
         the icon lists, the icon boxes, the buttons and the footer social row —
         and the port shipped none of them. Same Font Awesome build the live site

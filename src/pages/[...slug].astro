@@ -155,6 +155,13 @@ const hasBlock = (blocks: Block[], type: string): boolean =>
   blocks.some((b) => (b.type === 'columns' ? b.cols.some((c) => hasBlock(c.blocks, type)) : b.type === type));
 const needsProgress = page.sections.some((s) => hasBlock(s.blocks, 'countdown'));
 
+/* Montserrat is requested only where the ported styles name it — four
+   addresses, against 1,683 that would otherwise fetch a face they never use.
+   Read off the page's own content rather than from a list, so a page edited in
+   /admin to use it gets the font without anyone remembering to add it. */
+const needsMontserrat =
+  JSON.stringify(page.sections).includes('Montserrat') || (page.css ?? '').includes('Montserrat');
+
 const dateLabel = page.published
   ? new Date(page.published).toLocaleDateString('en-CA', {
       year: 'numeric',
@@ -175,6 +182,7 @@ const dateLabel = page.published
   offer={needsOffer}
   chrome={page.chrome ?? 'full'}
   progress={needsProgress}
+  montserrat={needsMontserrat}
 >
   {page.kind === 'post' && dateLabel && (
     <div class="postmeta">

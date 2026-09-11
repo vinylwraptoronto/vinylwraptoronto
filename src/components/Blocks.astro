@@ -1046,6 +1046,21 @@ const galleryStyle = (b: {
     font-size: 13px;
     color: #767676;
   }
+  /* The reviewer's name under a testimonial on the two landing pages. The
+     extractor flattened Elementor's testimonial widget into rich text, so the
+     name is a bare span with nothing to select it by; the class is added to
+     the stored content instead. 14px on 21 at weight 500 in the brand navy,
+     centred — identical across both pages and all ten reviews, where ours
+     inherited the body's 16px/24 at 400. */
+  .rt :global(.tm-name) {
+    display: block;
+    font-size: 14px;
+    line-height: 21px;
+    font-weight: 500;
+    color: var(--brand-navy);
+    text-align: center;
+  }
+
   /* A standalone body figure's caption: 16px on 22px leading in #333, measured
      against the original on the 50 pages that carry one. The 13px/#767676 here
      was invented. */
