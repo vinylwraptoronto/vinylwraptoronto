@@ -30,3 +30,14 @@
 # here and are matched first — a static rule beats the splat.
 /author/admin/  /  301
 /author/admin   /  301
+
+# /vinyl/ 301s to the homepage on the original, and 1,651 pages here link it
+# from the contact icon strip.
+#
+# astro.config.mjs already declares this redirect, but the Cloudflare adapter
+# writes it into _redirects as "/vinyl" with no trailing slash — and this site
+# is trailingSlash: "always", so the form every page actually links had no rule
+# at all and answered 404 on the live preview. The rule is written here, in
+# both forms, because the asset server matches literal paths and will not
+# infer one from the other.
+/vinyl/  /  301

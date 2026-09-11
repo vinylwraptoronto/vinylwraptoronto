@@ -26,18 +26,31 @@ const routeOf = (f) =>
   '/' + path.relative(DIST, f).replace(/index\.html$/, '').replace(/\\/g, '/');
 const routes = new Set(htmlFiles.map(routeOf));
 
-// Addresses handled by a redirect are reachable even though no page is built
-// for them — read _redirects so they are not reported as dead.
+/** Prefixes from splat rules in _redirects, e.g. "/wp-content/uploads/". */
+const splatRedirects = [];
+
+/*
+ * Addresses handled by a redirect are reachable even though no page is built
+ * for them — read _redirects so they are not reported as dead.
+ *
+ * Exactly the paths the file declares, and no variants. This used to also
+ * credit the trailing-slash counterpart of every rule, on the assumption that
+ * one implies the other. It does not: the asset server matches literal paths.
+ * The Cloudflare adapter writes astro.config's /vinyl/ redirect into this file
+ * as "/vinyl" with no slash, this site is trailingSlash "always", and so the
+ * form that 1,651 pages actually link had no rule and answered 404 — while
+ * this check reported zero dead links, because it had invented the rule that
+ * would have covered it. A splat still covers everything beneath it.
+ */
 const redirectsFile = path.join(DIST, '_redirects');
 if (fs.existsSync(redirectsFile)) {
   for (const line of fs.readFileSync(redirectsFile, 'utf8').split('\n')) {
     const t = line.trim();
     if (!t || t.startsWith('#')) continue;
     const from = t.split(/\s+/)[0];
-    if (from) {
-      routes.add(from);
-      routes.add(from.endsWith('/') ? from : from + '/');
-    }
+    if (!from) continue;
+    if (from.endsWith('*')) splatRedirects.push(from.slice(0, -1));
+    else routes.add(from);
   }
 }
 
@@ -84,7 +97,11 @@ for (const f of htmlFiles) {
     }
     totalLinks++;
     const norm = href.endsWith('/') ? href : href + '/';
-    if (!routes.has(norm) && !routes.has(href)) {
+    if (
+      !routes.has(norm) &&
+      !routes.has(href) &&
+      !splatRedirects.some((p) => href.startsWith(p))
+    ) {
       if (!deadLinks.has(href)) deadLinks.set(href, []);
       deadLinks.get(href).push(route);
     }

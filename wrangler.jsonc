@@ -35,27 +35,22 @@
 
     // Which requests the Worker sees before the asset server answers them.
     //
-    // /admin and /api have to be here: neither exists as a file, and
+    // ONLY these. /admin and /api need it because neither exists as a file and
     // /api/quote is a POST, which no asset lookup can answer.
     //
-    // Documents are here for one reason — worker-entry.mjs stamps
-    // X-Robots-Tag: noindex on anything served from the preview hostname, and
-    // it cannot stamp a response the asset server returned without it. The
-    // preview is a byte-identical copy of the client's site and was fully
-    // indexable; a duplicate site in the index is worth a Worker invocation
-    // per page view. Once the apex is attached and the preview retired, this
-    // can go back to just /admin and /api.
+    // Do not widen this to "/*". The asset server is what applies _redirects,
+    // and it only gets the chance on requests that reach it first. Routing
+    // everything through the Worker instead was tried, to stamp a noindex
+    // header on the preview, and it silently broke every redirect on the site:
+    // /catalogues/, /partial-trailer-wrap/ and /author/admin/ answered 200
+    // from the catch-all route instead of 301, and /vinyl/ and the
+    // /wp-content/uploads/ splat became 404s. Pages looked perfect throughout,
+    // which is what made it worth a comment rather than a memory.
     //
-    // The pages themselves are still static files: the Worker reads them
-    // through the ASSETS binding rather than rendering anything.
-    "run_worker_first": [
-      "/*",
-      // The two big static trees stay on the fast path: hashed build output and
-      // the self-hosted font files. Between them they are most of the requests
-      // a page makes and none of them is a document anyone could index.
-      "!/_astro/*",
-      "!/fonts/*"
-    ]
+    // Everything else stays a static file served without invoking the Worker,
+    // and reaches it only when there is no file for it -- which is what
+    // not_found_handling "none" above is for.
+    "run_worker_first": ["/admin", "/admin/*", "/api/*"]
   },
 
   // Preview hostname: staging.vinylwraptoronto.com, attached to this Worker as
