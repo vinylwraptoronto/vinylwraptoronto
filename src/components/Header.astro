@@ -153,11 +153,20 @@ const branchCurrent = (item: NavItem): boolean =>
     z-index: 100;
   }
 
-  /* Stretched full width on the live site, not clamped to the content column. */
-  .bar { width: 100%; display: flex; align-items: center; gap: 0; padding: 0; }
+  /* Stretched full width on the live site, not clamped to the content column.
 
+     10px top and bottom: the original's header is 68px tall with a 66px
+     container around 46px nav links, and this had no vertical padding at all,
+     so the bar came out 48px. 20px short on every one of the 678 addresses,
+     and the most-multiplied single difference on the site. */
+  .bar { width: 100%; display: flex; align-items: center; gap: 0; padding: 10px 0; }
+
+  /* The column is 12% — 173px at 1440, which is what the original's logo
+     column measures — but the logo inside it renders at 153px there, not the
+     full width of its column. Ours filled the column and came out 169x37
+     against the original's 153x33. */
   .brand { width: 12%; display: block; text-align: start; }
-  .brand img { width: 100%; height: auto; display: block; }
+  .brand img { width: 100%; max-width: 153px; height: auto; display: block; }
 
   .nav { width: 78%; margin: 0 35px 0 0; }
 
