@@ -8,6 +8,7 @@
  */
 import type { Block, Section } from '../types';
 import categories from '../data/categories.json';
+import imgDims from '../data/img-dims.json';
 import QuoteForm from './QuoteForm.astro';
 import { img, imgHtml } from '../lib/img';
 
@@ -34,6 +35,20 @@ const groups: { section?: Section; blocks: Block[]; bare: boolean }[] = blocks
   : (sections ?? []).map((s) => ({ section: s, blocks: s.blocks, bare: false }));
 
 const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined);
+
+/** The pixel size of an uploaded image, from src/data/img-dims.json.
+ *
+ *  A masonry gallery shows every photograph at its own shape, so no stylesheet
+ *  can state one ratio that reserves the tiles' boxes. Without a reserved box a
+ *  picture that has not decoded yet — or that the image host fails to serve —
+ *  is zero pixels tall, which collapses the column and stacks the alt text on
+ *  top of itself. Giving each tile the ratio of its own file fixes that, and
+ *  the ratio has to come from the file because neither our page data nor the
+ *  original's script-rendered markup carries it.
+ *
+ *  Run `node scripts/img-dims.mjs --write` after adding uploads. */
+const dimsOf = (src: string): [number, number] | undefined =>
+  (imgDims as Record<string, [number, number]>)[src.split('?')[0]];
 
 /** Stable anchor id from heading text, so the table of contents can link to it. */
 const slugify = (t: string) =>
@@ -520,11 +535,18 @@ const galleryStyle = (b: {
         if (b.type === 'gallery') {
           return (
             <div class="gallery">
-              {b.images.map((i) => (
-                <a class="lb-link" href={img(i.src)}>
-                  <img src={img(i.src)} alt={i.alt} loading="lazy" decoding="async" />
-                </a>
-              ))}
+              {/* Dimensions so the browser can reserve each tile's box: this
+                  grid states no ratio of its own, so without them a lazy tile
+                  that has not decoded is zero pixels tall. Nothing overrides
+                  aspect-ratio here, so the attributes alone are enough. */}
+              {b.images.map((i) => {
+                const d = dimsOf(i.src);
+                return (
+                  <a class="lb-link" href={img(i.src)}>
+                    <img src={img(i.src)} alt={i.alt} width={d?.[0]} height={d?.[1]} loading="lazy" decoding="async" />
+                  </a>
+                );
+              })}
             </div>
           );
         }
@@ -622,16 +644,33 @@ const galleryStyle = (b: {
                 </div>
               )}
               <div class:list={['fgal-grid', { 'fgal-grid--masonry': b.masonry }]} style={galleryStyle(b)}>
-                {b.items.map((it) => (
+                {b.items.map((it) => {
+                  const d = dimsOf(it.src);
+                  return (
                   <figure class="fgal-item" data-tag={it.tag}>
                     {/* The original wraps every gallery item in a link to the
                         full-size file and opens its lightbox from there. The
                         link is what makes the picture reachable with JS off. */}
                     <a class="lb-link" href={img(it.src)} title={it.title}>
-                      <img src={img(it.src)} alt={it.alt ?? it.title} loading="lazy" decoding="async" />
+                      {/* The ratio has to be inline: the masonry rule sets
+                          `aspect-ratio: auto`, which also discards the ratio a
+                          browser would otherwise infer from width/height. The
+                          plain grid crops every tile to one ratio on purpose,
+                          so it keeps that and only the shape-preserving
+                          masonry variant gets the file's own. */}
+                      <img
+                        src={img(it.src)}
+                        alt={it.alt ?? it.title}
+                        width={d?.[0]}
+                        height={d?.[1]}
+                        style={b.masonry && d ? `aspect-ratio:${d[0]}/${d[1]}` : undefined}
+                        loading="lazy"
+                        decoding="async"
+                      />
                     </a>
                   </figure>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );
@@ -1709,6 +1748,9 @@ const galleryStyle = (b: {
     break-inside: avoid;
     margin-bottom: var(--fg-gap, 14px);
   }
+  /* `auto` is the fallback for a tile whose file dimensions are not known; where
+     they are, the item carries its true ratio inline and that wins, so the box
+     is reserved before the picture arrives. */
   .fgal-grid--masonry .fgal-item img { aspect-ratio: auto; height: auto; }
 
   /* Elementor's own breakpoints: tablet at 1024px, mobile at 767px. */
