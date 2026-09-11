@@ -23,16 +23,59 @@ The address diff is clean. Everything below is what a count does not show.
 
 ## Findings that block or need a decision
 
-| # | Finding | Severity |
+Seven of the eight are fixed and verified on the live preview. Status updated
+2026-09-11; the "verified" column is a real request against
+`staging.vinylwraptoronto.com`, not a claim about the build.
+
+| # | Finding | Status |
 |---|---|---|
-| 1 | **Case-variant addresses 404.** `/About/`, `/Contact/`, `/Blog/`, `/Our-Work/`, `/Car-Wraps/` all serve 200 on the old site and 404 on the new. A whole class of live inbound links, invisible to a path diff because the canonical paths all match. Needs an edge rule that lowercases the path. | blocks cutover |
-| 2 | **`/wp-content/uploads/*` 404s**, including both colour-guide PDFs. The files exist on `img.vinylwraptoronto.com` under rewritten paths, but the old public addresses are dead. A PDF is a page to Google and often the best-linked address on a trades site. Needs a redirect from `/wp-content/uploads/*` to the image host. | blocks cutover |
-| 3 | **Feeds 404.** `/feed/`, `/blog/feed/` and `/comments/feed/` all serve 200 on the old site. Real subscribers, and they break silently. | needs a decision |
-| 4 | **The preview is fully indexable.** `staging`'s robots.txt carries `User-agent: *` / `Allow: /`, and its pages carry `index, follow`. A canonical alone leaves a full duplicate of the site eligible for indexing. | fix before launch |
-| 5 | **The new build serves no sitemap.** Every sitemap path 404s, where the old site publishes an index with 11 children. | fix before launch |
-| 6 | **`/lp/` and `/lp-truck-wraps/` lost their FAQ schema** — `FAQPage`, `Question` and `Answer` are absent. These are the only two real JSON-LD losses on the site. | real SEO loss |
-| 7 | `/author/admin/` 301s to the homepage on the old site and 404s on the new. | minor |
-| 8 | Trailing-slash redirect is a **307** on the new site where the old site uses a **301**. 307 is temporary and does not pass authority the same way. | minor |
+| 1 | **Case-variant addresses 404.** `/Blog/`, `/Our-Work/`, `/Car-Wraps/` all serve 200 on the old site and 404'd on the new. A whole class of live inbound links, invisible to a path diff because the canonical paths all match. | **fixed.** The old site is genuinely case-insensitive — `/cAr-wraps/` and `/CAR-WRAPS/` both serve — so a list of variants could never cover it. `worker-entry.mjs` lowercases the path and 301s when that address is real. Verified: `/Car-Wraps/`, `/CAR-WRAPS/`, `/cAr-wraps/`, `/Blog/`, `/Our-Work/` → 301 |
+| 2 | **`/wp-content/uploads/*` 404s**, including both colour-guide PDFs. The files exist on `img.vinylwraptoronto.com` under rewritten paths, but the old public addresses were dead. | **fixed.** Splat redirect to the image host in `public/_redirects`. Verified: both PDFs and a sample image → 301 |
+| 3 | **Feeds 404.** `/feed/`, `/blog/feed/` and `/comments/feed/` all serve 200 on the old site. | **fixed.** All three rebuilt as RSS 2.0 with the channel fields the original emits, ten newest posts, item titles taken from each post's H1 as WordPress does — all ten match the original's exactly. The comments feed is valid and empty, as the original's is. Verified: 200, `application/rss+xml` |
+| 4 | **The preview is fully indexable.** `staging`'s robots.txt carries `User-agent: *` / `Allow: /`, and its pages carry `index, follow`. | **OPEN — the only one left.** See below. |
+| 5 | **The new build serves no sitemap.** Every sitemap path 404s, where the old site publishes an index with 11 children. | **fixed.** The index and all eleven children rebuilt at their original filenames, grouping and lastmod read off the original's own sitemaps. Counts match child for child: 201/200/2/58/8/70/3/42/91/1/2 = 678. `scripts/sweep.mjs` now fails a build whose sitemap lists an address that is not built or is noindex |
+| 6 | **`/lp/` and `/lp-truck-wraps/` lost their FAQ schema** — `FAQPage`, `Question` and `Answer` are absent. | open — re-verify after the accordion restore |
+| 7 | `/author/admin/` 301s to the homepage on the old site and 404s on the new. | **fixed.** Verified → 301 |
+| 8 | Trailing-slash redirect is a **307** on the new site where the old site uses a **301**. | open — Cloudflare's asset server emits the 307; not settable from the repo |
+
+### Finding 4 — why it is still open
+
+It needs a response header on the preview hostname, and the Worker cannot add
+one to a page it never sees: static assets are served without invoking it.
+
+Routing documents through the Worker instead was tried, and reverted. Widening
+`run_worker_first` to `"/*"` silently broke every redirect on the site —
+`/catalogues/`, `/partial-trailer-wrap/` and `/author/admin/` answered 200 from
+the catch-all route instead of 301, and `/wp-content/uploads/` became a 404
+again — because the asset server is what applies `_redirects` and it only gets
+the chance on requests that reach it first. Pages looked perfect throughout.
+
+The remaining instrument is a response-header Transform Rule on the zone,
+scoped to `staging.vinylwraptoronto.com`, setting `X-Robots-Tag: noindex,
+nofollow`. That is a change to the client's live zone rather than to this
+repository, so it is left for the cutover decision.
+
+`noindex`, not `Disallow`. Cloudflare injects a managed robots.txt at the edge
+carrying `User-agent: * / Allow: /`, so a Disallow served from here would sit in
+the same file arguing with it — and Disallow stops the crawl, which stops Google
+ever reading the noindex, leaving a linked address indexable URL-only.
+
+### Found while fixing the above
+
+**`/vinyl/` was a 404 on 3,302 links.** It 301s to the homepage on the original
+and is linked from the contact icon strip on 1,651 pages. `astro.config.mjs`
+declares the redirect, but the Cloudflare adapter writes it into `_redirects` as
+`/vinyl` with no trailing slash, and this site is `trailingSlash: "always"` — so
+the one form every page actually links had no rule at all.
+
+`scripts/sweep.mjs` is why nobody saw it. Reading `_redirects`, it credited not
+just each rule's path but the trailing-slash counterpart as well, on the
+assumption that one implies the other. It does not: the asset server matches
+literal paths. So the sweep marked `/vinyl/` reachable on the strength of a rule
+that did not exist, and reported **zero dead links across 218,158** while the
+most-linked address on the site was a 404. Both are fixed, and with the rule
+taken away the sweep now reports `/vinyl/` dead on 3,302 pages and fails the
+build.
 
 ## Checked and clean
 
