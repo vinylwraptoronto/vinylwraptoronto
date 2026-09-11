@@ -1,0 +1,12 @@
+# Response headers served by Cloudflare Workers static assets.
+#
+# The three feeds are emitted as index.html files, because that is what the
+# static asset server maps to the addresses the original uses — /feed/, not
+# /feed.xml. The filename would otherwise decide the content type, and a feed
+# reader handed text/html has every right to refuse it.
+/feed/
+  Content-Type: application/rss+xml; charset=UTF-8
+/blog/feed/
+  Content-Type: application/rss+xml; charset=UTF-8
+/comments/feed/
+  Content-Type: application/rss+xml; charset=UTF-8

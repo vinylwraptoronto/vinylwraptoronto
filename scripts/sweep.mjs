@@ -125,7 +125,51 @@ for (const f of htmlFiles) {
   }
 }
 
+/*
+ * The sitemaps.
+ *
+ * They are generated from a snapshot of the original's own sitemap index
+ * (src/data/sitemap-groups.json), which is a list of addresses rather than a
+ * query over the build. Nothing makes the two agree on their own: delete a
+ * page and the sitemap keeps advertising it, which hands Google a soft 404 and
+ * is invisible until Search Console reports it weeks later. So check here.
+ *
+ * A sitemap is also the one document on the site that must never name a
+ * noindex page — the two instructions contradict each other and Google treats
+ * the pairing as an error.
+ */
+const sitemapLocs = new Map();
+let sitemapFiles = 0;
+for (const f of fs.readdirSync(DIST)) {
+  if (!f.endsWith('.xml')) continue;
+  sitemapFiles++;
+  const xml = fs.readFileSync(path.join(DIST, f), 'utf8');
+  const isIndex = xml.includes('<sitemapindex');
+  for (const m of xml.matchAll(/<loc>([^<]*)<\/loc>/g)) {
+    const { pathname } = new URL(m[1]);
+    if (isIndex) {
+      // A child named by the index must exist as a file next to it.
+      if (!fs.existsSync(path.join(DIST, pathname.replace(/^\//, '')))) {
+        collect(sitemapLocs, pathname + '  (child named by the index is not built)', f);
+      }
+      continue;
+    }
+    if (!routes.has(pathname)) {
+      collect(sitemapLocs, pathname + '  (listed but not built)', f);
+      continue;
+    }
+    const page = path.join(DIST, pathname.replace(/^\//, ''), 'index.html');
+    if (fs.existsSync(page)) {
+      const robots = /<meta name="robots" content="([^"]*)"/.exec(fs.readFileSync(page, 'utf8'));
+      if (robots && /noindex/i.test(robots[1])) {
+        collect(sitemapLocs, pathname + '  (listed but noindex)', f);
+      }
+    }
+  }
+}
+
 console.log(`pages:        ${htmlFiles.length}`);
+console.log(`sitemaps:     ${sitemapFiles}   bad entries: ${sitemapLocs.size}`);
 console.log(`internal links checked: ${totalLinks}   dead: ${deadLinks.size}`);
 console.log(`image refs checked:     ${totalImages}   missing: ${missingImages.size}`);
 console.log(`  on image host:        ${remoteKeys.size} distinct keys`);
@@ -150,10 +194,16 @@ show('DEAD LINKS', deadLinks);
 show('MISSING IMAGES', missingImages);
 show('NOT REWRITTEN TO IMAGE HOST', unrewritten);
 show('DIRECT TO BACKBLAZE — must go through Cloudflare', directToB2);
+show('SITEMAP ENTRIES THAT DO NOT RESOLVE', sitemapLocs);
 if (emptyPages.length) console.log('\nEMPTY PAGES:\n  ' + emptyPages.slice(0, 15).join('\n  '));
 
 process.exit(
-  deadLinks.size || missingImages.size || unrewritten.size || directToB2.size || emptyPages.length
+  deadLinks.size ||
+  missingImages.size ||
+  unrewritten.size ||
+  directToB2.size ||
+  emptyPages.length ||
+  sitemapLocs.size
     ? 1
     : 0,
 );

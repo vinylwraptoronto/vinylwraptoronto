@@ -1,0 +1,13 @@
+# Cloudflare prepends its managed content-signals block to this file at the
+# edge, exactly as it does on the original. What follows is the site's own part.
+#
+# The original's rules for /wp-admin/ and the WP Import Export plugin are gone
+# with WordPress — there is no such path to disallow. The admin here is at
+# /admin/, which is behind a login and carries noindex of its own; it is named
+# anyway so a crawler does not spend requests on it.
+
+User-agent: *
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: https://vinylwraptoronto.com/sitemap_index.xml

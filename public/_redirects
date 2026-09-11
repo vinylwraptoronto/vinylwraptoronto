@@ -11,3 +11,22 @@
 # /catalogues/ returns 301 -> /catalogues-color-selection-vwt/
 /catalogues/  /catalogues-color-selection-vwt/  301
 /catalogues   /catalogues-color-selection-vwt/  301
+
+# The WordPress uploads tree.
+#
+# Every file the original served under /wp-content/uploads/ now lives in the
+# B2 bucket behind img.vinylwraptoronto.com, with that prefix dropped from the
+# key — see src/lib/img.ts. The built pages all point at the new host, so
+# nothing on the site needs this; the old addresses do. They are linked from
+# other people's pages, and three of them are the colour-guide PDFs, which are
+# pages in their own right to a crawler and the best-linked files on the site.
+#
+# Without this rule they 404 the moment the domain moves, because the uploads
+# tree is deliberately kept out of the Worker's asset upload (public/.assetsignore).
+/wp-content/uploads/*  https://img.vinylwraptoronto.com/:splat  301
+
+# /author/admin/ 301s to the homepage on the original. The two real author
+# archives, /author/masoud/ and /author/harjitbrandingcentres-com/, are pages
+# here and are matched first — a static rule beats the splat.
+/author/admin/  /  301
+/author/admin   /  301
