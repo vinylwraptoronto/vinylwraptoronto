@@ -124,14 +124,20 @@ export function blogSections(
 }
 
 /**
- * Page 2 and beyond are noindex, and every page states its position.
+ * Page 2 and beyond are indexable, as the original's are, and every page states
+ * its position.
  *
- * Google's advice since it retired rel=prev/next is that paginated pages
- * should be distinct rather than 34 near-duplicates competing with each other,
- * and the original leaves them indexable with identical titles. Numbering the
- * title and keeping the later pages out of the index is the honest reading of
- * that, and it does not cost anything: every post is still linked, so they are
- * still crawled.
+ * These were noindex here, which was wrong twice over. The original serves
+ * `follow, index` on /blog/page/3/ and on every other paginated listing, so the
+ * clone was dropping 65 indexable addresses the live site has; and noindexing a
+ * paginated listing is the thing Google specifically advises against, because
+ * the listing is a route to the posts behind it.
+ *
+ * What the numbering is for is the risk that came with indexing them: the
+ * original gives all 34 pages of /blog/ the same title, and 34 identical titles
+ * compete with one another. Numbering makes each one distinct, which is what
+ * Yoast itself does where the setting is enabled. That is a deliberate
+ * departure from the original, and the only one on these pages.
  */
 /**
  * Head for page 2 and beyond of a paginated listing.
@@ -150,7 +156,9 @@ export function blogPageMeta(
 
   const title = `${page.title} — Page ${pageNum} of ${total}`;
   const url = `https://vinylwraptoronto.com${base}page/${pageNum}/`;
-  const robots = 'noindex, follow';
+  /* Verbatim the string the original serves on these pages, which is also what
+     every indexable page on this site carries. */
+  const robots = 'follow, index, max-snippet:-1, max-video-preview:-1, max-image-preview:large';
 
   /* The ported head carries the listing's own robots, og:title and og:url.
      Setting the fields on the page object alone would leave those rendering
@@ -166,13 +174,29 @@ export function blogPageMeta(
   setMeta(meta, 'og:url', url, true);
   head.meta = meta as unknown as HeadData['meta'];
 
-  /* The ported Yoast graph describes the page-1 address itself: its WebPage
-     node is @id ".../#webpage", and the breadcrumb, isPartOf and
-     primaryImageOfPage nodes all reference that id. Rewriting the id would
-     mean rewriting every reference to it, and leaving it means every later
-     page claims to be page 1. Since they are noindex, structured data on them
-     is ignored anyway, so the honest answer is to serve none. */
-  delete head.ld;
+  /* The ported graph describes the page-1 address: its CollectionPage node is
+     @id ".../#webpage" with a matching url. Serving none was defensible while
+     these pages were noindex; now that they are indexed, an indexed page whose
+     structured data claims to be a different address is a real contradiction.
+
+     The original regenerates the graph per page, and comparing /blog/ with
+     /blog/page/3/ on the live site shows exactly what moves: the same four
+     nodes, and only that node's @id and url. Nothing references it by id -- the
+     Place, Organization and WebSite nodes do not -- so the same two fields are
+     rewritten here and the rest is left alone. */
+  if (head.ld) {
+    const ld = JSON.parse(JSON.stringify(head.ld)) as { '@graph'?: Array<Record<string, unknown>> };
+    for (const node of ld['@graph'] ?? []) {
+      const type = node['@type'];
+      const isPage = Array.isArray(type)
+        ? type.some((t) => typeof t === 'string' && t.endsWith('Page'))
+        : typeof type === 'string' && type.endsWith('Page');
+      if (!isPage) continue;
+      node['@id'] = `${url}#webpage`;
+      node.url = url;
+    }
+    head.ld = ld as unknown as HeadData['ld'];
+  }
 
   return { ...page, title, url, robots, head };
 }
