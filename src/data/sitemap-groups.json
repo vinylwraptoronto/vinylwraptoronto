@@ -2349,6 +2349,10 @@
   {
    "path": "/blogs/fleet-wrap/fleet-lettering-decals/",
    "lastmod": "2026-07-15T15:06:13+00:00"
+  },
+  {
+   "path": "/blogs/ai-to-print/",
+   "lastmod": null
   }
  ],
  "blogs_vehicles_brand-sitemap": [
@@ -2715,6 +2719,10 @@
   {
    "path": "/blogs_vehicles_brand/mercedes/",
    "lastmod": "2025-01-10T14:36:21+00:00"
+  },
+  {
+   "path": "/blogs_vehicles_brand/blog-land-rover/",
+   "lastmod": null
   }
  ],
  "pages_type-sitemap": [
@@ -2731,6 +2739,12 @@
   {
    "path": "/author/masoud/",
    "lastmod": "2026-09-02T12:19:17+00:00"
+  }
+ ],
+ "wrap-results-categories-sitemap": [
+  {
+   "path": "/wrap-results-categories/tesla/",
+   "lastmod": null
   }
  ]
 }
