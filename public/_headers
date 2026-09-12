@@ -1,5 +1,30 @@
 # Response headers served by Cloudflare Workers static assets.
 #
+# ---------------------------------------------------------------------------
+# Keep the preview out of the index.
+#
+# The clone serves the same 681 addresses, the same titles and the same
+# sitemaps as the real site. Left indexable, the preview offers Google a
+# complete duplicate of the client's site, competing with it on its own terms.
+#
+# The rule is scoped to the preview hostname, and that scoping is the whole
+# point: the cutover attaches the apex and www to THIS SAME Worker, so a rule
+# written as `/*` would carry noindex onto the real site the moment it goes
+# live -- silently, because the pages would look perfect. Never widen this
+# pattern; add a second block if another preview hostname appears.
+#
+# Note this is a header and NOT a `Disallow` in robots.txt. A disallowed path
+# is one a crawler may not fetch, so it would never read the noindex and the
+# address could still be listed from links alone. The page has to stay
+# fetchable for the instruction to be seen.
+#
+# It is applied here rather than in the Worker because the Worker does not see
+# these requests at all -- see the `run_worker_first` comment in wrangler.jsonc
+# for what happened when that was tried.
+https://staging.vinylwraptoronto.com/*
+  X-Robots-Tag: noindex, nofollow
+# ---------------------------------------------------------------------------
+#
 # The three feeds are emitted as index.html files, because that is what the
 # static asset server maps to the addresses the original uses — /feed/, not
 # /feed.xml. The filename would otherwise decide the content type, and a feed
