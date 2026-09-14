@@ -647,18 +647,24 @@ const galleryStyle = (b: {
                   held for each picture, lazy loading is safe, so the page keeps
                   that saving rather than fetching all 69 pairs up front. */}
               {b.pairs.map((p) => {
-                const bd = dimsOf(p.before.src);
-                const ad = dimsOf(p.after.src);
+                /* 768 wide, the same "medium_large" the grid galleries ask for,
+                   because a pair is drawn at roughly half the content width and
+                   never needs the upload. /our-work/ carries 69 pairs: at full
+                   size that is 138 photographs and 12.8MB on one page, every one
+                   of which the browser must also decode and hold. The upload
+                   stays reachable -- data-full is what the lightbox opens. */
+                const bt = tileOf(p.before.src);
+                const at = tileOf(p.after.src);
                 return (
                 <div class="compare-pair">
                   <figure>
-                    <img src={img(p.before.src)} alt={p.before.alt}
-                      width={bd?.[0]} height={bd?.[1]} loading="lazy" decoding="async" />
+                    <img src={img(bt.src)} data-full={img(p.before.src)} alt={p.before.alt}
+                      width={bt.w} height={bt.h} loading="lazy" decoding="async" />
                     <figcaption>{p.beforeLabel}</figcaption>
                   </figure>
                   <figure>
-                    <img src={img(p.after.src)} alt={p.after.alt}
-                      width={ad?.[0]} height={ad?.[1]} loading="lazy" decoding="async" />
+                    <img src={img(at.src)} data-full={img(p.after.src)} alt={p.after.alt}
+                      width={at.w} height={at.h} loading="lazy" decoding="async" />
                     <figcaption>{p.afterLabel}</figcaption>
                   </figure>
                 </div>
@@ -776,8 +782,18 @@ const galleryStyle = (b: {
                   c.shadow ? `box-shadow:${c.shadow}` : '',
                   c.radius ? `border-radius:${c.radius}` : '',
                 ].filter(Boolean).join(';');
+                /* A column holding a before/after slider is a card on the
+                   original: its own 1px border, padding and radius, with the
+                   title and the View Pictures button centred inside it. Ours
+                   drew no card, which is why a button looked like it belonged
+                   to the pair below rather than the one above -- and why the
+                   ones on the 52 columns that have a button read as stray. */
+                const isCard = (c.blocks ?? []).some((x) => x.type === 'compare');
                 return (
-                  <div class:list={['col', { 'col--tinted': tinted }]} style={style}>
+                  <div
+                    class:list={['col', { 'col--tinted': tinted, 'col--card': isCard }]}
+                    style={style}
+                  >
                     <Astro.self blocks={c.blocks} toc={tocEntries} />
                   </div>
                 );
@@ -941,6 +957,27 @@ const galleryStyle = (b: {
   /* The first widget in a column takes no gap above it, and must not re-inherit
      the section's own vertical rhythm either. */
   .cols > .col > :global(:first-child) { margin-top: 0; }
+
+  /* A column holding a before/after slider is a card, which is how the original
+     draws the 69 on /our-work/: `border-width: 1px; border-color: #F3F3F3;
+     padding: 15px; border-radius: 5px`, with the title and the View Pictures
+     button centred inside it.
+     Without the card the button had nothing to belong to -- it sat in the gap
+     between two rows, reading as a stray control above the next pair rather
+     than as part of its own. That is what made 52 buttons look like they were
+     on the wrong items, when the count and the placement were right all along. */
+  .col--card {
+    border: 1px solid #f3f3f3;
+    border-radius: 5px;
+    padding: 15px;
+  }
+  .col--card :global(h1),
+  .col--card :global(h2),
+  .col--card :global(h3),
+  .col--card :global(h4),
+  .col--card :global(h5) { text-align: center; }
+  /* The button is an inline-block, so centring it is the line box's job. */
+  .col--card :global(.btn) { align-self: center; }
 
   /* Where the widgets sit in a column taller than they are. Elementor puts this
      on the section (elementor-section-content-middle and friends) and, in the

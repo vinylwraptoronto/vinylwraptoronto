@@ -68,12 +68,25 @@ export function sized(src, box) {
 /* ---------- collect every gallery tile ---------- */
 
 const need = new Map(); // "box:src" -> {src, box}
+const add = (src, box) => {
+  if (src?.startsWith('/wp-content/uploads/')) need.set(`${box}:${src}`, { src, box });
+};
+
 const walk = (blocks) => {
   for (const b of blocks ?? []) {
     if (b.type === 'filtergallery' || b.type === 'gallery') {
       const box = b.masonry ? 300 : 768;
-      for (const it of b.items ?? b.images ?? []) {
-        if (it.src?.startsWith('/wp-content/uploads/')) need.set(`${box}:${it.src}`, { src: it.src, box });
+      for (const it of b.items ?? b.images ?? []) add(it.src, box);
+    }
+    /* The before/after sliders. These were asking for the full upload, and
+       /our-work/ holds 69 pairs of them -- 138 full-resolution photographs on
+       one page, 12.8MB, every one of which the browser must also decode and
+       hold in memory. They are drawn at roughly half the content width, so
+       768 is the same size the grid galleries already use. */
+    if (b.type === 'compare') {
+      for (const p of b.pairs ?? []) {
+        add(p.before?.src, 768);
+        add(p.after?.src, 768);
       }
     }
     if (b.type === 'columns') for (const c of b.cols ?? []) walk(c.blocks);

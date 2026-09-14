@@ -102,7 +102,9 @@
   :global(.compare-pair[data-juxtapose] img) { display: block; width: 100%; }
   :global(.compare-pair[data-juxtapose] figcaption) {
     position: absolute;
-    bottom: 10px;
+    /* Top, not bottom. The original's rule is `.jx-left { align-items:
+       flex-start }`, which puts both labels at the top of the picture. */
+    top: 10px;
     padding: 4px 9px;
     /* The original's own value: `.jx-label { background-color:
        var(--e-global-color-d077a13); color: #FFFFFF }`. The translucent black
@@ -121,7 +123,15 @@
     pointer-events: none;
   }
   :global(.compare-pair[data-juxtapose] figure:nth-of-type(1) figcaption) { left: 10px; }
-  :global(.compare-pair[data-juxtapose] figure:nth-of-type(2) figcaption) { right: 10px; }
+  /* The two labels are not the same colour. The original gives Before
+     `.jx-left .jx-label { background-color: var(--e-global-color-d077a13) }`
+     and After `.jx-right .jx-label { background-color:
+     var(--e-global-color-f32bb28) }` -- navy and the brand pink. Both were
+     navy here. */
+  :global(.compare-pair[data-juxtapose] figure:nth-of-type(2) figcaption) {
+    right: 10px;
+    background: var(--e-global-color-f32bb28, #ff0099);
+  }
 
   /* The gallery link must not change how the grid lays out. */
   :global(a.lb-link) {
@@ -256,7 +266,14 @@
       if (!group.length) return;
       index = (i + group.length) % group.length;
       const el = group[index];
-      img.src = el.currentSrc || el.src;
+      /* The viewer opens the upload, not the thumbnail on the page. Gallery
+         tiles request a 300 or 768 wide resize and before/after pairs a 768,
+         so reading the tile's own src put a thumbnail in a full-screen viewer.
+         The full file is on the tile's link, or on data-full where there is no
+         link -- the pairs are not linked, because clicking one drags. */
+      const full =
+        el.dataset.full || el.closest<HTMLAnchorElement>('a.lb-link')?.href;
+      img.src = full || el.currentSrc || el.src;
       img.alt = el.alt || '';
       cap.textContent = el.alt || '';
     };
