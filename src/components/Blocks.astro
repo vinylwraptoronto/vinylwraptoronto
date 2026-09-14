@@ -1769,6 +1769,39 @@ const galleryStyle = (b: {
     color: #8a8a8a;
   }
 
+  /* How a tile arrives.
+   *
+   * The original's gallery holds each picture invisible at half size until it
+   * has loaded, then animates it up. Its own rule is
+   *
+   *   .e-gallery--lazyload .e-gallery-image:not(.e-gallery-image-loaded)
+   *     { filter: opacity(0); transform: scale(0.5) }
+   *
+   * over --image-transition-duration: 250ms on filter and transform, from a
+   * `center top` origin. Those are its values, not chosen ones.
+   *
+   * The starting state is behind a class that only script adds, exactly as the
+   * original does it -- `e-gallery--lazyload` appears nowhere in its served
+   * HTML. With no JavaScript the pictures simply show, rather than a gallery of
+   * 341 permanently invisible tiles. */
+  .fgal-item img {
+    transform-origin: center top;
+    transition: filter 250ms, transform 250ms;
+  }
+  .fgal-grid--lazy .fgal-item img {
+    filter: opacity(0);
+    transform: scale(0.5);
+  }
+  .fgal-grid--lazy .fgal-item img.is-loaded {
+    filter: none;
+    transform: none;
+  }
+  /* The reveal is decoration; the picture is the content. */
+  @media (prefers-reduced-motion: reduce) {
+    .fgal-item img { transition: none; }
+    .fgal-grid--lazy .fgal-item img { filter: none; transform: none; }
+  }
+
   /* A masonry gallery keeps each photograph's own shape — that is the whole
      difference between it and the grid above, and forcing one ratio on 341
      tiles both crops them all and makes the section 2,487px too tall. CSS

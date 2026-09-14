@@ -317,6 +317,35 @@
       });
     });
 
+    // ---------- gallery tiles arriving -------------------------------------
+    // The original fades and scales each picture in as it loads. The starting
+    // state (invisible, half size) lives behind .fgal-grid--lazy, and the class
+    // is added HERE rather than in the markup for the same reason the original
+    // adds its own from script: if this never runs, the pictures are simply
+    // visible instead of a gallery of 341 invisible tiles.
+    document.querySelectorAll<HTMLElement>('.fgal-grid').forEach((grid) => {
+      const shots = [...grid.querySelectorAll<HTMLImageElement>('.fgal-item img')];
+      if (!shots.length) return;
+      grid.classList.add('fgal-grid--lazy');
+
+      const arrived = (img: HTMLImageElement) => img.classList.add('is-loaded');
+
+      shots.forEach((img) => {
+        // Cached images can already be done before this runs; without the
+        // complete check those tiles would wait for a load event that never
+        // fires and stay invisible.
+        if (img.complete) {
+          arrived(img);
+          return;
+        }
+        img.addEventListener('load', () => arrived(img), { once: true });
+        // A picture that fails is revealed too, so its reserved box and alt
+        // text show. Leaving it hidden would turn a broken image into a blank
+        // gap with no indication anything was meant to be there.
+        img.addEventListener('error', () => arrived(img), { once: true });
+      });
+    });
+
     // ---------- before/after sliders ---------------------------------------
     document.querySelectorAll<HTMLElement>('.compare-pair').forEach((pair) => {
       const figs = pair.querySelectorAll('figure');
