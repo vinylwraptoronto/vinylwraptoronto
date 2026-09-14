@@ -633,18 +633,37 @@ const galleryStyle = (b: {
         if (b.type === 'compare') {
           return (
             <div class="compare">
-              {b.pairs.map((p) => (
+              {/* Dimensions so each picture reserves its box before it arrives.
+                  Without them these were the last images on the site with
+                  nothing holding their shape, and it shows worst here: the
+                  slider lays the "after" picture over the "before" one and
+                  reveals it by clipping, so a picture that has not loaded has
+                  no size to be clipped against and the pair renders wrong.
+                  /our-work/ puts 69 of these on one page.
+
+                  It is also why the original turns lazy loading off on them
+                  (its markup carries a3-notlazy, and none of its 140 images is
+                  lazy). It had to: it reserves nothing either. With a real box
+                  held for each picture, lazy loading is safe, so the page keeps
+                  that saving rather than fetching all 69 pairs up front. */}
+              {b.pairs.map((p) => {
+                const bd = dimsOf(p.before.src);
+                const ad = dimsOf(p.after.src);
+                return (
                 <div class="compare-pair">
                   <figure>
-                    <img src={img(p.before.src)} alt={p.before.alt} loading="lazy" decoding="async" />
+                    <img src={img(p.before.src)} alt={p.before.alt}
+                      width={bd?.[0]} height={bd?.[1]} loading="lazy" decoding="async" />
                     <figcaption>{p.beforeLabel}</figcaption>
                   </figure>
                   <figure>
-                    <img src={img(p.after.src)} alt={p.after.alt} loading="lazy" decoding="async" />
+                    <img src={img(p.after.src)} alt={p.after.alt}
+                      width={ad?.[0]} height={ad?.[1]} loading="lazy" decoding="async" />
                     <figcaption>{p.afterLabel}</figcaption>
                   </figure>
                 </div>
-              ))}
+                );
+              })}
             </div>
           );
         }
@@ -1784,22 +1803,36 @@ const galleryStyle = (b: {
    * original does it -- `e-gallery--lazyload` appears nowhere in its served
    * HTML. With no JavaScript the pictures simply show, rather than a gallery of
    * 341 permanently invisible tiles. */
-  .fgal-item img {
+  .fgal-item img,
+  .carou-slide img,
+  .compare-pair img {
     transform-origin: center top;
     transition: filter 250ms, transform 250ms;
   }
-  .fgal-grid--lazy .fgal-item img {
+  .img-reveal .fgal-item img,
+  .img-reveal.carou .carou-slide img,
+  .img-reveal.compare-pair img {
     filter: opacity(0);
     transform: scale(0.5);
   }
-  .fgal-grid--lazy .fgal-item img.is-loaded {
+  .img-reveal .fgal-item img.is-loaded,
+  .img-reveal.carou .carou-slide img.is-loaded,
+  .img-reveal.compare-pair img.is-loaded {
     filter: none;
     transform: none;
   }
+  /* A before/after slider lays its two pictures over one another and reveals
+     the top one by clipping. Scaling either would slide it out of register
+     with the other for the length of the animation, so that pair fades only.
+     The effect is the original's; the geometry is ours to not break. */
+  .img-reveal.compare-pair img { transform: none; }
+
   /* The reveal is decoration; the picture is the content. */
   @media (prefers-reduced-motion: reduce) {
-    .fgal-item img { transition: none; }
-    .fgal-grid--lazy .fgal-item img { filter: none; transform: none; }
+    .fgal-item img, .carou-slide img, .compare-pair img { transition: none; }
+    .img-reveal .fgal-item img,
+    .img-reveal.carou .carou-slide img,
+    .img-reveal.compare-pair img { filter: none; transform: none; }
   }
 
   /* A masonry gallery keeps each photograph's own shape — that is the whole

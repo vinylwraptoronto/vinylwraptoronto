@@ -323,10 +323,12 @@
     // is added HERE rather than in the markup for the same reason the original
     // adds its own from script: if this never runs, the pictures are simply
     // visible instead of a gallery of 341 invisible tiles.
-    document.querySelectorAll<HTMLElement>('.fgal-grid').forEach((grid) => {
-      const shots = [...grid.querySelectorAll<HTMLImageElement>('.fgal-item img')];
+    // Every image display on the site that reads as a gallery: the filter
+    // galleries, the carousels, and the before/after sliders.
+    document.querySelectorAll<HTMLElement>('.fgal-grid, .carou, .compare-pair').forEach((grid) => {
+      const shots = [...grid.querySelectorAll<HTMLImageElement>('img')];
       if (!shots.length) return;
-      grid.classList.add('fgal-grid--lazy');
+      grid.classList.add('img-reveal');
 
       const arrived = (img: HTMLImageElement) => img.classList.add('is-loaded');
 
