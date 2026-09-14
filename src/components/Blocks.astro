@@ -74,6 +74,10 @@ const tileOf = (src: string, masonry?: boolean): { src: string; w?: number; h?: 
   return { src, w: d?.[0], h: d?.[1] };
 };
 
+/** The pages whose before/after pairs are stamped from the loop template, and
+ *  so are drawn as bordered cards. See the `isCard` comment below. */
+const LOOP_GRID_PAGES = new Set(['/our-work/', '/tesla-vinyl-wraps/']);
+
 /** Stable anchor id from heading text, so the table of contents can link to it. */
 const slugify = (t: string) =>
   t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
@@ -782,13 +786,25 @@ const galleryStyle = (b: {
                   c.shadow ? `box-shadow:${c.shadow}` : '',
                   c.radius ? `border-radius:${c.radius}` : '',
                 ].filter(Boolean).join(';');
-                /* A column holding a before/after slider is a card on the
-                   original: its own 1px border, padding and radius, with the
-                   title and the View Pictures button centred inside it. Ours
-                   drew no card, which is why a button looked like it belonged
-                   to the pair below rather than the one above -- and why the
-                   ones on the 52 columns that have a button read as stray. */
-                const isCard = (c.blocks ?? []).some((x) => x.type === 'compare');
+                /* A loop-grid card: its own 1px border, padding and radius,
+                   with the title and the View Pictures button centred inside
+                   it. Ours drew no card, which is why a button looked like it
+                   belonged to the pair below rather than the one above -- and
+                   why the ones on the 52 columns that have a button read as
+                   stray.
+
+                   Scoped to the two pages that render the loop, because the
+                   border is not a property of a comparison. It comes from the
+                   loop template: the rule is
+                   `.elementor-20599 .elementor-element.elementor-element-fc2d502
+                    { border-width: 1px; border-color: #F3F3F3; padding: 15px }`,
+                   and that element appears in the original's markup only on
+                   /our-work/ (69) and /tesla-vinyl-wraps/ (12). Checked on
+                   /lp/, /lp-truck-wraps/ and three /wraps-before-after/ pages,
+                   which all hold comparisons and none of which draws a card. */
+                const isCard =
+                  LOOP_GRID_PAGES.has(Astro.url.pathname) &&
+                  (c.blocks ?? []).some((x) => x.type === 'compare');
                 return (
                   <div
                     class:list={['col', { 'col--tinted': tinted, 'col--card': isCard }]}
