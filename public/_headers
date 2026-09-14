@@ -21,6 +21,11 @@
 # It is applied here rather than in the Worker because the Worker does not see
 # these requests at all -- see the `run_worker_first` comment in wrangler.jsonc
 # for what happened when that was tried.
+# Both hostnames are listed while the preview moves from staging. to astro.,
+# so neither is ever live without this rule. The staging. block comes out once
+# that hostname is detached.
+https://astro.vinylwraptoronto.com/*
+  X-Robots-Tag: noindex, nofollow
 https://staging.vinylwraptoronto.com/*
   X-Robots-Tag: noindex, nofollow
 # ---------------------------------------------------------------------------
