@@ -104,7 +104,10 @@
     position: absolute;
     bottom: 10px;
     padding: 4px 9px;
-    background: rgba(0, 0, 0, 0.62);
+    /* The original's own value: `.jx-label { background-color:
+       var(--e-global-color-d077a13); color: #FFFFFF }`. The translucent black
+       here was invented. */
+    background: var(--e-global-color-d077a13, #15334c);
     color: #fff;
     /* 16px on 18px leading at weight 500, with no extra tracking — measured
        against the original's Before/After labels on all 68 pages that carry a
@@ -137,18 +140,43 @@
     box-shadow: 0 0 6px rgba(0, 0, 0, 0.55);
     pointer-events: none;
   }
-  :global(.jx-handle::after) {
-    content: '';
+  /* The controller, as the original draws it. Its widget sets
+     `.jx-controller { background-color: var(--e-global-color-8c22d81) }` with
+     `border-radius: 5px`, and hands the handle a left and a right chevron
+     through data-prev-icon / data-next-icon. So it is a rounded green tab with
+     two arrows, not the plain white disc this had. */
+  :global(.jx-controller) {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 38px;
-    height: 38px;
-    margin: -19px 0 0 -19px;
-    border: 3px solid #fff;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.35);
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 10px;
+    border-radius: 5px;
+    background: var(--e-global-color-8c22d81, #14a278);
+    transition: background-color 150ms;
   }
+  /* Its own rule: the colour follows a hover of the whole slider, not of the
+     handle, which is what makes it respond while the pointer is anywhere over
+     the picture. */
+  :global(.compare-pair[data-juxtapose]:hover .jx-controller) {
+    background: var(--e-global-color-secondary, #232323);
+  }
+  :global(.compare-pair[data-juxtapose]:focus-visible) {
+    outline: 3px solid var(--e-global-color-a8178e9, #99cc33);
+    outline-offset: 2px;
+  }
+  /* Chevrons drawn from a rotated corner rather than fetched as an image. */
+  :global(.jx-arrow) {
+    width: 7px;
+    height: 7px;
+    border-top: 2px solid #0f172a;
+    border-right: 2px solid #0f172a;
+  }
+  :global(.jx-arrow--prev) { transform: rotate(-135deg); }
+  :global(.jx-arrow--next) { transform: rotate(45deg); }
 </style>
 
 <script>
@@ -359,13 +387,50 @@
       pair.dataset.juxtapose = '';
       const handle = document.createElement('span');
       handle.className = 'jx-handle';
+      // The controller carries a left and a right chevron, as the original's
+      // does through its data-prev-icon / data-next-icon attributes.
+      const controller = document.createElement('span');
+      controller.className = 'jx-controller';
+      for (const dir of ['prev', 'next']) {
+        const arrow = document.createElement('i');
+        arrow.className = `jx-arrow jx-arrow--${dir}`;
+        controller.appendChild(arrow);
+      }
+      handle.appendChild(controller);
       pair.appendChild(handle);
 
+      /* The original starts at data-startingposition="50%", which is also the
+         CSS fallback; it is set explicitly so the value is always readable. */
+      let pct = 50;
+      const apply = () => {
+        pair.style.setProperty('--split', `${pct}%`);
+        pair.setAttribute('aria-valuenow', String(Math.round(pct)));
+      };
       const setSplit = (clientX: number) => {
         const r = pair.getBoundingClientRect();
-        const pct = Math.min(100, Math.max(0, ((clientX - r.left) / r.width) * 100));
-        pair.style.setProperty('--split', `${pct}%`);
+        pct = Math.min(100, Math.max(0, ((clientX - r.left) / r.width) * 100));
+        apply();
       };
+
+      /* Operable without a mouse. The slider is a real control, and a drag was
+         the only way to move it -- which left it unusable by keyboard and
+         unannounced to a screen reader. */
+      pair.tabIndex = 0;
+      pair.setAttribute('role', 'slider');
+      pair.setAttribute('aria-label', 'Reveal the wrapped vehicle');
+      pair.setAttribute('aria-valuemin', '0');
+      pair.setAttribute('aria-valuemax', '100');
+      apply();
+      pair.addEventListener('keydown', (e: KeyboardEvent) => {
+        const step = e.shiftKey ? 10 : 2;
+        if (e.key === 'ArrowLeft') pct = Math.max(0, pct - step);
+        else if (e.key === 'ArrowRight') pct = Math.min(100, pct + step);
+        else if (e.key === 'Home') pct = 0;
+        else if (e.key === 'End') pct = 100;
+        else return;
+        e.preventDefault();
+        apply();
+      });
 
       let dragging = false;
       const start = (e: PointerEvent) => {
