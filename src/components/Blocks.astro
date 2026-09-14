@@ -1756,6 +1756,17 @@ const galleryStyle = (b: {
     display: block;
     border-radius: 4px;
     cursor: zoom-in;
+    /* A picture that fails to arrive keeps its box -- that is what the width,
+       height and aspect-ratio are for -- but the browser then draws the alt
+       text inside that box and lets it spill out, which is how one failed
+       image ends up lying in a line across the pictures beside it. Clipping
+       keeps a failure inside its own tile, and the tint means the gap reads as
+       a picture that has not loaded rather than as a hole in the page. */
+    overflow: hidden;
+    background-color: #f0f0f0;
+    font-size: 12px;
+    line-height: 1.3;
+    color: #8a8a8a;
   }
 
   /* A masonry gallery keeps each photograph's own shape — that is the whole
