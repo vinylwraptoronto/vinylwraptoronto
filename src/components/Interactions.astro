@@ -323,9 +323,12 @@
     // is added HERE rather than in the markup for the same reason the original
     // adds its own from script: if this never runs, the pictures are simply
     // visible instead of a gallery of 341 invisible tiles.
-    // Every image display on the site that reads as a gallery: the filter
-    // galleries, the carousels, and the before/after sliders.
-    document.querySelectorAll<HTMLElement>('.fgal-grid, .carou, .compare-pair').forEach((grid) => {
+    // The galleries and the carousels. Deliberately NOT the before/after
+    // sliders: those overlay two pictures and reveal the top one by clipping,
+    // so fading them separately shows the lower picture through the upper one.
+    // See the note beside .compare-pair in Blocks.astro for why fading the pair
+    // as a unit was not the answer either.
+    document.querySelectorAll<HTMLElement>('.fgal-grid, .carou').forEach((grid) => {
       const shots = [...grid.querySelectorAll<HTMLImageElement>('img')];
       if (!shots.length) return;
       grid.classList.add('img-reveal');
