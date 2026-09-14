@@ -1,0 +1,146 @@
+---
+/**
+ * The galleries.
+ *
+ * 970 photographs across 42 galleries that, until they moved into D1, could
+ * only be changed by editing a data file and redeploying. Pages carry more than
+ * one, so each row names its page and how many pictures it holds.
+ *
+ * Galleries inside posts are not here: they are stored with their post and
+ * edited in the post editor, which is where someone would look for them.
+ */
+import Admin from '../../../layouts/Admin.astro';
+import { applyAdminHeaders } from '../../../lib/auth';
+import { guardPage } from '../../../lib/adminroute';
+
+export const prerender = false;
+
+applyAdminHeaders(Astro.response.headers);
+const guard = await guardPage(Astro.locals, Astro.cookies, Astro.url);
+if (!guard.ok) return guard.response;
+const { db, session } = guard.ctx;
+
+const q = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 100);
+
+const rows = await db
+  .prepare(
+    `SELECT g.id, g.page_slug, g.eid, g.label, g.updated_at,
+            COUNT(i.id)                                  AS images,
+            SUM(CASE WHEN i.hidden = 1 THEN 1 ELSE 0 END) AS hidden,
+            SUM(CASE WHEN COALESCE(i.alt, '') = '' AND i.hidden = 0 THEN 1 ELSE 0 END) AS no_alt
+       FROM galleries g
+       LEFT JOIN gallery_images i ON i.gallery_id = g.id
+       ${q ? 'WHERE g.page_slug LIKE ? OR g.label LIKE ?' : ''}
+      GROUP BY g.id
+      ORDER BY COUNT(i.id) DESC, g.page_slug`,
+  )
+  .bind(...(q ? [`%${q}%`, `%${q}%`] : []))
+  .all<{
+    id: number;
+    page_slug: string;
+    eid: string;
+    label: string | null;
+    updated_at: string;
+    images: number;
+    hidden: number;
+    no_alt: number;
+  }>();
+
+const totals = rows.results.reduce(
+  (t, r) => ({
+    images: t.images + r.images,
+    hidden: t.hidden + (r.hidden ?? 0),
+    no_alt: t.no_alt + (r.no_alt ?? 0),
+  }),
+  { images: 0, hidden: 0, no_alt: 0 },
+);
+---
+
+<Admin title="Galleries" user={{ username: session.username, csrfToken: session.csrfToken }}>
+  <div class="head">
+    <div>
+      <h1>Galleries</h1>
+      <p class="lede">
+        {rows.results.length} {rows.results.length === 1 ? 'gallery' : 'galleries'} holding
+        {totals.images} photographs{totals.hidden > 0 && <>, {totals.hidden} hidden</>}.
+        {totals.no_alt > 0 && <> <strong>{totals.no_alt} have no alt text.</strong></>}
+      </p>
+    </div>
+  </div>
+
+  <form class="filters" method="get" action="/admin/gallery/">
+    <input type="search" name="q" value={q} placeholder="Search by page" aria-label="Search galleries" />
+    <button type="submit" class="primary">Filter</button>
+    {q && <a class="clear" href="/admin/gallery/">Clear</a>}
+  </form>
+
+  <div class="card">
+    {rows.results.length === 0 ? (
+      <p class="empty">Nothing matches that.</p>
+    ) : (
+      <table>
+        <thead>
+          <tr><th>Gallery</th><th>Photographs</th><th>Alt text</th><th></th></tr>
+        </thead>
+        <tbody>
+          {rows.results.map((g) => (
+            <tr>
+              <td>
+                <a class="title" href={`/admin/gallery/${g.id}/`}>{g.label ?? g.page_slug}</a>
+                <span class="slug">/{g.page_slug}/ · {g.eid}</span>
+              </td>
+              <td class="nowrap">
+                {g.images}
+                {g.hidden > 0 && <span class="pill">{g.hidden} hidden</span>}
+              </td>
+              <td class="nowrap">
+                {g.no_alt > 0
+                  ? <span class="pill pill--bad">{g.no_alt} missing</span>
+                  : <span class="ok">All set</span>}
+              </td>
+              <td class="row-actions">
+                <a href={`/admin/gallery/${g.id}/`}>Edit</a>
+                <a href={`/${g.page_slug}/`} target="_blank" rel="noreferrer">View page</a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+
+  <p class="note">
+    Changes here reach the site at the next publish — the galleries are read out of
+    the database when the site is built, the same way posts are.
+  </p>
+</Admin>
+
+<style is:global>
+  .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 16px; align-items: center; }
+  .filters input[type='search'] {
+    padding: 8px 10px; font: inherit; border: 1px solid #c6ccd4; border-radius: 7px;
+    background: #fff; min-width: 240px; flex: 1;
+  }
+  .filters .clear { font-size: 13px; color: var(--muted); }
+
+  .title { font-weight: 500; display: block; }
+  .slug { font-size: 12px; color: var(--muted); }
+  .empty { color: var(--muted); margin: 0; }
+  .nowrap { white-space: nowrap; }
+  .ok { color: #14603f; font-size: 13px; }
+
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 12px;
+    background: #eef0f3; color: var(--muted); margin-left: 6px;
+  }
+  .pill--bad { background: #fde8e8; color: #8a1c1c; margin-left: 0; }
+
+  .note { color: var(--muted); font-size: 13px; margin: 16px 0 0; }
+
+  .row-actions { white-space: nowrap; }
+  .row-actions a { margin-right: 10px; font-size: 13px; }
+
+  .pager { display: flex; gap: 16px; align-items: center; justify-content: center; font-size: 14px; color: var(--muted); }
+  .pager a { color: var(--accent); }
+</style>

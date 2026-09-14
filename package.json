@@ -5,13 +5,14 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/pull-posts.mjs && astro build",
+    "build": "node scripts/pull-posts.mjs && node scripts/pull-galleries.mjs && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "deploy": "bash scripts/deploy.sh",
     "check": "node scripts/verify.mjs && node scripts/sweep.mjs && node scripts/behaviour.mjs",
     "check:images": "node scripts/sweep.mjs && node scripts/img-check.mjs",
     "posts:pull": "node scripts/pull-posts.mjs",
+    "galleries:pull": "node scripts/pull-galleries.mjs",
     "admin:user": "node scripts/admin-user.mjs"
   },
   "dependencies": {

@@ -15,6 +15,7 @@ import additions from '../data/post-additions.json';
 import pageSeo from '../data/page-seo.json';
 import blogIndex from '../data/blog-index.json';
 import { applyPageSeo, type PageSeoOverride } from '../lib/pageseo';
+import { withGalleries } from '../lib/gallery';
 import { blogPageMeta, blogSections, pageCount, PER_PAGE, type BlogEntry } from '../lib/bloglist';
 import { membersOf } from '../lib/archive';
 
@@ -82,8 +83,14 @@ const { page: raw, pageNum = 1 } = Astro.props as { page: PageData; pageNum?: nu
    place — see src/lib/pageseo.ts for why adding tags beside them would leave
    the old values rendering. Empty until someone edits a page, so this is a
    no-op on a fresh checkout. */
+/* Galleries come from D1 too, pulled into src/data/galleries.json before the
+   build. Applied here rather than in the renderer so the block components never
+   have to know where a picture came from, and only where the database actually
+   has rows -- a gallery it does not know about keeps the pictures the page was
+   ported with. Posts are unaffected: their galleries are already in D1, inside
+   the post's own sections. */
 const withSeo = applyPageSeo(
-  raw,
+  withGalleries(raw),
   (pageSeo as Record<string, PageSeoOverride>)[raw.slug],
 );
 

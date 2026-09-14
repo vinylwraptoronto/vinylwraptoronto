@@ -1,0 +1,249 @@
+---
+/**
+ * One gallery.
+ *
+ * The portfolio holds 341 photographs, so the pictures are paged rather than
+ * put on one screen: forty rows is a screen someone can work in, and the save
+ * only touches the rows that were on it.
+ *
+ * Alt text leads, because it is the field that is both most often empty and
+ * most consequential — it is what a screen reader announces and what tells
+ * Google what the photograph shows.
+ */
+import Admin from '../../../layouts/Admin.astro';
+import { applyAdminHeaders } from '../../../lib/auth';
+import { guardPage } from '../../../lib/adminroute';
+import { img } from '../../../lib/img';
+
+export const prerender = false;
+
+applyAdminHeaders(Astro.response.headers);
+const guard = await guardPage(Astro.locals, Astro.cookies, Astro.url);
+if (!guard.ok) return guard.response;
+const { db, session } = guard.ctx;
+
+const id = Number(Astro.params.id);
+if (!Number.isInteger(id) || id < 1) return Astro.redirect('/admin/gallery/', 302);
+
+const gallery = await db
+  .prepare(`SELECT id, page_slug, eid, label, filters, updated_at FROM galleries WHERE id = ?`)
+  .bind(id)
+  .first<{
+    id: number;
+    page_slug: string;
+    eid: string;
+    label: string | null;
+    filters: string;
+    updated_at: string;
+  }>();
+if (!gallery) return Astro.redirect('/admin/gallery/', 302);
+
+let filters: { index: string; label: string }[] = [];
+try {
+  const parsed = JSON.parse(gallery.filters || '[]');
+  if (Array.isArray(parsed)) filters = parsed;
+} catch {
+  /* Render without tabs rather than failing the screen. */
+}
+
+const PER_PAGE = 40;
+const countRow = await db
+  .prepare(`SELECT COUNT(*) AS n FROM gallery_images WHERE gallery_id = ?`)
+  .bind(id)
+  .first<{ n: number }>();
+const total = countRow?.n ?? 0;
+const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+const page = Math.min(Math.max(1, Number(Astro.url.searchParams.get('p') ?? '1') || 1), pages);
+const offset = (page - 1) * PER_PAGE;
+
+const images = await db
+  .prepare(
+    `SELECT id, src, title, alt, tag, position, hidden
+       FROM gallery_images
+      WHERE gallery_id = ?
+      ORDER BY position, id
+      LIMIT ? OFFSET ?`,
+  )
+  .bind(id, PER_PAGE, offset)
+  .all<{
+    id: number;
+    src: string;
+    title: string | null;
+    alt: string | null;
+    tag: string | null;
+    position: number;
+    hidden: number;
+  }>();
+
+const saved = Astro.url.searchParams.get('saved');
+const pageLink = (n: number) => `/admin/gallery/${id}/${n > 1 ? `?p=${n}` : ''}`;
+
+/* The filter tag is stored as the index the block uses ("0", "1"), which means
+   nothing on screen; show the label the visitor sees. */
+const tagLabel = (tag: string | null) =>
+  tag == null ? '—' : (filters.find((f) => f.index === tag)?.label ?? tag);
+---
+
+<Admin title={gallery.label ?? gallery.page_slug} user={{ username: session.username, csrfToken: session.csrfToken }}>
+  <p class="back"><a href="/admin/gallery/">← All galleries</a></p>
+
+  <div class="head">
+    <div>
+      <h1>{gallery.label ?? gallery.page_slug}</h1>
+      <p class="lede">
+        {total} {total === 1 ? 'photograph' : 'photographs'} on
+        <a href={`/${gallery.page_slug}/`} target="_blank" rel="noreferrer">/{gallery.page_slug}/</a>
+      </p>
+    </div>
+  </div>
+
+  {saved && <p class="ok-note">Saved {saved} {Number(saved) === 1 ? 'photograph' : 'photographs'}.</p>}
+
+  <form method="post" action="/api/admin/gallery/save/">
+    <input type="hidden" name="csrf" value={session.csrfToken} />
+    <input type="hidden" name="gallery_id" value={gallery.id} />
+    <input type="hidden" name="p" value={String(page)} />
+
+    <div class="card">
+      {images.results.length === 0 ? (
+        <p class="empty">This gallery has no photographs.</p>
+      ) : (
+        <ul class="shots">
+          {images.results.map((im, i) => (
+            <li class={im.hidden ? 'is-hidden' : ''}>
+              <input type="hidden" name="id" value={im.id} />
+              <img
+                src={img(im.src)}
+                alt=""
+                width="120"
+                height="80"
+                loading="lazy"
+                decoding="async"
+              />
+              <div class="fields">
+                <label>
+                  <span>Alt text <em>what the photograph shows</em></span>
+                  <input type="text" name={`alt_${im.id}`} value={im.alt ?? ''} maxlength="500" />
+                </label>
+                <label>
+                  <span>Caption</span>
+                  <input type="text" name={`title_${im.id}`} value={im.title ?? ''} maxlength="500" />
+                </label>
+                <div class="minor">
+                  <label class="tag">
+                    <span>Filter tab</span>
+                    <select name={`tag_${im.id}`}>
+                      <option value="">None</option>
+                      {filters
+                        .filter((f) => f.index !== 'all')
+                        .map((f) => (
+                          <option value={f.index} selected={im.tag === f.index}>{f.label}</option>
+                        ))}
+                      {im.tag && !filters.some((f) => f.index === im.tag) && (
+                        <option value={im.tag} selected>{tagLabel(im.tag)}</option>
+                      )}
+                    </select>
+                  </label>
+                  <label class="shown">
+                    <input type="checkbox" name={`shown_${im.id}`} checked={!im.hidden} />
+                    <span>Show on the site</span>
+                  </label>
+                  <span class="pos">#{offset + i + 1}</span>
+                  {/* The pressed button's own name and value are what the route
+                      reads, so reordering needs no script and works with
+                      JavaScript off. Unsaved text in the row is submitted with
+                      it, so a move does not discard an edit in progress. */}
+                  <span class="move">
+                    <button type="submit" name="move" value={`up:${im.id}`}
+                      disabled={page === 1 && i === 0}
+                      aria-label="Move earlier" title="Move earlier">↑</button>
+                    <button type="submit" name="move" value={`down:${im.id}`}
+                      disabled={page === pages && i === images.results.length - 1}
+                      aria-label="Move later" title="Move later">↓</button>
+                  </span>
+                </div>
+                <p class="file">{im.src.split('/').pop()}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="primary">Save changes</button>
+      <span class="muted">Only the {images.results.length} on this page.</span>
+    </div>
+  </form>
+
+  {pages > 1 && (
+    <nav class="pager" aria-label="Pages">
+      {page > 1 && <a href={pageLink(page - 1)}>← Previous</a>}
+      <span>Page {page} of {pages}</span>
+      {page < pages && <a href={pageLink(page + 1)}>Next →</a>}
+    </nav>
+  )}
+</Admin>
+
+<style is:global>
+  .back { margin: 0 0 8px; font-size: 14px; }
+  .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .empty { color: var(--muted); margin: 0; }
+  .muted { color: var(--muted); font-size: 13px; }
+
+  .ok-note {
+    margin: 0 0 16px; padding: 10px 14px; border-radius: 8px;
+    background: #e6f4ee; color: #14603f; font-size: 14px;
+  }
+
+  .shots { list-style: none; margin: 0; padding: 0; }
+  .shots li {
+    display: flex; gap: 14px; padding: 14px 0; border-top: 1px solid #e7eaee; align-items: flex-start;
+  }
+  .shots li:first-child { border-top: 0; padding-top: 0; }
+  /* A hidden picture still shows its words, just visibly set aside. */
+  .shots li.is-hidden { opacity: 0.55; }
+  .shots img {
+    width: 120px; height: 80px; object-fit: cover; border-radius: 6px;
+    background: #eef0f3; flex: none;
+  }
+
+  .fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .fields label { display: flex; flex-direction: column; gap: 3px; }
+  .fields label > span { font-size: 12px; color: var(--muted); }
+  .fields label > span em { font-style: normal; opacity: 0.75; }
+  .fields input[type='text'], .fields select {
+    padding: 7px 9px; font: inherit; font-size: 14px;
+    border: 1px solid #c6ccd4; border-radius: 6px; background: #fff; width: 100%;
+  }
+
+  .minor { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+  .minor .tag { min-width: 170px; }
+  .minor .shown { flex-direction: row; align-items: center; gap: 6px; }
+  .minor .shown span { font-size: 13px; color: inherit; }
+  .pos { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .move button {
+    font: inherit; line-height: 1; padding: 5px 9px; margin-left: 4px;
+    border: 1px solid #c6ccd4; border-radius: 6px; background: #fff; cursor: pointer;
+  }
+  .move button[disabled] { opacity: 0.4; cursor: default; }
+
+  .file {
+    margin: 2px 0 0; font-size: 11px; color: var(--muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  .actions { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+
+  @media (max-width: 640px) {
+    .shots li { flex-direction: column; }
+    .shots img { width: 100%; height: 140px; }
+  }
+
+  .row-actions { white-space: nowrap; }
+  .row-actions a { margin-right: 10px; font-size: 13px; }
+
+  .pager { display: flex; gap: 16px; align-items: center; justify-content: center; font-size: 14px; color: var(--muted); }
+  .pager a { color: var(--accent); }
+</style>
