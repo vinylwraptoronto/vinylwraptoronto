@@ -31,6 +31,12 @@ type TocEntry = { eid?: string; text: string; level: number; id: string };
 
 const { sections, blocks, toc } = Astro.props;
 
+/** True when this call is rendering the inside of a column rather than whole
+ *  sections. A before/after pair in a column is drawn at half the content
+ *  width and one at section level at the full width, which is the difference
+ *  between a 768-wide file being ample and it being an upscale. */
+const inColumn = !!blocks;
+
 const groups: { section?: Section; blocks: Block[]; bare: boolean }[] = blocks
   ? [{ blocks, bare: true }]
   : (sections ?? []).map((s) => ({ section: s, blocks: s.blocks, bare: false }));
@@ -72,6 +78,13 @@ const tileOf = (src: string, masonry?: boolean): { src: string; w?: number; h?: 
   if (hit) return { src: hit[0], w: hit[1], h: hit[2] };
   const d = dimsOf(src);
   return { src, w: d?.[0], h: d?.[1] };
+};
+
+/** The upload's own dimensions, shaped like tileOf's result so the two are
+ *  interchangeable at the call site. */
+const dimsPair = (src: string): { w?: number; h?: number } => {
+  const d = dimsOf(src);
+  return { w: d?.[0], h: d?.[1] };
 };
 
 /** The pages whose before/after pairs are stamped from the loop template, and
@@ -651,14 +664,21 @@ const galleryStyle = (b: {
                   held for each picture, lazy loading is safe, so the page keeps
                   that saving rather than fetching all 69 pairs up front. */}
               {b.pairs.map((p) => {
-                /* 768 wide, the same "medium_large" the grid galleries ask for,
-                   because a pair is drawn at roughly half the content width and
-                   never needs the upload. /our-work/ carries 69 pairs: at full
-                   size that is 138 photographs and 12.8MB on one page, every one
-                   of which the browser must also decode and hold. The upload
-                   stays reachable -- data-full is what the lightbox opens. */
-                const bt = tileOf(p.before.src);
-                const at = tileOf(p.after.src);
+                /* In a column, 768 wide -- the same "medium_large" the grid
+                   galleries ask for. A pair in a column is drawn at 536-628px,
+                   so the upload is wasted: /our-work/ carries 69 of them, which
+                   at full size is 138 photographs and 13.4MB on one page, every
+                   one of which the browser must also decode and hold.
+
+                   At section level it keeps the upload. Those are the single
+                   project pages, where the pair is drawn at 1160px and a
+                   768-wide file would be visibly upscaled -- and where there
+                   are two images on the page, so there is nothing to save.
+
+                   Either way the upload stays reachable: data-full is what the
+                   lightbox opens. */
+                const bt = inColumn ? tileOf(p.before.src) : { src: p.before.src, ...dimsPair(p.before.src) };
+                const at = inColumn ? tileOf(p.after.src) : { src: p.after.src, ...dimsPair(p.after.src) };
                 return (
                 <div class="compare-pair">
                   <figure>
