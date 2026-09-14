@@ -123,7 +123,7 @@ function announce(username, password, verb) {
   console.log('  This is the only time that password is shown. It is not stored');
   console.log('  anywhere in readable form -- if it is lost, run `reset`.');
   console.log('');
-  console.log('  Sign in at https://staging.vinylwraptoronto.com/admin/ ; the account');
+  console.log('  Sign in at https://astro.vinylwraptoronto.com/admin/ ; the account');
   console.log('  must choose a new password before anything else will answer.');
   console.log('');
 }

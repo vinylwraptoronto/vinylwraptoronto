@@ -1,6 +1,10 @@
-# Address comparison — vinylwraptoronto.com → staging.vinylwraptoronto.com
+# Address comparison — vinylwraptoronto.com → astro.vinylwraptoronto.com
 
 Run 2026-09-10. Old site live and readable at the time of the run.
+
+The preview hostname was `staging.vinylwraptoronto.com` when this ran; it was
+renamed to `astro.vinylwraptoronto.com` on 2026-09-14 and the names below were
+updated with it. Same Worker and same deployment — only the hostname moved.
 
 Chart: https://claude.ai/code/artifact/2542b53b-e7a6-42dd-b159-8da540596274
 
@@ -25,7 +29,7 @@ The address diff is clean. Everything below is what a count does not show.
 
 Seven of the eight are fixed and verified on the live preview. Status updated
 2026-09-11; the "verified" column is a real request against
-`staging.vinylwraptoronto.com`, not a claim about the build.
+`astro.vinylwraptoronto.com`, not a claim about the build.
 
 | # | Finding | Status |
 |---|---|---|
@@ -50,10 +54,17 @@ the catch-all route instead of 301, and `/wp-content/uploads/` became a 404
 again — because the asset server is what applies `_redirects` and it only gets
 the chance on requests that reach it first. Pages looked perfect throughout.
 
-The remaining instrument is a response-header Transform Rule on the zone,
-scoped to `staging.vinylwraptoronto.com`, setting `X-Robots-Tag: noindex,
-nofollow`. That is a change to the client's live zone rather than to this
-repository, so it is left for the cutover decision.
+Closed 2026-09-14, and not the way this paragraph originally proposed. A zone
+Transform Rule was the fallback; the rule lives in `public/_headers` instead,
+scoped to `https://astro.vinylwraptoronto.com/*` and setting
+`X-Robots-Tag: noindex, nofollow`. That keeps it in the repository, reviewed as
+a diff and deployed with the site, rather than as an undocumented change to the
+client's live zone.
+
+The scoping is the part that matters: cutover attaches the apex and www to this
+same Worker, so a rule written as `/*` would carry `noindex` onto the real site
+the moment it went live. It must never be widened; a new preview hostname gets
+its own block.
 
 `noindex`, not `Disallow`. Cloudflare injects a managed robots.txt at the edge
 carrying `User-agent: * / Allow: /`, so a Disallow served from here would sit in

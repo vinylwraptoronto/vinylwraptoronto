@@ -24,7 +24,7 @@ set -euo pipefail
 
 ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-47a82355b575e264047206a36c2cd05c}"
 WORKER="vinylwraptoronto"
-HOSTNAME_="staging.vinylwraptoronto.com"
+HOSTNAME_="astro.vinylwraptoronto.com"
 TOKEN="${CLOUDFLARE_API_TOKEN:-${CF_API_TOKEN:-}}"
 API="https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/workers/scripts/$WORKER"
 

@@ -184,7 +184,7 @@ The workflow needs two repository secrets:
 
 `Workers Scripts` is an **Account** permission, not a Zone one — the Workers
 entry under Zone is `Workers Routes`, which is a different thing and not needed
-here, because `staging.vinylwraptoronto.com` is attached as a Custom Domain
+here, because `astro.vinylwraptoronto.com` is attached as a Custom Domain
 rather than a route. Account Resources must include this account.
 
 Either token name works: the workflow passes both and `scripts/deploy.sh` takes
@@ -214,7 +214,7 @@ server bundle.
 
 | Hostname | Points at |
 |---|---|
-| `staging.vinylwraptoronto.com` | this Worker, as a Custom Domain |
+| `astro.vinylwraptoronto.com` | this Worker, as a Custom Domain |
 | `vinylwraptoronto.com` | **still the old WordPress server** — not this site |
 
 The apex has not been cut over. Only staging serves this build.
