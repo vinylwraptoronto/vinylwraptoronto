@@ -1,27 +1,43 @@
 import type { APIRoute } from 'astro';
-import { originIsSelf } from '../../lib/auth';
+import { clientIp, originIsSelf, type Db } from '../../lib/auth';
 
 /**
  * Quote form endpoint.
  *
  * The live site posts this form into WordPress (Elementor Pro Forms). There is
- * no WordPress here, so submissions are delivered by email through Resend.
+ * no WordPress here, so a submission is written to D1 and then emailed through
+ * Resend.
+ *
+ * That order is the point. The email used to be the only copy: if Resend was
+ * unreachable, or its secrets were missing, this returned 503 and told the
+ * visitor to phone instead, and the enquiry was gone. Now the row is written
+ * first and the email is a notification about a record that already exists, so
+ * a delivery failure costs the client a notification rather than the lead. A
+ * submission that was stored but not delivered is reported as such at the top
+ * of /admin/quotes/.
  *
  * This is the one on-demand route in the project — every content page is still
  * prerendered and served as a static file.
  *
- * Requires two Worker secrets (Settings -> Variables & Secrets, as SECRETS, not
- * build variables — a build variable is present while the build runs and absent
- * when this route executes, so the build passes and the form fails in
- * production):
+ * Two Worker secrets are needed for the email half (Settings -> Variables &
+ * Secrets, as SECRETS, not build variables — a build variable is present while
+ * the build runs and absent when this route executes, so the build passes and
+ * the form fails in production):
  *
  *   RESEND_API_KEY   the Resend API key
  *   QUOTE_TO_EMAIL   where submissions are delivered
  *
- * Until those exist the endpoint returns 503 with a message pointing the
- * visitor at the phone number, rather than silently dropping an enquiry.
+ * Without them the submission is still accepted and stored; only the email is
+ * skipped. The visitor is told their enquiry was received, because it was.
  */
 export const prerender = false;
+
+/** Submissions accepted from one address before it is told to slow down.
+ *  Storing submissions means storing spam too, and a bot that finds this
+ *  endpoint would otherwise fill the table. High enough that a real person
+ *  sending a second enquiry, or an office behind one address, never meets it. */
+const RATE_LIMIT = 6;
+const RATE_WINDOW_MINUTES = 10;
 
 const FROM = 'Vinyl Wrap Toronto <onboarding@resend.dev>';
 
@@ -46,9 +62,10 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     return json({ error: 'That request did not come from this site.' }, 403);
   }
 
-  const env = (locals as { runtime?: { env?: Record<string, string> } })?.runtime?.env ?? {};
-  const apiKey = env.RESEND_API_KEY;
-  const to = env.QUOTE_TO_EMAIL;
+  const env = (locals as { runtime?: { env?: Record<string, unknown> } })?.runtime?.env ?? {};
+  const apiKey = env.RESEND_API_KEY as string | undefined;
+  const to = env.QUOTE_TO_EMAIL as string | undefined;
+  const db = env.BLOG as Db | undefined;
 
   let form: FormData;
   try {
@@ -63,6 +80,10 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   const phone = get('phone');
   const message = get('message');
   const vehicle = get('vehicle_type');
+  /* The Limited Time Offer form asks which wrap, and sends `product` where the
+     site-wide form sends `vehicle_type`. It was never read, so that answer was
+     dropped from the email entirely. */
+  const product = get('product');
   const wrapType = form.getAll('wrap_type').map(String).join(', ');
   const photos = form.getAll('photos').filter((f): f is File => f instanceof File && f.size > 0);
 
@@ -73,7 +94,74 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     return json({ error: 'That email address does not look right.' }, 400);
   }
 
-  if (!apiKey || !to) {
+  const ip = clientIp(request);
+
+  /* Storing submissions means storing whatever a bot sends too. */
+  if (db && ip) {
+    try {
+      const recent = await db
+        .prepare(
+          `SELECT COUNT(*) AS n FROM quote_submissions
+            WHERE ip = ? AND created_at > datetime('now', ?)`,
+        )
+        .bind(ip, `-${RATE_WINDOW_MINUTES} minutes`)
+        .first<{ n: number }>();
+      if ((recent?.n ?? 0) >= RATE_LIMIT) {
+        return json(
+          { error: 'That is a lot of enquiries at once. Please call 416-746-1381.' },
+          429,
+        );
+      }
+    } catch {
+      /* The limiter is a guard, not a gate: if the count cannot be read, the
+         submission still goes through. Losing a lead to a database hiccup is
+         the failure this whole route was changed to avoid. */
+    }
+  }
+
+  /* Names and sizes only -- the files themselves stay on the email. See the
+     note in db/migrations/0013. */
+  const photoMeta = photos.map((f) => ({
+    name: f.name || 'photo',
+    size: f.size,
+    type: f.type || null,
+  }));
+
+  let id: number | null = null;
+  if (db) {
+    try {
+      const row = await db
+        .prepare(
+          `INSERT INTO quote_submissions
+             (name, email, phone, wrap_type, vehicle_type, product, message,
+              photos, photo_count, source_page, ip, user_agent)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           RETURNING id`,
+        )
+        .bind(
+          name,
+          email,
+          phone,
+          wrapType || null,
+          vehicle || null,
+          product || null,
+          message || null,
+          JSON.stringify(photoMeta),
+          photos.length,
+          request.headers.get('referer')?.slice(0, 500) ?? null,
+          ip,
+          request.headers.get('user-agent')?.slice(0, 300) ?? null,
+        )
+        .first<{ id: number }>();
+      id = row?.id ?? null;
+    } catch {
+      /* Fall through to the email, which may still get the enquiry out. */
+    }
+  }
+
+  /* Nothing held it and nothing can send it: the only honest answer is to say
+     so rather than report success for an enquiry that went nowhere. */
+  if (id === null && (!apiKey || !to)) {
     return json(
       {
         error:
@@ -89,6 +177,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     ['Phone', phone],
     ['Wrap type', wrapType],
     ['Vehicle type', vehicle],
+    ['Product', product],
     ['Message', message],
     ['Photos attached', String(photos.length)],
   ];
@@ -111,21 +200,53 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     attachments.push({ filename: file.name || 'photo', content: btoa(bin) });
   }
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      from: FROM,
-      to: [to],
-      reply_to: email,
-      subject: `Quote request from ${name}`,
-      html,
-      ...(attachments.length ? { attachments } : {}),
-    }),
-  });
+  /** What went wrong with the notification, or null if it went out. */
+  let deliveryError: string | null = null;
 
-  if (!res.ok) {
+  if (!apiKey || !to) {
+    deliveryError = 'Resend is not configured (RESEND_API_KEY / QUOTE_TO_EMAIL).';
+  } else {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          from: FROM,
+          to: [to],
+          reply_to: email,
+          subject: `Quote request from ${name}`,
+          html,
+          ...(attachments.length ? { attachments } : {}),
+        }),
+      });
+      if (!res.ok) deliveryError = `Resend returned ${res.status}.`;
+    } catch (e) {
+      deliveryError = `Could not reach Resend: ${String(e).slice(0, 200)}`;
+    }
+  }
+
+  if (id !== null && db) {
+    try {
+      await db
+        .prepare(
+          `UPDATE quote_submissions
+              SET delivered = ?, delivered_at = ?, delivery_error = ?
+            WHERE id = ?`,
+        )
+        .bind(deliveryError ? 0 : 1, deliveryError ? null : new Date().toISOString(), deliveryError, id)
+        .run();
+    } catch {
+      /* The enquiry is already saved; only the delivery note is missing. */
+    }
+  }
+
+  /* Nothing was stored and the email failed, so the enquiry really is lost --
+     the one case that still owes the visitor the phone number. */
+  if (id === null && deliveryError) {
     return json({ error: 'Sorry, that did not send. Please call 416-746-1381.' }, 502);
   }
+
+  /* Otherwise the enquiry has been received: either it is on the email, or it
+     is a row the client will see in /admin/quotes/, flagged as undelivered. */
   return json({ ok: true }, 200);
 };

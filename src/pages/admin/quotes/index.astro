@@ -1,0 +1,213 @@
+---
+/**
+ * Quote form submissions.
+ *
+ * Before D1 these existed only as email, so there was nothing to show here and
+ * nothing to go back to once an email was deleted or missed. The list leads
+ * with the two states that need somebody to act: an enquiry nobody has opened,
+ * and one the notification email never reached.
+ */
+import Admin from '../../../layouts/Admin.astro';
+import { applyAdminHeaders } from '../../../lib/auth';
+import { guardPage } from '../../../lib/adminroute';
+
+export const prerender = false;
+
+applyAdminHeaders(Astro.response.headers);
+const guard = await guardPage(Astro.locals, Astro.cookies, Astro.url);
+if (!guard.ok) return guard.response;
+const { db, session } = guard.ctx;
+
+const PER_PAGE = 25;
+const q = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 100);
+const show = Astro.url.searchParams.get('show') ?? '';
+const page = Math.max(1, Number(Astro.url.searchParams.get('p') ?? '1') || 1);
+
+const where: string[] = [];
+const binds: unknown[] = [];
+if (q) {
+  where.push('(name LIKE ? OR email LIKE ? OR phone LIKE ? OR message LIKE ?)');
+  binds.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
+}
+if (show === 'unread') where.push('read_at IS NULL');
+if (show === 'undelivered') where.push('delivered = 0');
+const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+const totalRow = await db
+  .prepare(`SELECT COUNT(*) AS n FROM quote_submissions ${clause}`)
+  .bind(...binds)
+  .first<{ n: number }>();
+const total = totalRow?.n ?? 0;
+const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+const offset = (Math.min(page, pages) - 1) * PER_PAGE;
+
+const rows = await db
+  .prepare(
+    `SELECT id, created_at, name, email, phone, vehicle_type, product, wrap_type,
+            message, photo_count, delivered, read_at
+       FROM quote_submissions
+       ${clause}
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?`,
+  )
+  .bind(...binds, PER_PAGE, offset)
+  .all<{
+    id: number;
+    created_at: string;
+    name: string;
+    email: string;
+    phone: string;
+    vehicle_type: string | null;
+    product: string | null;
+    wrap_type: string | null;
+    message: string | null;
+    photo_count: number;
+    delivered: number;
+    read_at: string | null;
+  }>();
+
+const counts = await db
+  .prepare(
+    `SELECT COUNT(*) AS all_n,
+            SUM(CASE WHEN read_at IS NULL THEN 1 ELSE 0 END) AS unread,
+            SUM(CASE WHEN delivered = 0 THEN 1 ELSE 0 END)   AS undelivered
+       FROM quote_submissions`,
+  )
+  .first<Record<string, number>>();
+
+const link = (over: Record<string, string>) => {
+  const u = new URL(Astro.url.pathname, Astro.url.origin);
+  const base: Record<string, string> = { q, show, p: String(page) };
+  for (const [k, v] of Object.entries({ ...base, ...over })) if (v && v !== '1') u.searchParams.set(k, v);
+  return u.pathname + (u.search || '');
+};
+
+/** "14 Sep, 09:42" — the year only when it is not this one. */
+const when = (iso: string) => {
+  const d = new Date(iso.replace(' ', 'T') + (iso.endsWith('Z') ? '' : 'Z'));
+  const sameYear = d.getUTCFullYear() === new Date().getUTCFullYear();
+  return d.toLocaleString('en-CA', {
+    day: 'numeric',
+    month: 'short',
+    ...(sameYear ? {} : { year: 'numeric' }),
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'America/Toronto',
+  });
+};
+
+const wants = (r: { vehicle_type: string | null; product: string | null; wrap_type: string | null }) =>
+  [r.product, r.vehicle_type, r.wrap_type].filter(Boolean).join(' · ');
+---
+
+<Admin title="Quote requests" user={{ username: session.username, csrfToken: session.csrfToken }}>
+  <div class="head">
+    <div>
+      <h1>Quote requests</h1>
+      <p class="lede">
+        {counts?.all_n ?? 0} received — {counts?.unread ?? 0} not opened yet
+        {(counts?.undelivered ?? 0) > 0 && (
+          <>, <strong>{counts?.undelivered} never emailed</strong></>
+        )}.
+      </p>
+    </div>
+  </div>
+
+  {(counts?.undelivered ?? 0) > 0 && show !== 'undelivered' && (
+    <p class="warn">
+      {counts?.undelivered} {counts?.undelivered === 1 ? 'enquiry was' : 'enquiries were'} saved here
+      but the notification email did not go out. They are safe — nobody has been told about them.
+      <a href={link({ show: 'undelivered', p: '1' })}>Show them</a>
+    </p>
+  )}
+
+  <form class="filters" method="get" action="/admin/quotes/">
+    <input type="search" name="q" value={q} placeholder="Search name, email, phone or message" aria-label="Search quote requests" />
+    <select name="show" aria-label="Show">
+      <option value="">All</option>
+      <option value="unread" selected={show === 'unread'}>Not opened</option>
+      <option value="undelivered" selected={show === 'undelivered'}>Never emailed</option>
+    </select>
+    <button type="submit" class="primary">Filter</button>
+    {(q || show) && <a class="clear" href="/admin/quotes/">Clear</a>}
+  </form>
+
+  <div class="card">
+    {rows.results.length === 0 ? (
+      <p class="empty">
+        {q || show ? 'Nothing matches that.' : 'No quote requests yet. They will appear here as they come in.'}
+      </p>
+    ) : (
+      <table>
+        <thead>
+          <tr>
+            <th>From</th><th>Wants</th><th>Message</th><th>Received</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.results.map((r) => (
+            <tr class={r.read_at ? '' : 'is-unread'}>
+              <td>
+                <a class="title" href={`/admin/quotes/${r.id}/`}>{r.name}</a>
+                <span class="slug">{r.email} · {r.phone}</span>
+              </td>
+              <td>
+                {wants(r) || <span class="muted">—</span>}
+                {r.photo_count > 0 && <span class="pill">{r.photo_count} photo{r.photo_count === 1 ? '' : 's'}</span>}
+              </td>
+              <td class="msg">{r.message ? r.message.slice(0, 90) + (r.message.length > 90 ? '…' : '') : <span class="muted">—</span>}</td>
+              <td class="nowrap">{when(r.created_at)}</td>
+              <td class="row-actions">
+                {!r.read_at && <span class="pill pill--new">New</span>}
+                {!r.delivered && <span class="pill pill--bad">Not emailed</span>}
+                <a href={`/admin/quotes/${r.id}/`}>Open</a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+
+  {pages > 1 && (
+    <nav class="pager" aria-label="Pages">
+      {page > 1 && <a href={link({ p: String(page - 1) })}>← Newer</a>}
+      <span>Page {Math.min(page, pages)} of {pages}</span>
+      {page < pages && <a href={link({ p: String(page + 1) })}>Older →</a>}
+    </nav>
+  )}
+</Admin>
+
+<style is:global>
+  .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 16px; align-items: center; }
+  .filters input[type='search'], .filters select {
+    padding: 8px 10px; font: inherit; border: 1px solid #c6ccd4; border-radius: 7px; background: #fff;
+  }
+  .filters input[type='search'] { min-width: 240px; flex: 1; }
+  .filters .clear { font-size: 13px; color: var(--muted); }
+
+  .title { font-weight: 500; display: block; }
+  .slug { font-size: 12px; color: var(--muted); }
+  .empty { color: var(--muted); margin: 0; }
+  .muted { color: var(--muted); }
+  .nowrap { white-space: nowrap; }
+  .msg { color: var(--muted); max-width: 32ch; }
+
+  /* An unopened enquiry is the one thing on this screen that needs doing. */
+  tr.is-unread td:first-child { box-shadow: inset 3px 0 0 var(--accent); padding-left: 13px; }
+  tr.is-unread .title { font-weight: 600; }
+
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 12px;
+    background: #eef0f3; color: var(--muted); margin-left: 6px;
+  }
+  .pill--new { background: #e6f4ee; color: #14603f; }
+  .pill--bad { background: #fde8e8; color: #8a1c1c; }
+
+  .warn {
+    margin: 0 0 16px; padding: 12px 14px; border-radius: 8px;
+    background: #fdf3e4; color: #8a5a00; font-size: 14px;
+  }
+  .warn a { margin-left: 8px; }
+</style>

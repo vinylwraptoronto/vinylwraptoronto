@@ -1,0 +1,187 @@
+---
+/**
+ * One quote request.
+ *
+ * Opening it marks it read, which is what "not opened yet" on the list counts.
+ * That is a write on a GET, which is normally worth avoiding; here it is the
+ * behaviour every mail client has and the alternative — a button the client has
+ * to remember to press — would leave the unread count meaningless within a week.
+ */
+import Admin from '../../../layouts/Admin.astro';
+import { applyAdminHeaders } from '../../../lib/auth';
+import { guardPage } from '../../../lib/adminroute';
+
+export const prerender = false;
+
+applyAdminHeaders(Astro.response.headers);
+const guard = await guardPage(Astro.locals, Astro.cookies, Astro.url);
+if (!guard.ok) return guard.response;
+const { db, session } = guard.ctx;
+
+const id = Number(Astro.params.id);
+if (!Number.isInteger(id) || id < 1) return Astro.redirect('/admin/quotes/', 302);
+
+const row = await db
+  .prepare(
+    `SELECT id, created_at, name, email, phone, wrap_type, vehicle_type, product,
+            message, photos, photo_count, source_page, ip, user_agent,
+            delivered, delivered_at, delivery_error, read_at
+       FROM quote_submissions WHERE id = ?`,
+  )
+  .bind(id)
+  .first<{
+    id: number;
+    created_at: string;
+    name: string;
+    email: string;
+    phone: string;
+    wrap_type: string | null;
+    vehicle_type: string | null;
+    product: string | null;
+    message: string | null;
+    photos: string;
+    photo_count: number;
+    source_page: string | null;
+    ip: string | null;
+    user_agent: string | null;
+    delivered: number;
+    delivered_at: string | null;
+    delivery_error: string | null;
+    read_at: string | null;
+  }>();
+
+if (!row) return Astro.redirect('/admin/quotes/', 302);
+
+const wasUnread = row.read_at === null;
+if (wasUnread) {
+  try {
+    await db
+      .prepare(`UPDATE quote_submissions SET read_at = ? WHERE id = ? AND read_at IS NULL`)
+      .bind(new Date().toISOString(), id)
+      .run();
+  } catch {
+    /* Not worth failing the page over: the enquiry is what matters, the read
+       mark is bookkeeping. */
+  }
+}
+
+let photos: { name: string; size: number; type: string | null }[] = [];
+try {
+  const parsed = JSON.parse(row.photos || '[]');
+  if (Array.isArray(parsed)) photos = parsed;
+} catch {
+  /* A row written by an older version, or by hand. Show none rather than throw. */
+}
+
+const kb = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+
+const when = (iso: string | null) => {
+  if (!iso) return '—';
+  const d = new Date(iso.replace(' ', 'T') + (iso.endsWith('Z') ? '' : 'Z'));
+  return d.toLocaleString('en-CA', {
+    weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', timeZone: 'America/Toronto',
+  });
+};
+
+const facts: [string, string | null][] = [
+  ['Wrap type', row.wrap_type],
+  ['Vehicle type', row.vehicle_type],
+  ['Product', row.product],
+];
+---
+
+<Admin title={`Quote from ${row.name}`} user={{ username: session.username, csrfToken: session.csrfToken }}>
+  <p class="back"><a href="/admin/quotes/">← All quote requests</a></p>
+
+  <div class="head">
+    <div>
+      <h1>{row.name}</h1>
+      <p class="lede">Received {when(row.created_at)}</p>
+    </div>
+    <a class="btn" href={`mailto:${encodeURIComponent(row.email)}?subject=${encodeURIComponent('Your quote request — Vinyl Wrap Toronto')}`}>Reply by email</a>
+  </div>
+
+  {!row.delivered && (
+    <p class="warn">
+      <strong>This was never emailed out.</strong> It is saved here in full, but no notification
+      reached the inbox{row.delivery_error ? ` — ${row.delivery_error}` : ''}.
+    </p>
+  )}
+
+  <div class="card">
+    <dl class="facts">
+      <dt>Email</dt>
+      <dd><a href={`mailto:${row.email}`}>{row.email}</a></dd>
+      <dt>Phone</dt>
+      <dd><a href={`tel:${row.phone.replace(/[^\d+]/g, '')}`}>{row.phone}</a></dd>
+      {facts.filter(([, v]) => v).map(([k, v]) => (<><dt>{k}</dt><dd>{v}</dd></>))}
+    </dl>
+
+    <h2>Message</h2>
+    {row.message
+      ? <p class="message">{row.message}</p>
+      : <p class="empty">They did not leave a message.</p>}
+
+    <h2>Photos</h2>
+    {photos.length === 0 ? (
+      <p class="empty">None attached.</p>
+    ) : (
+      <>
+        {/* The files went out on the notification email; only their details are
+            kept here. Saying so is better than showing names that look like
+            links and are not. */}
+        <p class="empty">
+          {photos.length} attached to the notification email. The files are not stored on the site.
+        </p>
+        <ul class="photos">
+          {photos.map((p) => (
+            <li><span class="fname">{p.name}</span> <span class="muted">{kb(p.size)}{p.type ? ` · ${p.type}` : ''}</span></li>
+          ))}
+        </ul>
+      </>
+    )}
+
+    <h2>Where it came from</h2>
+    <dl class="facts">
+      <dt>Page</dt>
+      <dd>{row.source_page ? <a href={row.source_page} target="_blank" rel="noreferrer">{row.source_page}</a> : '—'}</dd>
+      <dt>Emailed</dt>
+      <dd>{row.delivered ? when(row.delivered_at) : 'No'}</dd>
+      <dt>Address</dt>
+      <dd class="muted">{row.ip ?? '—'}</dd>
+      <dt>Browser</dt>
+      <dd class="muted small">{row.user_agent ?? '—'}</dd>
+    </dl>
+  </div>
+</Admin>
+
+<style is:global>
+  .back { margin: 0 0 8px; font-size: 14px; }
+  .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .btn {
+    display: inline-block; padding: 9px 16px; border-radius: 7px; font-weight: 500;
+    background: var(--accent); color: #fff; text-decoration: none; white-space: nowrap;
+  }
+  .btn:hover { background: #15694a; }
+
+  .facts { display: grid; grid-template-columns: 140px 1fr; gap: 6px 16px; margin: 0 0 8px; }
+  .facts dt { color: var(--muted); font-size: 14px; }
+  .facts dd { margin: 0; }
+  .facts dd.small { font-size: 12px; word-break: break-word; }
+
+  .card h2 { font-size: 15px; margin: 22px 0 8px; }
+  /* The visitor's own line breaks are content: collapsing them turns a list of
+     three vehicles into one run-on sentence. */
+  .message { margin: 0; white-space: pre-wrap; }
+  .empty { color: var(--muted); margin: 0; }
+  .muted { color: var(--muted); }
+
+  .photos { margin: 8px 0 0; padding-left: 18px; }
+  .photos .fname { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+
+  .warn {
+    margin: 0 0 16px; padding: 12px 14px; border-radius: 8px;
+    background: #fde8e8; color: #8a1c1c; font-size: 14px;
+  }
+</style>
