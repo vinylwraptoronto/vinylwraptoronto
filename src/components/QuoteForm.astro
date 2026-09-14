@@ -41,7 +41,11 @@ const order: readonly string[] = fields ?? SITE_ORDER;
 const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
 ---
 
-<form class={`qform qform--${variant}`} method="post" action="/api/quote" enctype="multipart/form-data" novalidate>
+{/* The trailing slash matters: the site is trailingSlash: 'always', so
+    /api/quote answers 308 to /api/quote/. A 308 keeps the method and body, so
+    submissions did go through, but every one paid an extra round trip and
+    re-uploaded its photographs to follow the redirect. */}
+<form class={`qform qform--${variant}`} method="post" action="/api/quote/" enctype="multipart/form-data" novalidate>
   {order.map((f) => (
     <>
       {f === 'name' && (
