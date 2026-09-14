@@ -80,6 +80,31 @@ const tileOf = (src: string, masonry?: boolean): { src: string; w?: number; h?: 
   return { src, w: d?.[0], h: d?.[1] };
 };
 
+/** The previous/next link's title, without the words that are not meant to be
+ *  seen.
+ *
+ *  Elementor puts a screen-reader-only word inside each arrow -- "Prev" before
+ *  the prev link's label, "Next" after the next link's title -- as
+ *  `<span class="elementor-screen-only">`. The extractor took the whole
+ *  anchor's text, so every one of the 471 navigations rendered
+ *  "Prev Previous <title>" and "Next <title> Next" on the page, with the label
+ *  word doubled beside its own label.
+ *
+ *  Stripped here rather than in the data because the same 471 blocks exist in
+ *  both the page JSON and posts.json, and posts.json is rebuilt from D1 on
+ *  every build -- a fix written into the file would be overwritten by the next
+ *  pull.
+ *
+ *  Checked, not assumed: every prev/next link points at a page this build also
+ *  holds, so each stripped title was compared against that page's own H1. 936
+ *  of 936 agree -- 928 exactly, and the other 8 differ only by a non-breaking
+ *  space or a doubled space inside the heading. */
+const navTitle = (text: string, dir: 'prev' | 'next'): string =>
+  (dir === 'prev'
+    ? text.replace(/^Prev\s+Previous\s+/, '')
+    : text.replace(/^Next\s+/, '').replace(/\s+Next$/, '')
+  ).trim();
+
 /** The upload's own dimensions, shaped like tileOf's result so the two are
  *  interchangeable at the call site. */
 const dimsPair = (src: string): { w?: number; h?: number } => {
@@ -530,17 +555,29 @@ const galleryStyle = (b: {
 
         if (b.type === 'postnav') {
           return (
-            <nav class="postnav" aria-label="Post navigation">
+            <nav
+              class="postnav"
+              aria-label="Post navigation"
+              data-eid={b.eid}
+              style={[b.box, b.style].filter(Boolean).join(';') || undefined}
+            >
               {b.prev && (
                 <a class="postnav-prev" href={b.prev.href} rel="prev">
-                  <span class="dir">Previous</span>
-                  <span class="t">{b.prev.text}</span>
+                  <span class="postnav-arrow"><i class="fas fa-angle-left" aria-hidden="true" /></span>
+                  <span class="postnav-text">
+                    <span class="dir">Previous</span>
+                    <span class="t">{navTitle(b.prev.text, 'prev')}</span>
+                  </span>
                 </a>
               )}
+              {b.prev && b.next && <span class="postnav-sep" aria-hidden="true" />}
               {b.next && (
                 <a class="postnav-next" href={b.next.href} rel="next">
-                  <span class="dir">Next</span>
-                  <span class="t">{b.next.text}</span>
+                  <span class="postnav-text">
+                    <span class="dir">Next</span>
+                    <span class="t">{navTitle(b.next.text, 'next')}</span>
+                  </span>
+                  <span class="postnav-arrow"><i class="fas fa-angle-right" aria-hidden="true" /></span>
                 </a>
               )}
             </nav>
@@ -1595,24 +1632,84 @@ const galleryStyle = (b: {
     color: #9e9e9e;
   }
 
+  /* Read off the original's own widget rather than invented. It draws a green
+     chevron on each side, a navy hairline down the middle, and sits on the
+     #FAFAFA panel its widget container carries -- which arrives in the block's
+     own `box`, exactly as it does for the five other block types that use it.
+     This drew a grey rule across the top instead, which the original has
+     nowhere: the border rules in widget-post-navigation.min.css are gated on
+     `.elementor-post-navigation.elementor-grid`, and this nav is not a grid. */
   .postnav {
     display: flex;
-    justify-content: space-between;
-    gap: 20px;
-    flex-wrap: wrap;
-    border-top: 1px solid var(--rule);
-    padding-top: 18px;
+    overflow: hidden;
   }
   .postnav a {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    max-width: 46%;
+    align-items: center;
+    /* gap and width are per-widget — the separator each one reserves room for
+       is a different thickness. Set with the rest of the per-widget values. */
+    overflow: hidden;
     text-decoration: none;
     color: var(--brand-navy);
   }
-  .postnav-next { text-align: right; margin-inline-start: auto; }
-  .postnav a:hover .t { color: var(--brand-pink); }
+  /* The site has exactly two post-navigation widgets and they are styled
+     differently throughout -- separator colour and width, arrow size, label and
+     title type, the panel. The defaults here are 0144f5b, which is 402 of the
+     471; b4f122c, the 69 before/after project pages, overrides below. Scoped on
+     the widget's own id rather than on the section's, because that is what the
+     difference actually belongs to. */
+  .postnav { margin-top: 20px; padding: 5px 0; }
+  .postnav a { width: calc(50% - 1px); gap: 15px; }
+  .postnav-sep { width: 2px; background: var(--brand-pink); }
+  .postnav-arrow { font-size: 30px; }
+  .postnav .t { font-weight: 400; font-size: 13px; }
+  @media (max-width: 767px) {
+    .postnav-arrow { font-size: 20px; }
+  }
+
+  /* b4f122c — the before/after project pages. The panel is in CSS rather than
+     left to each block's `box` because it is a property of the widget, not of
+     the page: the capture missed it on 2 of the 69 (both Teslas), and the
+     original serves it on those two as well. */
+  .postnav[data-eid='b4f122c'] {
+    margin-top: 25px;
+    padding: 10px;
+    background: #fafafa;
+  }
+  .postnav[data-eid='b4f122c'] a { width: calc(50% - 0.5px); gap: 10px; }
+  .postnav[data-eid='b4f122c'] .postnav-sep { width: 1px; background: var(--brand-navy); }
+  .postnav[data-eid='b4f122c'] .postnav-arrow { font-size: 50px; }
+  .postnav[data-eid='b4f122c'] .dir {
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 500;
+    color: #818181;
+  }
+  .postnav[data-eid='b4f122c'] .t { font-weight: 500; font-size: 15px; }
+  @media (max-width: 767px) {
+    .postnav[data-eid='b4f122c'] .postnav-arrow { font-size: 23px; }
+  }
+
+  .postnav-next { justify-content: flex-end; }
+  .postnav-text { display: flex; flex-direction: column; overflow: hidden; }
+  .postnav-next .postnav-text { text-align: end; }
+  /* One line each, cut with an ellipsis, as the original does — otherwise a
+     long project title wraps and the two sides stop lining up. */
+  .postnav .dir,
+  .postnav .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Structure only — thickness and colour are per-widget, above. */
+  .postnav-sep { align-self: stretch; flex: none; }
+  /* `.post-navigation__arrow-wrapper { color: var(--e-global-color-8c22d81) }`
+     — the brand green on both widgets; only the size differs. */
+  .postnav-arrow {
+    display: flex;
+    flex: none;
+    color: var(--brand-green);
+  }
+  .postnav-arrow i { transform: translateY(-5%); }
+  .postnav a:hover .t,
+  .postnav a:hover .dir,
+  .postnav a:hover .postnav-arrow { color: var(--brand-pink); }
   /* .post-navigation__prev--label: 18px on the body ratio in brand green with
      no tracking — the 12px grey caps here were invented. */
   .postnav .dir {
@@ -1621,19 +1718,9 @@ const galleryStyle = (b: {
     text-transform: uppercase;
     color: var(--brand-green);
   }
-  .postnav .t { font-family: 'Poppins', sans-serif; font-weight: 500; font-size: 15px; }
-
-  /* The before/after template styles its own post navigation differently: 16px
-     on 24 at weight 500 in grey, where every other post gives 18px on 27 at
-     400 in the brand green. Both are the original's, so this is scoped to that
-     template rather than fought over globally — section 153256c is on exactly
-     the 69 wraps-before-after pages and nothing else. */
-  .sec[data-eid='153256c'] .postnav .dir {
-    font-size: 16px;
-    line-height: 24px;
-    font-weight: 500;
-    color: #818181;
-  }
+  /* Family only — size and weight differ per widget, above. The 13px default
+     is 0144f5b's own declared value; 15px here was invented. */
+  .postnav .t { font-family: 'Poppins', sans-serif; }
 
 
   /* Carousel: slides-per-view and gap come from the widget's own settings. */
