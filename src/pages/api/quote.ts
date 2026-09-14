@@ -39,7 +39,24 @@ export const prerender = false;
 const RATE_LIMIT = 6;
 const RATE_WINDOW_MINUTES = 10;
 
-const FROM = 'Vinyl Wrap Toronto <onboarding@resend.dev>';
+/**
+ * Who the notification comes from.
+ *
+ * This was `onboarding@resend.dev`, Resend's test address, which only ever
+ * delivers to the account owner's own inbox — so it could never have reached
+ * the client, whatever key was set.
+ *
+ * It sends from the agency's own verified domain instead, because Resend's
+ * plan is at its domain limit and would not take vinylwraptoronto.com. That
+ * costs nothing here: the client never sees this address. It is an internal
+ * lead notification, and Reply-To is the customer, so answering it goes
+ * straight to them rather than to us.
+ *
+ * QUOTE_FROM_EMAIL overrides it, so moving to the client's own domain once the
+ * plan allows it is a Worker variable rather than a code change. Any address
+ * set here must be on a domain verified in Resend, or every send fails.
+ */
+const DEFAULT_FROM = 'Vinyl Wrap Toronto <quotes@brandingcentres.com>';
 
 const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) =>
@@ -65,6 +82,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   const env = (locals as { runtime?: { env?: Record<string, unknown> } })?.runtime?.env ?? {};
   const apiKey = env.RESEND_API_KEY as string | undefined;
   const to = env.QUOTE_TO_EMAIL as string | undefined;
+  const from = (env.QUOTE_FROM_EMAIL as string | undefined) || DEFAULT_FROM;
   const db = env.BLOG as Db | undefined;
 
   let form: FormData;
@@ -211,7 +229,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
         method: 'POST',
         headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
         body: JSON.stringify({
-          from: FROM,
+          from,
           to: [to],
           reply_to: email,
           subject: `Quote request from ${name}`,
