@@ -169,14 +169,36 @@
     outline-offset: 2px;
   }
   /* Chevrons drawn from a rotated corner rather than fetched as an image. */
+  /* The handle is pointer-events:none so it never blocks a drag across the
+     picture; the controller opts back in so its chevrons can be pressed. */
+  :global(.jx-controller) { pointer-events: auto; cursor: ew-resize; }
   :global(.jx-arrow) {
+    -webkit-appearance: none;
+    appearance: none;
+    background: none;
+    border: 0;
+    /* A 7px chevron is far too small to hit. The drawn mark stays 7px; the
+       button around it is padded out to a real target. */
+    padding: 7px 5px;
+    cursor: pointer;
+    display: block;
+    line-height: 0;
+  }
+  :global(.jx-arrow::before) {
+    content: '';
+    display: block;
     width: 7px;
     height: 7px;
     border-top: 2px solid #0f172a;
     border-right: 2px solid #0f172a;
   }
-  :global(.jx-arrow--prev) { transform: rotate(-135deg); }
-  :global(.jx-arrow--next) { transform: rotate(45deg); }
+  :global(.jx-arrow--prev::before) { transform: rotate(-135deg); }
+  :global(.jx-arrow--next::before) { transform: rotate(45deg); }
+  :global(.jx-arrow:focus-visible) {
+    outline: 2px solid #fff;
+    outline-offset: 1px;
+    border-radius: 3px;
+  }
 </style>
 
 <script>
@@ -391,10 +413,21 @@
       // does through its data-prev-icon / data-next-icon attributes.
       const controller = document.createElement('span');
       controller.className = 'jx-controller';
+      /* Real buttons, not decoration. They looked clickable and were not: the
+         handle is pointer-events:none, so a press on a chevron fell through to
+         the pair and set the split to where the handle already was, which moved
+         nothing. Anyone who tried them concluded the slider was broken. */
+      const arrows: Record<string, HTMLButtonElement> = {};
       for (const dir of ['prev', 'next']) {
-        const arrow = document.createElement('i');
+        const arrow = document.createElement('button');
+        arrow.type = 'button';
         arrow.className = `jx-arrow jx-arrow--${dir}`;
+        arrow.setAttribute(
+          'aria-label',
+          dir === 'prev' ? 'Show more of the before photo' : 'Show more of the after photo',
+        );
         controller.appendChild(arrow);
+        arrows[dir] = arrow;
       }
       handle.appendChild(controller);
       pair.appendChild(handle);
@@ -433,15 +466,53 @@
       });
 
       let dragging = false;
+      let movedWhileDown = false;
+      let downX = 0;
+      let fromController = false;
       const start = (e: PointerEvent) => {
         dragging = true;
-        pair.setPointerCapture(e.pointerId);
-        setSplit(e.clientX);
+        movedWhileDown = false;
+        downX = e.clientX;
+        /* The pointer is captured on the first real movement, NOT here.
+           Capturing on pointerdown retargets every later pointer event to the
+           pair, and the browser then fires the click on the pair rather than on
+           the chevron -- so the buttons never heard a click and stayed dead,
+           which is the whole reason they did not work. */
+        fromController = controller.contains(e.target as Node);
+        /* A press on the controller must not jump the split to the pointer:
+           that is where the handle already is, and on a chevron it would undo
+           the step the click is about to make. */
+        if (!fromController) setSplit(e.clientX);
       };
       const move = (e: PointerEvent) => {
-        if (dragging) setSplit(e.clientX);
+        if (!dragging) return;
+        if (!movedWhileDown && Math.abs(e.clientX - downX) > 3) {
+          movedWhileDown = true;
+          try {
+            pair.setPointerCapture(e.pointerId);
+          } catch {
+            /* Capture is a convenience for dragging past the edge, not a
+               requirement; without it the drag simply ends at the boundary. */
+          }
+        }
+        if (movedWhileDown || !fromController) setSplit(e.clientX);
       };
       const end = () => { dragging = false; };
+
+      /* Stepped by the same amount whichever way it is driven. */
+      const step = (delta: number) => {
+        pct = Math.min(100, Math.max(0, pct + delta));
+        apply();
+      };
+      for (const [dir, sign] of [['prev', -1], ['next', 1]] as const) {
+        arrows[dir].addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          // A drag that finished on the chevron is not a click on it.
+          if (movedWhileDown) return;
+          step(sign * 10);
+        });
+      }
 
       pair.addEventListener('pointerdown', start);
       pair.addEventListener('pointermove', move);
