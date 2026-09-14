@@ -147,8 +147,14 @@ for (const f of walk(DIST)) {
   if (head && !blocks.length && head.ld == null && !isNoindex) opportunity.noLd.push(rel);
   if (head && !desc?.[1] && !declared(head, 'description') && !isNoindex) opportunity.noDesc.push(rel);
 
-  for (const im of html.matchAll(/<img\b[^>]*>/gi))
+  /* Counting every <img> without alt text puts the lightbox's own empty
+     placeholder in the total -- one per page, 1,684 of them, which buried the
+     49 real pages under a number that looked alarming and meant nothing. An
+     element with no src is a slot the viewer fills, not a picture. */
+  for (const im of html.matchAll(/<img\b[^>]*>/gi)) {
+    if (!/\ssrc\s*=/.test(im[0])) continue;
     /\salt\s*=\s*["'][^"']+["']/i.test(im[0]) ? alt++ : noalt++;
+  }
 }
 
 const p = (l, n) => console.log(`  ${String(l).padEnd(34, '.')} ${n}`);
