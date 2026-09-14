@@ -203,6 +203,40 @@
 
 <script>
   (() => {
+    // ---------- a picture that failed gets another go ----------------------
+    //
+    // Reported twice: a picture showing broken on the page while the file
+    // itself is provably fine -- 200, valid bytes, served from the edge cache
+    // on every one of forty consecutive requests, and 139 of 139 fetched
+    // successfully at eighty at once. The file is not the problem; that
+    // browser's copy of that moment is. A dropped connection, a proxy hiccup
+    // or an error response the browser has since cached all look identical
+    // from here and none of them can be fixed by checking the file again.
+    //
+    // So rather than keep diagnosing, the page retries. The query string is
+    // what makes it worth doing: the host serves the file with any query
+    // (checked), so a retry also steps around a bad response already sitting
+    // in the browser cache, which a plain re-request would just hit again.
+    //
+    // Twice, backing off, then it gives up and the alt text stands.
+    const retries = new WeakMap<HTMLImageElement, number>();
+    const retry = (im: HTMLImageElement) => {
+      const n = (retries.get(im) ?? 0) + 1;
+      if (n > 2) return;
+      retries.set(im, n);
+      const base = im.dataset.src0 ?? (im.dataset.src0 = im.src.split('?')[0]);
+      setTimeout(() => {
+        im.src = `${base}?retry=${n}`;
+      }, 250 * n);
+    };
+    document.querySelectorAll<HTMLImageElement>('img').forEach((im) => {
+      im.addEventListener('error', () => retry(im));
+      // It may already have failed before this script ran -- the header logo
+      // is fetched at high priority long before this line. An <img> with no
+      // src at all is the lightbox's placeholder, not a failure.
+      if (im.complete && im.naturalWidth === 0 && im.getAttribute('src')) retry(im);
+    });
+
     // ---------- lightbox ---------------------------------------------------
     const box = document.getElementById('lightbox') as HTMLElement | null;
     if (!box) return;
