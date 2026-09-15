@@ -193,8 +193,12 @@ const iconHref = new URL(img(site.favicon), site.url).href;
     <main id="main">
       <slot />
     </main>
-    {chrome === 'full' && <Footer />}
+    {/* Before the footer, not after it. The bar has a home position on the
+        original -- the footer's own top edge -- and stops being stuck once the
+        page scrolls down to it. Rendered after the footer it has no home to
+        return to, so it stayed pinned and covered the Areas We Serve block. */}
     {chrome !== 'none' && <StickyBar />}
+    {chrome === 'full' && <Footer />}
     {chrome !== 'none' && <Popups offer={offer} />}
     <Interactions />
     <ClickSparks />

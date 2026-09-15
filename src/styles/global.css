@@ -20,9 +20,17 @@ body {
   line-height: 1.5;
   color: var(--body-text);
   background-color: #ffffff;
-  overflow-x: hidden;
-  /* Clears the fixed bottom CTA bar so it never covers the last of the footer. */
-  padding-bottom: 72px;
+  /* `clip`, not `hidden`. Both stop sideways scroll, but `hidden` makes the
+     body a scroll container -- and a `position: sticky` child of a scroll
+     container sticks to that box rather than to the viewport, which silently
+     breaks the bottom CTA bar. `clip` guards the same overflow without
+     creating one.
+
+     There was a `padding-bottom: 72px` here to keep the CTA bar, then
+     permanently fixed, off the last of the footer. The bar now comes to rest
+     in the flow the way the original's does, so the reservation is not needed
+     and the original's body carries no bottom padding either. */
+  overflow-x: clip;
 }
 
 img,

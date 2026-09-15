@@ -36,23 +36,34 @@ import { site } from '../data/site';
   /* #b853c7a — the wrapper is only as wide as its content width, centred, and
      transparent: the white background it carries on the live site is the page
      behind it, not part of the bar. */
+  /* sticky, not fixed. The live bar is not pinned for the whole page: it has a
+     home at the footer's top edge and settles into it once the page scrolls
+     that far, which is why the original never covers the footer. Measured on
+     the homepage: pinned at viewport bottom through scroll 5490, in flow at
+     its own 6387 by 5690, and scrolled off the top like any other element by
+     the end of the page.
+
+     `sticky` with `bottom: 0` is that behaviour natively -- held at the
+     viewport bottom while its own place in the flow is still below, released
+     the moment the flow catches up. It needs the element to be IN the flow, so
+     the centring is `margin-inline: auto` rather than the left/translateX pair
+     a fixed box needs, and it needs no ancestor to be a scroll container (see
+     the note on body's overflow in global.css). */
   .sb-wrap {
-    position: fixed;
-    left: 50%;
+    position: sticky;
     bottom: 0;
-    transform: translateX(-50%);
     z-index: 900;
     width: 30%;
-    /* fadeInUp, 1000ms delay — matches the live animation. The translateX is
-       the centring, so the hidden state has to repeat it alongside the lift. */
-    transform: translateX(-50%) translateY(14px);
+    margin-inline: auto;
+    /* fadeInUp, 1000ms delay — matches the live animation. */
+    transform: translateY(14px);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.45s ease, transform 0.45s ease;
   }
   .sb-wrap[data-shown] {
     opacity: 1;
-    transform: translateX(-50%);
+    transform: none;
     pointer-events: auto;
   }
 
