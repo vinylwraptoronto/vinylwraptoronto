@@ -57,10 +57,24 @@ const dots=await p.$$('.carou-dots button');
 ok('carousel present', (await p.$$('[data-carousel]')).length===1);
 ok('  dots suppressed when all slides fit', dots.length===0, `${dots.length} dots at 1440px`);
 
-// sticky header
-await p.evaluate(()=>window.scrollTo(0,1200)); await p.waitForTimeout(400);
-const stuck=await p.evaluate(()=>document.querySelector('.site-header').getBoundingClientRect().top);
-ok('header stays stuck on scroll', Math.abs(stuck)<2, `top=${Math.round(stuck)}`);
+// sticky header: away on the way down, back on the way up.
+//
+// This used to assert the header stayed at top=0 for ever, which is the
+// opposite of what the original does -- it animates its own top to -200px as
+// soon as you scroll down and back to 0 on the first upward movement. The
+// check passed for months on behaviour the original does not have.
+//
+// Real wheel gestures, because the code under test reads scroll direction.
+const hdrTop = () => p.evaluate(() =>
+  document.querySelector('.site-header').getBoundingClientRect().top);
+await p.evaluate(()=>window.scrollTo(0,0)); await p.waitForTimeout(300);
+await p.mouse.move(720, 500);
+await p.mouse.wheel(0, 600); await p.waitForTimeout(700);
+const down = await hdrTop();
+ok('header hides on scroll down', down < -100, `top=${Math.round(down)}`);
+await p.mouse.wheel(0, -300); await p.waitForTimeout(700);
+const up = await hdrTop();
+ok('  and comes back on scroll up', Math.abs(up) < 2, `top=${Math.round(up)}`);
 
 // form validation
 await go(`${U}/contact/`,'form.qform');

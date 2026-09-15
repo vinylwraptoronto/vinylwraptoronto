@@ -151,6 +151,18 @@ const branchCurrent = (item: NavItem): boolean =>
     position: sticky;
     top: 0;
     z-index: 100;
+    /* Goes away on the way down, comes back on the way up. The original
+       animates its own `top` between 0 and -200px over 0.4s; done here as a
+       transform so the sticky positioning underneath is left alone.
+
+       -200 rather than the header's own 68px because that is the original's
+       value, and the extra clears the box shadow along with the bar. */
+    transition: transform 0.4s;
+  }
+  .site-header[data-hidden] { transform: translateY(-200px); }
+  /* The header still gets out of the way, it just does not slide there. */
+  @media (prefers-reduced-motion: reduce) {
+    .site-header { transition: none; }
   }
 
   /* Stretched full width on the live site, not clamped to the content column.
@@ -507,6 +519,32 @@ const branchCurrent = (item: NavItem): boolean =>
     toggle.setAttribute('aria-expanded', String(!open));
     if (panel) panel.hidden = open;
   });
+
+  /* Hide on the way down, show on the way up — the original's sticky header
+     effect. Measured on it: no threshold in either direction, so the first
+     40px of downward scroll takes it away and the first upward movement
+     brings it straight back, and it is always shown at the very top.
+
+     The open menu is deliberately not a special case. On the original the
+     panel lives inside the header and slides with it, staying open the whole
+     time, and it comes back the moment you scroll up. */
+  const header = document.querySelector<HTMLElement>('.site-header');
+  if (header) {
+    let last = window.scrollY;
+    let queued = false;
+    const apply = () => {
+      queued = false;
+      const y = window.scrollY;
+      if (y <= 0 || y < last) header.removeAttribute('data-hidden');
+      else if (y > last) header.setAttribute('data-hidden', '');
+      last = y;
+    };
+    window.addEventListener('scroll', () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(apply);
+    }, { passive: true });
+  }
 
   // Sub-levels expand in place, as on the live panel.
   document.querySelectorAll<HTMLButtonElement>('.pexp').forEach((btn) => {
