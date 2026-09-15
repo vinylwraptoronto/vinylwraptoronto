@@ -315,8 +315,12 @@ const branchCurrent = (item: NavItem): boolean =>
     color: #fff;
     border: 0;
     cursor: pointer;
-    width: 56px;
-    height: 56px;
+    /* 51x51 with a 3px radius in the tablet band, 45x45 with 5px below 768 —
+       both measured off the original, which changes them at its own mobile
+       breakpoint. The port had one 56px square with square corners. */
+    width: 51px;
+    height: 51px;
+    border-radius: 3px;
     position: relative;
   }
   /* Pink at rest, green on hover AND focus. Clicking to open the panel leaves
@@ -346,26 +350,46 @@ const branchCurrent = (item: NavItem): boolean =>
   .panel { display: none; }
   .panel ul { list-style: none; margin: 0; padding: 0; }
 
+  /* One row, label and caret centred together as a pair.
+
+     The original's row is a single full-width anchor, `display: flex`, with its
+     caret as the last child inside it -- so the two read as one centred group
+     and any background covers the whole row. The port had the caret in a
+     separate 52px cell divided off by a rule down the right-hand side, which
+     is the most visible difference between the two panels. */
   .prow {
     display: flex;
-    align-items: stretch;
+    align-items: center;
+    justify-content: center;
     border-bottom: 1px solid #f2f2f2;
   }
+  /* Sized to its text rather than filling the row, so the caret sits against
+     the label instead of being pushed to the far edge. The row's states are on
+     .prow below, which is what keeps them full-width. */
   .prow > a {
-    flex: 1;
-    padding: 13px 16px;
+    flex: 0 1 auto;
+    padding: 10px 16px;
     font-family: 'Poppins', sans-serif;
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 400;
+    /* A flat 20px, which is what the original's nav items compute to at both
+       of its sizes — so the row is exactly 40px here and 30px below 768. The
+       inherited body 1.5 made it 33px and 24px, and the whole panel a fifth
+       taller than the original's. */
+    line-height: 20px;
     text-align: center;
     text-decoration: none;
     color: var(--e-global-color-f4d2693); /* #353535 */
   }
+  /* The original's `.sub-arrow` is 20px wide, transparent, and carries no
+     border of its own. Kept as a button rather than folded into the anchor:
+     the original makes a parent item a non-link that only expands, and a
+     separate control keeps the child pages reachable by keyboard. */
   .pexp {
-    width: 52px;
+    width: 20px;
+    align-self: stretch;
     background: none;
     border: 0;
-    border-left: 1px solid #f2f2f2;
     cursor: pointer;
     position: relative;
     color: inherit;
@@ -384,17 +408,31 @@ const branchCurrent = (item: NavItem): boolean =>
   .pexp[aria-expanded='true']::after { transform: rotate(180deg); }
 
   /* Current page reads green; an opened branch reads pink — as on the live
-     panel, where HOME sits green and an expanded VEHICLE WRAPS sits pink. */
-  .prow > a[aria-current='page'] {
-    background-color: var(--e-global-color-8c22d81); /* #14A278 */
-    color: #fff;
-  }
-  .panel li.open > .prow {
+     panel, where HOME sits green and an expanded VEHICLE WRAPS sits pink.
+
+     On the row, not the anchor. The anchor is only as wide as its label now, so
+     a background there would paint a stripe behind the words instead of the
+     full-width band the original draws. */
+  .panel li.open > .prow,
+  .prow:hover {
     background-color: var(--e-global-color-f32bb28); /* #FF0099 */
   }
   .panel li.open > .prow > a,
-  .panel li.open > .prow > .pexp { color: #fff; }
-  .prow > a:hover { background-color: var(--e-global-color-f32bb28); color: #fff; }
+  .panel li.open > .prow > .pexp,
+  .prow:hover > a,
+  .prow:hover > .pexp { color: #fff; }
+
+  /* The current page stays green through both of those — last, and outweighing
+     them. It has to be: the branch holding the current page is marked `open` so
+     it comes already expanded, which on the home page means HOME itself, and
+     the pink then painted over its green. The original resolves it the same
+     way round, its active rule following its hover rule at equal weight, so
+     hovering the page you are on leaves it green. */
+  .panel li > .prow:has(> a[aria-current='page']) {
+    background-color: var(--e-global-color-8c22d81); /* #14A278 */
+  }
+  .panel li > .prow:has(> a[aria-current='page']) > a,
+  .panel li > .prow:has(> a[aria-current='page']) > .pexp { color: #fff; }
 
   /* Top-level panel rows are uppercase on the live site; the two nested levels
      stay in title case. */
@@ -422,7 +460,20 @@ const branchCurrent = (item: NavItem): boolean =>
        is the gap between the burger and the navy "I want to" column. Without it
        the two sit flush against each other. */
     .toggle { display: block; margin-left: auto; margin-right: 35px; }
-    .brand { width: 30%; max-width: 260px; padding: 6px 0 6px 14px; }
+    /* Viewport units, not a pixel cap. Below 1024 the original's logo tracks
+       the viewport: 210px at 768, 250 at 900, 287 at 1024 -- a flat 28vw. The
+       port had a 153px ceiling on the image and a 260px one on its column, so
+       it held one size across the whole band and drew 153 where the original
+       draws 287.
+
+       This is the trap the clone procedure warns about in as many words: a
+       rebuild reaches for px, Elementor emits vw, and the two agree at exactly
+       the one width somebody checked. */
+    /* No vertical padding: the space above and below the logo is the header
+       row's, not the logo column's. The 6px a side here was making every
+       collapsed header 12px taller than the original's. */
+    .brand { width: auto; max-width: none; padding: 0 0 0 14px; }
+    .brand img { width: 28vw; max-width: none; }
     .wantto-col { width: 20%; }
     .panel { display: block; background: #fff; }
     .panel[hidden] { display: none; }
@@ -431,17 +482,20 @@ const branchCurrent = (item: NavItem): boolean =>
   /* The live template drops that margin to 0 at the mobile breakpoint, where
      the space is needed for the logo. */
   @media (max-width: 767px) {
-    .toggle { margin-right: 0; }
+    .toggle { margin-right: 0; width: 45px; height: 45px; border-radius: 5px; }
+    /* The panel tightens with it: the original's rows go from 40px to 30px
+       here, on 5px of padding and 15px text. */
+    .prow > a { padding: 5px 16px; font-size: 15px; }
     /* The column carries elementor-hidden-mobile, so below 768px the original
        shows logo + burger only. The port kept it visible, pushing the burger
        ~145px inward and squeezing the logo. */
     .wantto-col { display: none; }
+    /* With the "I want to" column gone the logo takes the room, as it does on
+       the original: 245px at 390 and 306 at 480, which is 63vw. */
+    .brand { padding-left: 10px; }
+    .brand img { width: 63vw; }
   }
 
-  @media (max-width: 480px) {
-    .brand { width: auto; max-width: 150px; padding-left: 10px; }
-    .toggle { width: 48px; height: 48px; }
-  }
 </style>
 
 <script>

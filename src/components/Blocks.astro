@@ -1485,7 +1485,15 @@ const galleryStyle = (b: {
     border-radius: 0;
     text-decoration: none;
   }
-  .btn:hover { background-color: var(--e-global-color-a8178e9); }
+  /* #14A278, not #99CC33. Measured across five pages: of the ten navy buttons
+     sampled on the original, eight go to #14A278 on hover and only the Tesla
+     page's two CTAs go pink. The port sent every button to #99CC33, which is
+     the sticky bar's hover colour rather than a page button's.
+
+     Elementor writes this per element, so #14A278 is the default here and not
+     a constant: a page whose buttons rest pink or lime hovers differently
+     again, and those belong to their own page's pass. */
+  .btn:hover { background-color: var(--e-global-color-8c22d81); }
 
   .ilist { list-style: none; margin: 0; padding: 0; }
   .ilist > li {
