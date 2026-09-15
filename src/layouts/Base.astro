@@ -4,9 +4,11 @@ import Footer from '../components/Footer.astro';
 import Popups from '../components/Popups.astro';
 import StickyBar from '../components/StickyBar.astro';
 import Interactions from '../components/Interactions.astro';
+import Analytics from '../components/Analytics.astro';
 import ClickSparks from '../components/ClickSparks.astro';
 import { site } from '../data/site';
 import { img, imgOrigin } from '../lib/img';
+import { analyticsFor } from '../../seo.config';
 import type { HeadData } from '../types';
 import '../styles/tokens.css';
 import '../styles/global.css';
@@ -170,9 +172,19 @@ const iconHref = new URL(img(site.favicon), site.url).href;
         extractor used to drop all of it, so below 1440px every ported heading
         kept its desktop size while the original shrank it. */}
     {pageCss && <style is:inline set:html={pageCss} />}
+    <Analytics pathname={Astro.url.pathname} />
   </head>
 
   <body>
+    {/* The original's first child of <body>, above the skip link. The GTM
+        noscript has to be here rather than in the head: an <iframe> is not
+        valid there, and a browser with scripting off never reaches a tag that
+        depends on one. */}
+    {analyticsFor(Astro.url.pathname) && (
+      <noscript
+        set:html={`<iframe src="https://www.googletagmanager.com/ns.html?id=${analyticsFor(Astro.url.pathname).gtm}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`}
+      />
+    )}
     <a class="skip" href="#main">Skip to content</a>
     {progress && (
       <div class="readbar" aria-hidden="true"><span class="readbar-fill"></span></div>

@@ -249,6 +249,22 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
           status.dataset.state = 'ok';
           status.textContent = 'Thanks — your message has been sent. We will be in touch shortly.';
           form.reset();
+          /* The Google Ads lead conversion.
+           *
+           * The original's form navigates to /thank-you/, and that page fires
+           * this event. This form answers in place and never leaves the page,
+           * which is better for the person filling it in -- but it meant the
+           * conversion never fired, so Ads would have recorded zero form leads
+           * from the whole site while still being charged for the clicks.
+           *
+           * Fired here with the same conversion label the original uses, so
+           * nothing has to change in the Ads account. /thank-you/ still carries
+           * its own copy for anyone who arrives there directly. */
+          (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag?.(
+            'event',
+            'conversion',
+            { send_to: 'AW-11342080648/Hac5CN7WneMYEIjVqaAq' },
+          );
         } else {
           status.dataset.state = 'err';
           status.textContent =

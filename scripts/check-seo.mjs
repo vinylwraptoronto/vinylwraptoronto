@@ -40,7 +40,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { verification } from '../seo.config.mjs';
+import { verification, analyticsFor } from '../seo.config.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const DIST = path.join(ROOT, 'dist');
@@ -86,7 +86,7 @@ const fails = [];
 const opportunity = { noLd: [], noDesc: [] };
 const warn = { titleLen: [], descLen: [] };
 let pages = 0, carried = 0, ld = 0, alt = 0, noalt = 0, skipped = 0, noindex = 0;
-let tokenPages = 0;
+let tokenPages = 0, analyticsPages = 0;
 
 for (const f of walk(DIST)) {
   let rel = '/' + path.relative(DIST, f).replace(/index\.html$/, '');
@@ -147,6 +147,29 @@ for (const f of walk(DIST)) {
   if (head && !blocks.length && head.ld == null && !isNoindex) opportunity.noLd.push(rel);
   if (head && !desc?.[1] && !declared(head, 'description') && !isNoindex) opportunity.noDesc.push(rel);
 
+  /* The measurement tags. These were absent from every page of the clone --
+     five systems, and nothing on the site would ever have reported it. The
+     verification tags above are asserted by value for the same reason; an id
+     that quietly changes is as bad as one that disappears. */
+  const wantA = analyticsFor(rel);
+  if (wantA) {
+    const need = [
+      [wantA.gtm, 2],            // the loader and the noscript iframe
+      [wantA.ga4, 1],
+      [wantA.metaPixel, 2],      // the init and the noscript pixel
+      [wantA.googleAds, 1],
+      [wantA.clarity, 1],
+    ];
+    const short = need.filter(([id, n]) => html.split(id).length - 1 < n).map(([id]) => id);
+    if (short.length) fails.push([rel, `analytics tags missing: ${short.join(', ')}`]);
+    else analyticsPages++;
+    if (rel === '/thank-you/' && !html.includes(wantA.leadConversion))
+      fails.push([rel, 'the Ads lead conversion is missing from /thank-you/']);
+  } else if (/GTM-|googletagmanager|fbq\(|clarity\.ms/.test(html)) {
+    /* The two AMP web stories: the original serves them untagged. */
+    fails.push([rel, 'analytics on a page the original leaves untagged']);
+  }
+
   /* Counting every <img> without alt text puts the lightbox's own empty
      placeholder in the total -- one per page, 1,684 of them, which buried the
      49 real pages under a number that looked alarming and meant nothing. An
@@ -166,6 +189,7 @@ p('not pages, skipped', skipped);
 p('noindex pages', noindex);
 p('JSON-LD blocks, all parsing', ld);
 p('pages carrying their tokens', tokenPages);
+p('pages carrying the analytics tags', analyticsPages);
 p('images with alt', alt);
 p('images without alt', noalt);
 p('title outside 10-60', warn.titleLen.length);

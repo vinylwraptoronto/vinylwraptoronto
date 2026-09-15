@@ -45,4 +45,46 @@ export const verification = [
 export const verificationFor = (pathname) =>
   verification.filter((v) => !v.homeOnly || pathname === '/');
 
-export default { verification, verificationFor };
+/**
+ * The analytics and advertising accounts the original loads on every page.
+ *
+ * The clone loaded none of them. That is the most expensive thing the port had
+ * lost: not a picture or a paragraph, but every measurement the client's
+ * marketing runs on. Read off the live original's own <head> on 2026-09-15 and
+ * confirmed byte-identical on the homepage, /contact/ and two blog posts.
+ *
+ * Note GA4 is configured twice on the original -- once directly and again
+ * inside the GTM container -- which inflates its page_view count. That is
+ * reproduced rather than corrected: this is a port, and quietly halving a
+ * number the client has been reading for years is not ours to do. It is
+ * written down here so whoever owns the account can decide.
+ *
+ * There is no consent banner on the original; it fires everything
+ * unconditionally, and restoring the tags restores that posture too.
+ */
+export const analytics = {
+  ga4: 'G-4MYWXBW53L',
+  gtm: 'GTM-WJQ6MSM',
+  metaPixel: '320703912723165',
+  googleAds: 'AW-11342080648',
+  /** Google's forwarding-number substitution on the displayed phone number. */
+  adsCallConversion: 'AW-11342080648/L6h1CJDjyogcEIjVqaAq',
+  phoneConversionNumber: '416-746-1381',
+  clarity: 'naf1gd0z27',
+  /** The lead conversion. The original fires it on its thank-you page. */
+  leadConversion: 'AW-11342080648/Hac5CN7WneMYEIjVqaAq',
+  /** The two AMP web stories. The original serves them with only a Universal
+   *  Analytics property, dead since July 2023, and no GTM, GA4, Pixel or
+   *  Clarity. Left untagged, because adding tags there would be a change to
+   *  the client's site rather than a port of it. */
+  excludePaths: [
+    '/web-stories/custom-designed-vehicle-wraps-in-gta/',
+    '/web-stories/vehicle-racing-stripes-in-gta-toronto/',
+  ],
+};
+
+/** The analytics block for one page, or null where the original has none. */
+export const analyticsFor = (pathname) =>
+  analytics.excludePaths.includes(pathname) ? null : analytics;
+
+export default { verification, verificationFor, analytics, analyticsFor };

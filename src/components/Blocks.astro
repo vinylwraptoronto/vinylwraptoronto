@@ -272,6 +272,29 @@ const galleryStyle = (b: {
         if (b.type === 'heading') {
           const Tag = (b.tag ?? `h${Math.min(Math.max(b.level, 1), 6)}`) as 'h1';
           const id = b.eid ? tocIds.get(b.eid) : undefined;
+
+          /* The offer price, on 403 pages, and the one place where flattening a
+             widget into plain text changed what a customer is told.
+
+             a36b238 is Elementor's animated-headline widget with
+             marker:strikethrough — the old price struck through in the brand
+             pink at 22px, then the price you actually pay at 35px underneath.
+             The scrape kept only its text, so both numbers arrived as one
+             string and rendered as "$4,500 $3,500" at a single size with
+             nothing saying which is which.
+
+             Split at render rather than in the data: 402 of the 403 records
+             also live in src/data/posts.json, which is rebuilt from D1 on every
+             build. b.text is left whole so the table-of-contents anchor on all
+             403 pages ("#4-500-3-500") still resolves. */
+          if (b.eid === 'a36b238' && /^\$[\d,]+\s+\$[\d,]+$/.test(b.text.trim())) {
+            const [was, now] = b.text.trim().split(/\s+/);
+            return (
+              <Tag class:list={[{ hd: !!b.tag }]} id={id} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
+                <span class="ah-was">{was}</span><br /><span class="ah-now">{now}</span>
+              </Tag>
+            );
+          }
           /* `hd` carries the heading widget's leading to the blocks that are
              not rendered as h1..h6. Elementor lets a heading choose its tag,
              and "Share This Post" is one of 402 that pick <p> — which then took
@@ -1305,6 +1328,20 @@ const galleryStyle = (b: {
      that reason. */
   .hlink { color: inherit; font-weight: 400; text-decoration: none; }
   .hlink:hover { color: var(--brand-pink); }
+
+  /* The offer price — measured off the original's animated-headline widget
+     a36b238: the old price struck through in the brand pink at 22px, the price
+     you pay at 35px under it. Elementor draws the strike as a hand-drawn SVG
+     marker path; a straight line-through in the same colour reads identically
+     at this size and costs no markup. */
+  .ah-was {
+    font-size: 22px;
+    color: #f3f3f3;
+    text-decoration: line-through;
+    text-decoration-color: var(--brand-pink, #ff0099);
+    text-decoration-thickness: 2px;
+  }
+  .ah-now { font-size: 35px; line-height: 1.3em; }
 
   .fig { margin: 0; }
   .fig img { display: block; border-radius: 4px; }
