@@ -99,7 +99,11 @@ const branchCurrent = (item: NavItem): boolean =>
   </div>
 
   <!-- The panel menu: full-width rows, sub-levels expand inline. -->
-  <nav id="panel-nav" class="panel" hidden aria-label="Menu">
+  {/* No `hidden` attribute: it sets display:none, which cannot be transitioned,
+      and the panel has to ease its height open. Closed is max-height 0 plus
+      visibility:hidden, which keeps its links out of the tab order just the
+      same. */}
+  <nav id="panel-nav" class="panel" aria-label="Menu">
     <ul>
       {nav.map((item) => (
         <li class={branchCurrent(item) ? 'open' : ''}>
@@ -374,7 +378,9 @@ const branchCurrent = (item: NavItem): boolean =>
     height: 3px;
     margin-left: -13px;
     background: currentColor;
-    transition: transform 0.18s ease, opacity 0.18s ease;
+    /* No transition: the original carries two icons, a bar glyph and a close
+       glyph, and swaps which one is shown. The bars snap into the X. The 0.18s
+       rotation here was the port's own flourish. */
   }
   .toggle-bars { top: 50%; margin-top: -1.5px; }
   .toggle-bars::before { content: ''; margin-top: -9px; }
@@ -384,7 +390,33 @@ const branchCurrent = (item: NavItem): boolean =>
   .toggle[aria-expanded='true'] .toggle-bars::after { margin-top: 0; transform: rotate(-45deg); }
 
   /* --- panel menu ------------------------------------------------------- */
-  .panel { display: none; }
+  /* The panel opens by easing its own max-height, which is what the original
+     does: `transition: max-height 0.3s ease` over `overflow: hidden`, from 0
+     to the room left below the header. It never toggles display.
+
+     The port used the `hidden` attribute, so the panel went from display:none
+     to display:block and appeared in one frame -- display cannot transition,
+     so there was no animation to get wrong, only none at all.
+
+     visibility rather than the attribute keeps the links out of the tab order
+     while closed; it flips at the end of the close so nothing disappears
+     mid-slide, and instantly on open. */
+  .panel {
+    display: none;
+    overflow: hidden;
+    max-height: 0;
+    visibility: hidden;
+    transition: max-height 0.3s ease, visibility 0s linear 0.3s;
+  }
+  .panel[data-open] {
+    overflow-y: auto;
+    visibility: visible;
+    transition: max-height 0.3s ease, visibility 0s;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .panel { transition: visibility 0s linear 0.3s; }
+    .panel[data-open] { transition: visibility 0s; }
+  }
   .panel ul { list-style: none; margin: 0; padding: 0; }
 
   /* One row, label and caret centred together as a pair.
@@ -513,7 +545,6 @@ const branchCurrent = (item: NavItem): boolean =>
     .brand img { width: 28vw; max-width: none; }
     .wantto-col { width: 20%; }
     .panel { display: block; background: #fff; }
-    .panel[hidden] { display: none; }
   }
 
   /* The live template drops that margin to 0 at the mobile breakpoint, where
@@ -540,9 +571,30 @@ const branchCurrent = (item: NavItem): boolean =>
   const panel = document.querySelector<HTMLElement>('#panel-nav');
 
   toggle?.addEventListener('click', () => {
-    const open = toggle.getAttribute('aria-expanded') === 'true';
-    toggle.setAttribute('aria-expanded', String(!open));
-    if (panel) panel.hidden = open;
+    const wasOpen = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!wasOpen));
+    if (!panel) return;
+    if (wasOpen) {
+      panel.removeAttribute('data-open');
+      /* Back to the stylesheet's 0, so the close eases rather than snapping. */
+      panel.style.maxHeight = '';
+    } else {
+      panel.setAttribute('data-open', '');
+      /* Whichever is smaller: the panel's own content, or the room left below
+         the header. The room is measured off the panel rather than assumed
+         from a header height, which changes across the breakpoints, and it is
+         what lets a menu longer than the screen scroll inside the panel
+         instead of running off the bottom of it.
+
+         Taking the smaller matters for the animation, not just the layout. The
+         easing runs on max-height, so with a target far above the content the
+         height reaches its full 279px about 90ms into a 300ms transition and
+         the rest of the curve is spent on a number nothing can see -- a slide
+         that looks like a snap. Easing to the content height instead spends
+         the whole 300ms on movement, which is what the original's does. */
+      const room = Math.max(200, window.innerHeight - panel.getBoundingClientRect().top);
+      panel.style.maxHeight = `${Math.min(panel.scrollHeight, room)}px`;
+    }
   });
 
   /* Hide on the way down, show on the way up — the original's sticky header

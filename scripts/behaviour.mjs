@@ -94,6 +94,31 @@ await p.click('.fgal-item img'); await p.waitForTimeout(400);
 ok('lightbox opens on an image', await p.isVisible('#lightbox'));
 await p.keyboard.press('Escape');
 
+// the mobile menu, which nothing here covered until the panel was found
+// opening in a single frame where the original eases it over 0.3s. A check
+// that only asserted "the panel is visible after the click" would have passed
+// that, so this reads the height mid-slide as well as at the ends.
+await p.setViewportSize({width:390,height:780});
+await go(`${U}/`,'.toggle');
+const panelH = () => p.evaluate(()=>
+  Math.round(document.querySelector('#panel-nav').getBoundingClientRect().height));
+const linkReachable = () => p.evaluate(()=>{
+  const a=document.querySelector('#panel-nav a');
+  return !!a && a.checkVisibility({contentVisibilityAuto:true,opacityProperty:true,visibilityProperty:true});
+});
+ok('mobile menu starts closed', await panelH()===0 && !(await linkReachable()));
+await p.click('.toggle');
+await p.waitForTimeout(90);
+const mid = await panelH();
+await p.waitForTimeout(500);
+const open = await panelH();
+ok('  burger opens the panel', open>200 && await linkReachable(), `${open}px`);
+ok('  and slides rather than snapping', mid>0 && mid<open, `${mid}px at 90ms of ${open}px`);
+await p.click('.toggle');
+await p.waitForTimeout(600);
+ok('  closes again', await panelH()===0 && !(await linkReachable()));
+await p.setViewportSize({width:1440,height:1000});
+
 // before/after slider
 await go(`${U}/wraps-before-after/audi-q5-full-colour-change/`,'.compare-pair');
 ok('comparison slider enhanced', (await p.$$('.compare-pair[data-juxtapose]')).length>0);
