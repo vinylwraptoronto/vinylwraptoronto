@@ -7,6 +7,7 @@
  * with the measured type scale and palette.
  */
 import type { Block, Section } from '../types';
+import posts from '../data/posts.json';
 import categories from '../data/categories.json';
 import imgDims from '../data/img-dims.json';
 import galleryThumbs from '../data/gallery-thumbs.json';
@@ -111,6 +112,70 @@ const dimsPair = (src: string): { w?: number; h?: number } => {
   const d = dimsOf(src);
   return { w: d?.[0], h: d?.[1] };
 };
+
+/** The "Read More Blogs" row, built from the newest posts rather than frozen.
+ *
+ *  On the original this is an Elementor loop: it asks for the most recent posts
+ *  every time the page is served. The scrape could only see the answer it gave
+ *  that day, so all 402 pages carried the same two posts for ever -- and by the
+ *  time this was measured the client had published three more, none of which
+ *  the clone linked from anywhere. The posts themselves were fine; the row
+ *  pointing at them was a photograph of a moving thing.
+ *
+ *  posts.json is rebuilt from D1 on every build, so computing it here means the
+ *  row is right at every deploy instead of right once. */
+const RECENT_CARDS_EID = '100f1ef';
+
+const byNewest = [...(posts as any[])]
+  .filter((p) => p.published)
+  .sort((a, b) => String(b.published).localeCompare(String(a.published)));
+
+const metaOf = (p: any, key: string) =>
+  ((p.head?.meta ?? []) as [string, boolean, string][])
+    .find(([k]) => k.toLowerCase() === key)?.[2];
+
+/** The post's own H1, which is not the same as its SEO title. */
+const headlineOf = (p: any): string => {
+  const find = (blocks: any[]): string | undefined => {
+    for (const b of blocks ?? []) {
+      if (b.type === 'heading' && b.level === 1 && b.text) return b.text;
+      if (b.type === 'columns') {
+        for (const c of b.cols ?? []) {
+          const hit = find(c.blocks);
+          if (hit) return hit;
+        }
+      }
+    }
+  };
+  for (const s of p.sections ?? []) {
+    const hit = find(s.blocks);
+    if (hit) return hit;
+  }
+  return p.title;
+};
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+
+const recentCards = (exclude: string, n: number) =>
+  byNewest
+    .filter((p) => `/${String(p.slug).replace(/^\/|\/$/g, '')}/` !== exclude)
+    .slice(0, n)
+    .map((p) => {
+      const t = headlineOf(p);
+      const d = String(p.published).slice(0, 10).split('-');
+      const thumb = p.ogImage ? tileOf(p.ogImage, true).src : null;
+      return {
+        title: t,
+        href: `/${String(p.slug).replace(/^\/|\/$/g, '')}/`,
+        image: thumb,
+        badge: metaOf(p, 'article:section') ?? null,
+        alt: t,
+        author: p.author ?? null,
+        date: d.length === 3 ? `${Number(d[2])} ${MONTHS[Number(d[1]) - 1]} ${d[0]}` : null,
+        more: 'Read More »',
+      };
+    });
 
 /** The pages whose before/after pairs are stamped from the loop template, and
  *  so are drawn as bordered cards. See the `isCard` comment below. */
@@ -522,6 +587,13 @@ const galleryStyle = (b: {
         }
 
         if (b.type === 'cards') {
+          /* The one loop widget on the blog template. Its cards are recomputed
+             from the current posts; every other cards block is page content and
+             is rendered as captured. */
+          const cards =
+            b.eid === RECENT_CARDS_EID
+              ? recentCards(Astro.url.pathname, b.cards.length || 2)
+              : b.cards;
           return (
             <ul
               class="cards"
@@ -535,7 +607,7 @@ const galleryStyle = (b: {
                 typeof b.gapRow === 'number' ? `--cards-gap-r:${b.gapRow}px` : '',
               ].filter(Boolean).join(';') || undefined}
             >
-              {b.cards.map((c) => (
+              {cards.map((c) => (
                 <li>
                   {c.badge && <span class="card-badge" style={b.badgeStyle ?? undefined}>{c.badge}</span>}
                   {c.image && (
