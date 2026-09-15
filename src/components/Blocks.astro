@@ -1484,6 +1484,9 @@ const galleryStyle = (b: {
     padding: 12px 24px;
     border-radius: 0;
     text-decoration: none;
+    /* Buttons ease over 0.3s on the original, where the nav takes 0.4s. The
+       port had every hover on the site snapping instantly. */
+    transition: all 0.3s ease;
   }
   /* #14A278, not #99CC33. Measured across five pages: of the ten navy buttons
      sampled on the original, eight go to #14A278 on hover and only the Tesla

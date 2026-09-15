@@ -213,6 +213,11 @@ const branchCurrent = (item: NavItem): boolean =>
     white-space: nowrap;
     color: var(--e-global-color-d077a13); /* #15334C */
     padding: 13px 10px;
+    /* The original eases its nav items over 0.4s; the port snapped straight to
+       the hover colour. Measured mid-transition on both, 90ms after the pointer
+       lands: the original is part-way between navy and pink, the port was
+       already pink. Same end colour, different thing to watch. */
+    transition: all 0.4s ease;
   }
   .nav > ul > li > a:hover,
   .nav > ul > li > a[aria-current='page'] { color: var(--e-global-color-f32bb28); }
@@ -283,6 +288,12 @@ const branchCurrent = (item: NavItem): boolean =>
     text-decoration: none;
     color: var(--e-global-color-f4d2693); /* #353535 */
     padding: 10px 16px;
+    /* The desktop dropdown eases with the rest of the nav: the original's rule
+       is scoped to the main menu and the flyout sits inside it, so it inherits
+       the 0.4s. The MOBILE panel does not -- it is a standalone dropdown,
+       outside that scope, and measures 0s on the original. That is why .prow
+       is deliberately left without one. */
+    transition: all 0.4s ease;
   }
   .sub li > a:hover { color: #fff; background-color: var(--e-global-color-f32bb28); }
   .sub li > a[aria-current='page'] { color: #fff; background-color: var(--e-global-color-8c22d81); }
@@ -316,6 +327,8 @@ const branchCurrent = (item: NavItem): boolean =>
     text-align: center;
     cursor: pointer;
     white-space: nowrap;
+    /* 0.3s, the original's button easing — a shorter one than the nav's. */
+    transition: all 0.3s ease;
   }
   .wantto:hover { background-color: #99cc3300; }
 

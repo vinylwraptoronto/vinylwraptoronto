@@ -207,7 +207,8 @@ import {
     color: #ffffff;
   }
 
-  .list a { color: #ffffff; text-decoration: none; }
+  /* Footer links ease over 0.3s on the original, like its buttons. */
+  .list a { color: #ffffff; text-decoration: none; transition: all 0.3s ease; }
   .list a:hover { text-decoration: underline; }
 
   /* #e8fc75d — 30px pink ellipsis, 15px from the title, both linking to
@@ -293,6 +294,7 @@ import {
     color: var(--e-global-color-d077a13);
     background-color: #ffffff;
     text-decoration: none;
+    transition: all 0.3s ease;
   }
   .social a:hover {
     background-color: var(--e-global-color-8c22d81); /* #14A278 */
@@ -341,7 +343,7 @@ import {
      and the link inside them is 400. Setting the whole block to 400 fixed the
      link and broke both h5s, which is how the difference showed up. */
   .byname { text-decoration: underline; font-weight: 400; }
-  .credit a { color: var(--e-global-color-d077a13); text-decoration: none; }
+  .credit a { color: var(--e-global-color-d077a13); text-decoration: none; transition: all 0.3s ease; }
   .credit a:hover { color: var(--e-global-color-f32bb28); }
 
   /* #37ceb7c is a nav menu with align-justify — the three links spread across
