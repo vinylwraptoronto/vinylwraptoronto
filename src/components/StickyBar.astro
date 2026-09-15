@@ -52,7 +52,20 @@ import { site } from '../data/site';
   .sb-wrap {
     position: sticky;
     bottom: 0;
-    z-index: 900;
+    /* Below the header's 100, which is how the original keeps the two apart.
+       It does it with two elements: a fixed clone at z-index 99 -- the same as
+       its header -- while the bar is pinned, and an in-flow original at
+       z-index auto once it comes to rest above the footer. Those never
+       conflict, because the pinned copy sits on the viewport floor, below
+       anything the menu panel can reach, and the resting copy is at 0 so the
+       header and the open menu paint straight over it.
+
+       This is one sticky element rather than two, so it needs one number that
+       holds in both states, and below the header is that number: pinned it
+       still floats over the page, and at rest the open menu covers it as the
+       original's does. At 900 it was above the header, so the menu opened
+       underneath it and the bar drew across the middle of the menu. */
+    z-index: 99;
     width: 30%;
     margin-inline: auto;
     /* fadeInUp, 1000ms delay — matches the live animation. */

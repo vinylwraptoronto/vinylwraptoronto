@@ -127,7 +127,16 @@ ok('mobile menu starts closed', await panelH()===0 && !(await linkReachable()));
 // so opening the menu shoved every page down by the panel's height and left it
 // stacked under the sticky CTA bar.
 const docH = () => p.evaluate(()=>document.body.scrollHeight);
-const docBefore = await docH();
+// Settle first. A page still pulling in lazy images grows on its own, and
+// comparing a height taken before the open against one taken after would be
+// measuring the images, not the menu.
+let docBefore = await docH();
+for (let i = 0; i < 20; i++) {
+  await p.waitForTimeout(300);
+  const now = await docH();
+  if (now === docBefore) break;
+  docBefore = now;
+}
 await p.click('.toggle');
 await p.waitForTimeout(90);
 const mid = await panelH();
@@ -139,6 +148,32 @@ ok('  opens over the page, not into it', await docH()===docBefore, `${docBefore}
 await p.click('.toggle');
 await p.waitForTimeout(600);
 ok('  closes again', await panelH()===0 && !(await linkReachable()));
+
+// The open menu must paint over the sticky CTA bar, not under it. This is the
+// state it went wrong in: scrolled far enough that the bar has come to rest
+// mid-screen rather than pinned to the viewport floor, with the menu open
+// across it. Raising the panel's own z-index did not fix it -- the number is
+// scoped to the header's stacking context, so what matters is the header
+// outranking the bar, and only hit-testing the overlap proves it.
+await p.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));
+await p.waitForTimeout(500);
+const barHome = await p.evaluate(()=>{
+  const b=document.querySelector('.sb-wrap');
+  return Math.round(b.getBoundingClientRect().top+window.scrollY);
+});
+await p.evaluate((y)=>window.scrollTo(0,y-300), barHome);
+await p.waitForTimeout(500);
+await p.click('.toggle');
+await p.waitForTimeout(600);
+const over = await p.evaluate(()=>{
+  const panel=document.querySelector('#panel-nav'), bar=document.querySelector('.sb-wrap');
+  const q=bar.getBoundingClientRect(), r=panel.getBoundingClientRect();
+  if(!(q.top<r.bottom&&q.bottom>r.top)) return 'no-overlap';
+  const hit=document.elementFromPoint(Math.round(q.left+q.width/2),Math.round(q.top+q.height/2));
+  return bar.contains(hit) ? 'bar' : panel.contains(hit) ? 'menu' : 'neither';
+});
+ok('  opens over the CTA bar, not under it', over==='menu', over);
+await p.click('.toggle');
 await p.setViewportSize({width:1440,height:1000});
 
 // before/after slider
