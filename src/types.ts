@@ -25,6 +25,11 @@ export type Block = (
   | {
       type: 'button';
       text: string;
+      /** The icon sits after the label rather than before it. Elementor stores
+       *  this as `flex-direction: row-reverse` on the button's own content
+       *  wrapper, a per-element rule the extractor did not carry -- so every
+       *  ported button drew its icon on the left whatever the original did. */
+      iconRight?: boolean;
       /** Absent when the button opens a popup rather than navigating. */
       href?: string;
       /** The popup this button opens. Elementor encodes that as a base64 blob
@@ -198,6 +203,15 @@ export type Block = (
       pauseOnHover: boolean;
       infinite: boolean;
       dots: boolean;
+      /** Styling Elementor applies to the slide images rather than to the
+       *  widget box. The carousel widget has a separate Image style section,
+       *  and it writes those rules to `.swiper-slide-image`, not to the
+       *  container -- so `box` and this are two different nodes.
+       *
+       *  The extractor did not know that: it folded the images' border-radius
+       *  into `box`, which drew a rounded corner on the widget instead of on
+       *  each logo, and dropped their 1px border entirely. */
+      imgStyle?: string;
     }
   | { type: 'faq'; items: { q: string; a: string }[] }
   | {
