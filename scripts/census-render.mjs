@@ -45,27 +45,88 @@ const PAYLOAD = () => {
   for (let n = walk.nextNode(); n; n = walk.nextNode()) {
     const t = n.nodeValue.replace(/\s+/g, ' ').trim();
     if (t.length < 2) continue;
-    let ok = true;
-    for (let p = n.parentElement; p && p !== document.body; p = p.parentElement) {
-      const s = getComputedStyle(p);
-      if (s.display === 'none' || s.visibility === 'hidden' || +s.opacity === 0) { ok = false; break; }
-    }
-    if (ok) visibleText.push(t);
+    /* checkVisibility(), not a walk up the ancestors checking display and
+       opacity. Those three properties are not the only way a browser hides
+       something: a collapsed <details> hides its panel with content-visibility,
+       and a subtree hidden that way still answers getComputedStyle with
+       display:block AND still returns a non-zero rect for a Range inside it.
+       Counting by hand therefore reported a page's ten collapsed FAQ answers as
+       209 words of visible copy the original did not have -- a defect that was
+       not there, on a page that was correct. */
+    const host = n.parentElement;
+    if (!host || !host.checkVisibility({
+      contentVisibilityAuto: true, opacityProperty: true, visibilityProperty: true,
+    })) continue;
+    visibleText.push(t);
   }
 
-  const boxes = [...document.querySelectorAll('[data-eid]')].map((el) => {
-    const s = getComputedStyle(el);
-    const r = el.getBoundingClientRect();
+  /* Matched by the Elementor element id, which both sides carry under different
+     names -- data-id on the original, data-eid on the port. The hard part is
+     that they do not put a widget's styling on the same node, and no choice of
+     single node makes the two comparable.
+
+     Elementor splits one widget across three: the outer wrapper carries
+     alignment, `> .elementor-widget-container` carries the box (background,
+     padding, border), and the content element inside it carries the type
+     (font-size, colour). The port collapses all three onto the one element it
+     renders. So matching wrapper-to-element, or descending to the content and
+     matching that, both compare a styled node against an unstyled one.
+
+     Measured: matching wrapper-to-element produced 480 "differences" across
+     five pages and 27 "unit-class errors"; descending to the content produced
+     198 more. Every one checked by hand was this mismatch -- a heading whose
+     navy box the original puts on the container and the port puts on the h3
+     renders identically and compares as four separate defects.
+
+     So the old side is flattened: walk the wrapper, its container and its
+     content, and take each property from the first node that sets it to
+     something other than the initial value. That is the union the port's single
+     element is actually equivalent to. */
+  const INITIAL = { backgroundColor: 'rgba(0, 0, 0, 0)', boxShadow: 'none' };
+  const flatten = (wrap) => {
+    if (wrap.dataset.eid) return [wrap];                 // the port: one node
+    const chain = [wrap];
+    const container = wrap.querySelector(':scope > .elementor-widget-container');
+    if (container) {
+      chain.push(container);
+      const content = container.firstElementChild;
+      if (content) chain.push(content);
+    }
+    return chain;
+  };
+  const pick = (chain, prop, initial) => {
+    for (const el of chain) {
+      const v = getComputedStyle(el)[prop];
+      if (v && v !== initial && v !== '0px' && v !== 'normal') return v;
+    }
+    return getComputedStyle(chain[0])[prop];
+  };
+  const boxes = [...document.querySelectorAll('[data-eid],[data-id]')].map((wrap) => {
+    const chain = flatten(wrap);
+    const el = chain[chain.length - 1];
+    const type_ = getComputedStyle(el);
+    const r = (chain[1] || chain[0]).getBoundingClientRect();
     return {
-      eid: el.dataset.eid,
+      eid: wrap.dataset.eid || wrap.dataset.id,
       tag: el.tagName.toLowerCase(),
       w: Math.round(r.width), h: Math.round(r.height),
-      pt: s.paddingTop, pb: s.paddingBottom, pl: s.paddingLeft, pr: s.paddingRight,
-      mt: s.marginTop, mb: s.marginBottom,
-      gap: s.gap, rowGap: s.rowGap, colGap: s.columnGap,
-      maxW: s.maxWidth, fs: s.fontSize, lh: s.lineHeight,
-      br: s.borderTopLeftRadius, bw: s.borderTopWidth,
-      bg: s.backgroundColor, color: s.color, shadow: s.boxShadow,
+      /* Box properties come from whichever node in the chain sets them --
+         usually the widget container. INHERITED ones must not: font-size,
+         line-height and colour have a computed value on every node, so "the
+         first node that sets it" always returns the wrapper's inherited 16px
+         and never reaches the 35px heading inside. Read those off the content
+         node. That one distinction accounted for the bulk of the residual
+         differences -- mb, colour, line-height and font-size were 4 of the top
+         5 properties flagged. */
+      pt: pick(chain, 'paddingTop'), pb: pick(chain, 'paddingBottom'),
+      pl: pick(chain, 'paddingLeft'), pr: pick(chain, 'paddingRight'),
+      mt: type_.marginTop, mb: type_.marginBottom,
+      gap: pick(chain, 'gap'), rowGap: pick(chain, 'rowGap'), colGap: pick(chain, 'columnGap'),
+      maxW: pick(chain, 'maxWidth'),
+      fs: type_.fontSize, lh: type_.lineHeight, color: type_.color,
+      br: pick(chain, 'borderTopLeftRadius'), bw: pick(chain, 'borderTopWidth'),
+      bg: pick(chain, 'backgroundColor', INITIAL.backgroundColor),
+      shadow: pick(chain, 'boxShadow', INITIAL.boxShadow),
     };
   });
 
