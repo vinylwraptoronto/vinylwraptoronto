@@ -105,8 +105,12 @@ def census(body: str, base: str) -> dict:
 
     # --- head ---
     title = (re.search(r"<title[^>]*>(.*?)</title>", doc, re.S | re.I) or [None, ""])[1]
+    # Match the attribute's OWN quote character, not "either quote". The old
+    # site encodes apostrophes as &#039; and the clone emits them raw, so a
+    # [^"']* class stopped at the first apostrophe on the clone and reported 73
+    # descriptions as truncated when both sides say exactly the same sentence.
     desc = re.search(
-        r"<meta[^>]+name=[\"']description[\"'][^>]+content=[\"']([^\"']*)", doc, re.I)
+        r"<meta[^>]+name=([\"'])description\1[^>]+content=([\"'])(.*?)\2", doc, re.I)
 
     # --- headings, in document order ---
     heads = [(f"h{m.group(1)}", norm_text(TAG.sub(" ", m.group(2))))
@@ -150,7 +154,7 @@ def census(body: str, base: str) -> dict:
 
     return {
         "title": norm_text(title),
-        "description": norm_text(desc.group(1) if desc else ""),
+        "description": norm_text(desc.group(3) if desc else ""),
         "headings": heads,
         "links": links,
         "images": imgs,
