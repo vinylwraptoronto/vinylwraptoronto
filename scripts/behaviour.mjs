@@ -94,6 +94,21 @@ await p.click('.fgal-item img'); await p.waitForTimeout(400);
 ok('lightbox opens on an image', await p.isVisible('#lightbox'));
 await p.keyboard.press('Escape');
 
+// Buttons must actually change colour under the pointer. Worth a check of its
+// own because the way this last broke was silent: the resting colour was set
+// as an inline declaration, which outranks every stylesheet rule, so .btn:hover
+// stopped applying and every button on the site went dead while still looking
+// correct at rest.
+await go(`${U}/`,'.btn');
+const firstBtn = await p.$('.btn');
+const btnBg = () => firstBtn.evaluate(e=>getComputedStyle(e).backgroundColor);
+await p.mouse.move(2,2); await p.waitForTimeout(200);
+const btnRest = await btnBg();
+await firstBtn.hover(); await p.waitForTimeout(500);
+const btnHover = await btnBg();
+ok('buttons change colour on hover', btnRest!==btnHover, `${btnRest} -> ${btnHover}`);
+await p.mouse.move(2,2);
+
 // the mobile menu, which nothing here covered until the panel was found
 // opening in a single frame where the original eases it over 0.3s. A check
 // that only asserted "the panel is visible after the click" would have passed

@@ -39,6 +39,19 @@ export type Block = (
       style?: string | null;
       /** Font Awesome classes, e.g. "fas fa-phone-alt". */
       icon?: string | null;
+      /** Resting and hover colours, read off the original's own per-element
+       *  rules by scripts/pull-button-colours.py.
+       *
+       *  Elementor writes these per button, and the site uses that: of its 545
+       *  buttons, 402 rest pink and go green, 94 rest navy and go green, 22
+       *  rest green and go pink, and eleven other combinations cover the rest.
+       *  The port had one resting colour and one hover colour for all of them,
+       *  so most buttons on the site were the wrong colour before anyone
+       *  pointed at one. */
+      bg?: string;
+      hoverBg?: string;
+      hoverColor?: string;
+      hoverBorder?: string;
     }
   | {
       type: 'list';

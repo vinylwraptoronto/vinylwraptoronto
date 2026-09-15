@@ -106,6 +106,28 @@ const navTitle = (text: string, dir: 'prev' | 'next'): string =>
     : text.replace(/^Next\s+/, '').replace(/\s+Next$/, '')
   ).trim();
 
+/** A button's inline style: its own declarations, its resting background, and
+ *  its hover colours as custom properties the `.btn:hover` rule reads.
+ *
+ *  Custom properties rather than a generated class per button because the
+ *  colours are per element -- 545 buttons across the site in thirteen
+ *  different rest/hover pairings -- and a static rule cannot carry that. The
+ *  fallbacks in `.btn:hover` keep a button without harvested colours looking
+ *  the way it did before. */
+const btnStyle = (b: { style?: string | null; bg?: string; hoverBg?: string;
+                       hoverColor?: string; hoverBorder?: string }): string | undefined =>
+  [
+    b.style,
+    /* As a custom property, not `background-color` itself. Set directly it
+       would be an inline declaration, and an inline declaration outranks every
+       stylesheet rule -- including `.btn:hover`, which then had no effect at
+       all and left the site with rest colours right and no hover anywhere. */
+    b.bg && `--btn-bg:${b.bg}`,
+    b.hoverBg && `--btn-hover-bg:${b.hoverBg}`,
+    b.hoverColor && `--btn-hover-color:${b.hoverColor}`,
+    b.hoverBorder && `--btn-hover-border:${b.hoverBorder}`,
+  ].filter(Boolean).join(';') || undefined;
+
 /** The upload's own dimensions, shaped like tileOf's result so the two are
  *  interchangeable at the call site. */
 const dimsPair = (src: string): { w?: number; h?: number } => {
@@ -463,12 +485,12 @@ const galleryStyle = (b: {
             <p class="btnrow" data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
               {run.map((rb) => (
                 rb.popup ? (
-                  <button class:list={['btn', { 'btn--icon-right': rb.iconRight }]} type="button" data-popup={rb.popup} style={rb.style ?? undefined}>
+                  <button class:list={['btn', { 'btn--icon-right': rb.iconRight }]} type="button" data-popup={rb.popup} style={btnStyle(rb)}>
                     {rb.icon && <i class:list={['btn-ic', rb.icon]} aria-hidden="true"></i>}
                     {rb.text}
                   </button>
                 ) : (
-                  <a class:list={['btn', { 'btn--icon-right': rb.iconRight }]} href={img(rb.href!)} style={rb.style ?? undefined}>
+                  <a class:list={['btn', { 'btn--icon-right': rb.iconRight }]} href={img(rb.href!)} style={btnStyle(rb)}>
                     {rb.icon && <i class:list={['btn-ic', rb.icon]} aria-hidden="true"></i>}
                     {rb.text}
                   </a>
@@ -1473,7 +1495,7 @@ const galleryStyle = (b: {
   .btnrow button.btn { border: 0; cursor: pointer; }
   .btn {
     display: inline-block;
-    background-color: var(--e-global-color-d077a13);
+    background-color: var(--btn-bg, var(--e-global-color-d077a13));
     color: var(--e-global-color-accent);
     font-family: 'Poppins', sans-serif;
     font-weight: 500;
@@ -1488,15 +1510,20 @@ const galleryStyle = (b: {
        port had every hover on the site snapping instantly. */
     transition: all 0.3s ease;
   }
-  /* #14A278, not #99CC33. Measured across five pages: of the ten navy buttons
-     sampled on the original, eight go to #14A278 on hover and only the Tesla
-     page's two CTAs go pink. The port sent every button to #99CC33, which is
-     the sticky bar's hover colour rather than a page button's.
+  /* Each button's own hover, carried inline from the original's per-element
+     rules. The fallbacks are the commonest case, so a button whose colours
+     were never harvested still behaves sensibly.
 
-     Elementor writes this per element, so #14A278 is the default here and not
-     a constant: a page whose buttons rest pink or lime hovers differently
-     again, and those belong to their own page's pass. */
-  .btn:hover { background-color: var(--e-global-color-8c22d81); }
+     This replaced a single hard-coded hover for the whole site. #99CC33 first,
+     which is the sticky bar's colour rather than a page button's, then
+     #14A278, which is right for the 496 buttons that go green and wrong for
+     the 49 that do not. Neither could have been right: Elementor stores the
+     colour per button and the site uses thirteen different pairings. */
+  .btn:hover {
+    background-color: var(--btn-hover-bg, var(--e-global-color-8c22d81));
+    color: var(--btn-hover-color, var(--e-global-color-accent));
+    border-color: var(--btn-hover-border, transparent);
+  }
 
   .ilist { list-style: none; margin: 0; padding: 0; }
   .ilist > li {

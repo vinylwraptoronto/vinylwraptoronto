@@ -33,7 +33,7 @@
          "type": "list",
          "items": [
           {
-           "text": "Etobicoke \u2022 Serving Toronto & GTA",
+           "text": "Etobicoke • Serving Toronto & GTA",
            "href": null,
            "icon": "fas fa-map-pin"
           }
@@ -56,7 +56,9 @@
          "icon": null,
          "style": "font-family:\"Montserrat\", Sans-serif;line-height:1em;color:#FFFFFF;font-weight:500",
          "href": "tel:416-746-1381",
-         "eid": "5f27727e"
+         "eid": "5f27727e",
+         "bg": "var( --e-global-color-d077a13 )",
+         "hoverBg": "var( --e-global-color-f32bb28 )"
         }
        ]
       }
@@ -84,7 +86,7 @@
         {
          "type": "heading",
          "level": 1,
-         "text": "Truck Wraps in GTA \u2014 Decals, Partial & Full Wraps",
+         "text": "Truck Wraps in GTA — Decals, Partial & Full Wraps",
          "href": null,
          "style": "font-family:\"Montserrat\", Sans-serif;font-size:2.3vw;line-height:1.3em;color:var( --e-global-color-a8178e9 );font-weight:700",
          "eid": "cd759f4"
@@ -105,7 +107,7 @@
          "type": "list",
          "items": [
           {
-           "text": "Fast Turnaround \u2022 In-house Design \u2022 Certified Installers",
+           "text": "Fast Turnaround • In-house Design • Certified Installers",
            "href": null,
            "icon": "fas fa-check"
           },
@@ -166,7 +168,9 @@
          "hide": [
           "desktop",
           "tablet"
-         ]
+         ],
+         "bg": "var( --e-global-color-a8178e9 )",
+         "hoverBg": "var( --e-global-color-f32bb28 )"
         }
        ]
       }
@@ -242,7 +246,7 @@
           },
           {
            "src": "/wp-content/uploads/2025/12/Custom-Dodge-Ram-1500-Truck-Decals-for-Brians-Masonry-After-Right-Side-View-1024x538.png",
-           "alt": "Custom Dodge Ram 1500 Truck Decals for Brian\u2019s Masonry - After - Right Side View",
+           "alt": "Custom Dodge Ram 1500 Truck Decals for Brian’s Masonry - After - Right Side View",
            "width": null,
            "height": null
           },
@@ -312,7 +316,9 @@
          "icon": null,
          "style": "text-align:center;font-family:\"Montserrat\", Sans-serif;line-height:1em;color:#FFFFFF;font-weight:500",
          "href": "tel:416-746-1381",
-         "eid": "51953a48"
+         "eid": "51953a48",
+         "bg": "var( --e-global-color-d077a13 )",
+         "hoverBg": "var( --e-global-color-f32bb28 )"
         }
        ]
       },
@@ -420,7 +426,9 @@
          "icon": null,
          "style": "text-align:center;font-family:\"Montserrat\", Sans-serif;line-height:1em;color:#FFFFFF;font-weight:500",
          "href": "tel:416-746-1381",
-         "eid": "18021adf"
+         "eid": "18021adf",
+         "bg": "var( --e-global-color-d077a13 )",
+         "hoverBg": "var( --e-global-color-f32bb28 )"
         }
        ]
       }
@@ -644,7 +652,9 @@
          "icon": null,
          "style": "text-align:left;font-family:\"Montserrat\", Sans-serif;line-height:1em;color:#FFFFFF;font-weight:500",
          "href": "tel:416-746-1381",
-         "eid": "4f371b53"
+         "eid": "4f371b53",
+         "bg": "var( --e-global-color-d077a13 )",
+         "hoverBg": "var( --e-global-color-f32bb28 )"
         }
        ]
       },
@@ -662,7 +672,7 @@
         {
          "type": "heading",
          "level": 4,
-         "text": "A colour change wrap transforms your vehicle\u2019s appearance and can help protect the original paint underneath.",
+         "text": "A colour change wrap transforms your vehicle’s appearance and can help protect the original paint underneath.",
          "href": null,
          "style": "text-align:start;font-family:\"Montserrat\", Sans-serif;font-size:16px;line-height:1.3em;color:#000000;font-weight:500",
          "eid": "633ea8a1"
@@ -670,7 +680,7 @@
         {
          "type": "heading",
          "level": 4,
-         "text": "Popular finishes: Gloss \u2022 Satin \u2022 Matte \u2022 Metallic \u2022 Textures",
+         "text": "Popular finishes: Gloss • Satin • Matte • Metallic • Textures",
          "href": null,
          "style": "text-align:start;font-family:\"Montserrat\", Sans-serif;font-size:0.9vw;line-height:1.3em;color:var( --e-global-color-d077a13 );font-weight:700;text-transform:capitalize",
          "eid": "367356c6"
@@ -689,7 +699,9 @@
          "icon": null,
          "style": "text-align:left;font-family:\"Montserrat\", Sans-serif;line-height:1em;color:#FFFFFF;font-weight:500",
          "href": "tel:416-746-1381",
-         "eid": "380c4e6c"
+         "eid": "380c4e6c",
+         "bg": "var( --e-global-color-d077a13 )",
+         "hoverBg": "var( --e-global-color-f32bb28 )"
         }
        ]
       }
@@ -743,7 +755,7 @@
         {
          "type": "heading",
          "level": 4,
-         "text": "Mercedes GLE 63 \u2013 Colour Change",
+         "text": "Mercedes GLE 63 – Colour Change",
          "href": null,
          "style": null,
          "eid": "33f8f76e"
@@ -805,7 +817,7 @@
         {
          "type": "heading",
          "level": 4,
-         "text": "KCS Group \u2013 Mercedes Metris \u2013 Partial Wrap",
+         "text": "KCS Group – Mercedes Metris – Partial Wrap",
          "href": null,
          "style": null,
          "eid": "33f8f76e"
@@ -836,7 +848,7 @@
         {
          "type": "heading",
          "level": 4,
-         "text": "Dodge Caravan \u2013 Custom Decals",
+         "text": "Dodge Caravan – Custom Decals",
          "href": null,
          "style": null,
          "eid": "33f8f76e"
@@ -929,7 +941,7 @@
         {
          "type": "heading",
          "level": 4,
-         "text": "Ford F-250 \u2013 Partial Wrap",
+         "text": "Ford F-250 – Partial Wrap",
          "href": null,
          "style": null,
          "eid": "33f8f76e"
@@ -960,7 +972,7 @@
         {
          "type": "heading",
          "level": 4,
-         "text": "Tesla Model S \u2013 Colour Change",
+         "text": "Tesla Model S – Colour Change",
          "href": null,
          "style": null,
          "eid": "33f8f76e"
@@ -1025,7 +1037,7 @@
        "a": "<p>Yes. We wrap and decal trucks for contractors, service businesses, and fleets.</p>"
       },
       {
-       "q": "What\u2019s the difference between decals, partial wraps, and full wraps?",
+       "q": "What’s the difference between decals, partial wraps, and full wraps?",
        "a": "<p>Decals are logos/lettering. Partial wraps cover key panels for higher impact. Full wraps provide maximum coverage and visibility.</p>"
       },
       {
@@ -1069,7 +1081,7 @@
         {
          "type": "feature",
          "title": "Cars",
-         "text": "Colour changes, decals, and partial wraps that upgrade your look and protect your paint\u2014installed clean with premium materials.",
+         "text": "Colour changes, decals, and partial wraps that upgrade your look and protect your paint—installed clean with premium materials.",
          "image": "/wp-content/uploads/2024/11/Mazda-Mx-5GT-Soft-Top-Full-Vinyl-Wrap-After-Side-Angle-View.webp",
          "alt": "",
          "level": 3,
@@ -1181,7 +1193,7 @@
     {
      "type": "heading",
      "level": 2,
-     "text": "\u00a9 2026 Vinyl Wrap Toronto - All Rights Reserved",
+     "text": "© 2026 Vinyl Wrap Toronto - All Rights Reserved",
      "href": null,
      "style": "text-align:center;font-family:\"Montserrat\", Sans-serif;font-size:14px;line-height:1.3em;color:#000000;font-weight:400",
      "tag": "p",
@@ -1514,7 +1526,7 @@
      },
      {
       "@type": "Question",
-      "name": "What\u2019s the difference between decals, partial wraps, and full wraps?",
+      "name": "What’s the difference between decals, partial wraps, and full wraps?",
       "acceptedAnswer": {
        "@type": "Answer",
        "text": "Decals are logos/lettering. Partial wraps cover key panels for higher impact. Full wraps provide maximum coverage and visibility."

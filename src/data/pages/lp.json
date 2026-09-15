@@ -33,7 +33,7 @@
          "type": "list",
          "items": [
           {
-           "text": "Etobicoke \u2022 Serving Toronto & GTA",
+           "text": "Etobicoke • Serving Toronto & GTA",
            "href": null,
            "icon": "fas fa-map-pin"
           }
@@ -56,7 +56,9 @@
          "icon": null,
          "style": "font-family:\"Montserrat\", Sans-serif;line-height:1em;color:#FFFFFF;font-weight:500",
          "href": "tel:416-746-1381",
-         "eid": "c05d0b3"
+         "eid": "c05d0b3",
+         "bg": "var( --e-global-color-d077a13 )",
+         "hoverBg": "var( --e-global-color-f32bb28 )"
         }
        ]
       }
@@ -115,7 +117,7 @@
            "icon": "fas fa-check"
           },
           {
-           "text": "Fast Turnaround \u2022 In-house Design \u2022 Certified Installers",
+           "text": "Fast Turnaround • In-house Design • Certified Installers",
            "href": null,
            "icon": "fas fa-check"
           }
@@ -282,7 +284,9 @@
          "icon": null,
          "style": "text-align:center;font-family:\"Montserrat\", Sans-serif;line-height:1em;color:#FFFFFF;font-weight:500",
          "href": "tel:416-746-1381",
-         "eid": "28976b7"
+         "eid": "28976b7",
+         "bg": "var( --e-global-color-d077a13 )",
+         "hoverBg": "var( --e-global-color-f32bb28 )"
         }
        ]
       },
@@ -328,8 +332,8 @@
            "height": null
           },
           {
-           "src": "/wp-content/uploads/2021/06/Dodge-Challenger-\u2013-Colour-Change-Wrap-and-Top-5-Benefits-Vinyl-Wrap-Toronto-Before-After-Car-wraps.webp",
-           "alt": "Dodge Challenger \u2013 Colour Change Wrap and Top 5 Benefits - Vinyl Wrap Toronto - Before & After - Car wraps",
+           "src": "/wp-content/uploads/2021/06/Dodge-Challenger-–-Colour-Change-Wrap-and-Top-5-Benefits-Vinyl-Wrap-Toronto-Before-After-Car-wraps.webp",
+           "alt": "Dodge Challenger – Colour Change Wrap and Top 5 Benefits - Vinyl Wrap Toronto - Before & After - Car wraps",
            "width": null,
            "height": null
           },
@@ -393,7 +397,9 @@
          "icon": null,
          "style": "text-align:center;font-family:\"Montserrat\", Sans-serif;line-height:1em;color:#FFFFFF;font-weight:500",
          "href": "tel:416-746-1381",
-         "eid": "958b12a"
+         "eid": "958b12a",
+         "bg": "var( --e-global-color-d077a13 )",
+         "hoverBg": "var( --e-global-color-f32bb28 )"
         }
        ]
       }
@@ -477,7 +483,7 @@
         {
          "type": "heading",
          "level": 4,
-         "text": "Ford F150 Snowplow \u2013 Full Wrap",
+         "text": "Ford F150 Snowplow – Full Wrap",
          "href": null,
          "style": null,
          "eid": "33f8f76e"
@@ -539,7 +545,7 @@
         {
          "type": "heading",
          "level": 4,
-         "text": "Toyota Rav4 Commercial Full Wrap \u2013 Joy Radio",
+         "text": "Toyota Rav4 Commercial Full Wrap – Joy Radio",
          "href": null,
          "style": null,
          "eid": "33f8f76e"
@@ -570,7 +576,7 @@
         {
          "type": "heading",
          "level": 4,
-         "text": "RockBottom Underpinning \u2013 Truck Full Wrap",
+         "text": "RockBottom Underpinning – Truck Full Wrap",
          "href": null,
          "style": null,
          "eid": "33f8f76e"
@@ -601,7 +607,7 @@
         {
          "type": "heading",
          "level": 4,
-         "text": "Mercedes GLE 63 \u2013 Colour Change",
+         "text": "Mercedes GLE 63 – Colour Change",
          "href": null,
          "style": null,
          "eid": "33f8f76e"
@@ -663,7 +669,7 @@
         {
          "type": "heading",
          "level": 4,
-         "text": "Ford Transit \u2013 Partial Wrap",
+         "text": "Ford Transit – Partial Wrap",
          "href": null,
          "style": null,
          "eid": "33f8f76e"
@@ -694,7 +700,7 @@
         {
          "type": "heading",
          "level": 4,
-         "text": "Mazda 3 \u2013 Racing Stripes",
+         "text": "Mazda 3 – Racing Stripes",
          "href": null,
          "style": null,
          "eid": "33f8f76e"
@@ -891,7 +897,9 @@
          "icon": null,
          "style": "text-align:left;font-family:\"Montserrat\", Sans-serif;line-height:1em;color:#FFFFFF;font-weight:500",
          "href": "tel:416-746-1381",
-         "eid": "14bba9d"
+         "eid": "14bba9d",
+         "bg": "var( --e-global-color-d077a13 )",
+         "hoverBg": "var( --e-global-color-f32bb28 )"
         }
        ]
       },
@@ -909,7 +917,7 @@
         {
          "type": "heading",
          "level": 4,
-         "text": "A colour change wrap transforms your vehicle\u2019s appearance and can help protect the original paint underneath.",
+         "text": "A colour change wrap transforms your vehicle’s appearance and can help protect the original paint underneath.",
          "href": null,
          "style": "text-align:start;font-family:\"Montserrat\", Sans-serif;font-size:16px;line-height:1.3em;color:#000000;font-weight:500",
          "eid": "d67c5ff"
@@ -917,7 +925,7 @@
         {
          "type": "heading",
          "level": 4,
-         "text": "Popular finishes: Gloss \u2022 Satin \u2022 Matte \u2022 Metallic \u2022 Textures",
+         "text": "Popular finishes: Gloss • Satin • Matte • Metallic • Textures",
          "href": null,
          "style": "text-align:start;font-family:\"Montserrat\", Sans-serif;font-size:0.9vw;line-height:1.3em;color:var( --e-global-color-d077a13 );font-weight:700;text-transform:capitalize",
          "eid": "5058472"
@@ -936,7 +944,9 @@
          "icon": null,
          "style": "text-align:left;font-family:\"Montserrat\", Sans-serif;line-height:1em;color:#FFFFFF;font-weight:500",
          "href": "tel:416-746-1381",
-         "eid": "702a461"
+         "eid": "702a461",
+         "bg": "var( --e-global-color-d077a13 )",
+         "hoverBg": "var( --e-global-color-f32bb28 )"
         }
        ]
       }
@@ -995,7 +1005,7 @@
      "items": [
       {
        "q": "How much does a vehicle wrap cost in Toronto?",
-       "a": "<p>Pricing depends on vehicle size, coverage, and finish. Full colour change wraps start at $2,500 for select vehicles/finishes\u2014request a quote for exact pricing.</p>"
+       "a": "<p>Pricing depends on vehicle size, coverage, and finish. Full colour change wraps start at $2,500 for select vehicles/finishes—request a quote for exact pricing.</p>"
       },
       {
        "q": "How long does installation take?",
@@ -1076,7 +1086,7 @@
     {
      "type": "heading",
      "level": 2,
-     "text": "\u00a9 2026 Vinyl Wrap Toronto - All Rights Reserved",
+     "text": "© 2026 Vinyl Wrap Toronto - All Rights Reserved",
      "href": null,
      "style": "text-align:center;font-family:\"Montserrat\", Sans-serif;font-size:14px;line-height:1.3em;color:#000000;font-weight:400",
      "tag": "p",
@@ -1405,7 +1415,7 @@
       "name": "How much does a vehicle wrap cost in Toronto?",
       "acceptedAnswer": {
        "@type": "Answer",
-       "text": "Pricing depends on vehicle size, coverage, and finish. Full colour change wraps start at $2,500 for select vehicles/finishes\u2014request a quote for exact pricing."
+       "text": "Pricing depends on vehicle size, coverage, and finish. Full colour change wraps start at $2,500 for select vehicles/finishes—request a quote for exact pricing."
       }
      },
      {
