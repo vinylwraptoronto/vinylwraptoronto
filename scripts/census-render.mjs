@@ -26,11 +26,13 @@ const arg = (k, d) => {
 const OUT = arg('--out', 'render.json');
 const PATHS = fs.readFileSync(arg('--urls'), 'utf8').split('\n').map((s) => s.trim()).filter(Boolean);
 const WIDTHS = [1440, 900, 390];
+const CONC = Number(arg('--concurrency', '6'));
+const BOXES = !process.argv.includes('--no-boxes');
 const SPKI = 'KnP1OnzHv/y42eRQmbGwoYTHcSJF448m6CU5mdngwKk=';
 
 /* Runs inside the page. Returns everything comparable about the laid-out
    document; matching between the two sides happens in Node, below. */
-const PAYLOAD = () => {
+const PAYLOAD = (withBoxes) => {
   const vis = (el) => {
     const s = getComputedStyle(el);
     if (s.display === 'none' || s.visibility === 'hidden' || +s.opacity === 0) return false;
@@ -155,12 +157,12 @@ const PAYLOAD = () => {
     parkedInvisible: [...document.querySelectorAll('body *')]
       .filter((el) => { const s = getComputedStyle(el); return +s.opacity === 0 && el.getBoundingClientRect().height > 8; })
       .length,
-    boxes,
+    boxes: withBoxes ? boxes : undefined,
   };
 };
 
-const census = async (page, url) => {
-  const out = { url };
+const census = async (page) => {
+  const out = {};
   for (const w of WIDTHS) {
     await page.setViewportSize({ width: w, height: 1000 });
     await page.waitForTimeout(700);
@@ -168,7 +170,7 @@ const census = async (page, url) => {
     await page.waitForTimeout(900);
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(400);
-    out[w] = await page.evaluate(PAYLOAD);
+    out[w] = await page.evaluate(PAYLOAD, BOXES);
   }
   return out;
 };
@@ -179,30 +181,57 @@ const browser = await chromium.launch({
   proxy: { server: process.env.HTTPS_PROXY, bypass: '127.0.0.1,localhost' },
 });
 
-const results = [];
-for (const path of PATHS) {
+/* Resumable, a line at a time. A full-site pass is hours of browser work and
+   the first long run died two thirds through holding everything in memory. */
+const done = new Set();
+if (fs.existsSync(OUT)) {
+  for (const line of fs.readFileSync(OUT, 'utf8').split('\n')) {
+    if (!line.trim()) continue;
+    try { done.add(JSON.parse(line).path); } catch { /* half-written last line */ }
+  }
+}
+const todo = PATHS.filter((p) => !done.has(p));
+console.log(`${todo.length} addresses to measure (${done.size} already done), ` +
+  `${CONC} at a time, boxes ${BOXES ? 'on' : 'off'}`);
+
+const fh = fs.openSync(OUT, 'a');
+let cursor = 0, finished = 0;
+
+const one = async (path) => {
   const rec = { path };
   for (const [side, host] of [['old', 'vinylwraptoronto.com'], ['new', 'astro.vinylwraptoronto.com']]) {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     try {
       await page.goto(`https://${host}${path}`, { waitUntil: 'load', timeout: 120000 });
-      rec[side] = await census(page, `https://${host}${path}`);
+      rec[side] = await census(page);
     } catch (e) {
       rec[`${side}_error`] = String(e.message).split('\n')[0].slice(0, 120);
     }
     await page.close();
   }
-  results.push(rec);
-  const o = rec.old?.[1440], n = rec.new?.[1440];
-  console.log(
-    `${path.padEnd(48)} ` +
-    (o && n
-      ? `h ${String(o.docHeight).padStart(6)}/${String(n.docHeight).padStart(6)}  ` +
-        `words ${String(o.visibleWords).padStart(5)}/${String(n.visibleWords).padStart(5)}  ` +
-        `broken ${n.imgBroken}  parked ${n.parkedInvisible}`
-      : `old:${rec.old_error ?? 'ok'} new:${rec.new_error ?? 'ok'}`)
-  );
-  fs.writeFileSync(OUT, JSON.stringify(results));
-}
+  return rec;
+};
+
+const worker = async () => {
+  while (cursor < todo.length) {
+    const path = todo[cursor++];
+    let rec;
+    try { rec = await one(path); }
+    catch (e) { rec = { path, fatal: String(e.message).slice(0, 120) }; }
+    fs.writeSync(fh, JSON.stringify(rec) + '\n');
+    finished++;
+    const o = rec.old?.[1440], n = rec.new?.[1440];
+    if (!o || !n || n.imgBroken || n.overflow || n.parkedInvisible ||
+        (o.visibleWords && Math.abs(o.visibleWords - n.visibleWords) > o.visibleWords * 0.1)) {
+      console.log(`  FLAG ${path} ` + (o && n
+        ? `words ${o.visibleWords}/${n.visibleWords} broken ${n.imgBroken} ovf ${n.overflow} parked ${n.parkedInvisible}`
+        : `old:${rec.old_error ?? 'ok'} new:${rec.new_error ?? 'ok'}`));
+    }
+    if (finished % 25 === 0) console.log(`  ${finished}/${todo.length}`);
+  }
+};
+
+await Promise.all(Array.from({ length: CONC }, worker));
+fs.closeSync(fh);
 await browser.close();
 console.log(`\nwritten ${OUT}`);
