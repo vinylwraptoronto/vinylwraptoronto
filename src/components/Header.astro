@@ -308,6 +308,18 @@ const branchCurrent = (item: NavItem): boolean =>
     align-self: stretch;
     display: flex;
     padding: 0;
+    /* The navy runs the full height of the header on the original -- its
+       column starts at the header's top edge and stops on the green rule.
+       `align-self: stretch` only reaches the bar's content box, which is
+       inset by the 10px of vertical padding the bar carries for the nav
+       links, so the block sat 20px short of the original's. */
+    margin-block: -10px;
+    /* Centre the button in that column rather than letting it stretch. The
+       button is already the original's 39px by its own box -- 15px of text on
+       12px of padding a side -- and was only taller because a flex child
+       defaults to filling the cross axis. */
+    align-items: center;
+    justify-content: center;
   }
   .wantto-col:hover { background-color: var(--e-global-color-a8178e9); /* #99CC33 */ }
 
