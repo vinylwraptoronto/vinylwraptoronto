@@ -34,3 +34,8 @@ dist-img-keys.json
 db/*.sql
 !db/migrations/*.sql
 db/blog_rows.json
+
+# Comparison captures. Regenerated per page by the screenshot pass and ~1.5MB
+# each at 1440; the whole site's worth would be gigabytes in history. The
+# durable record of what they showed is _research/structure.md.
+_research/screenshots/

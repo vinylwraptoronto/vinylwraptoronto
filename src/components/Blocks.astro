@@ -463,12 +463,12 @@ const galleryStyle = (b: {
             <p class="btnrow" data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
               {run.map((rb) => (
                 rb.popup ? (
-                  <button class="btn" type="button" data-popup={rb.popup} style={rb.style ?? undefined}>
+                  <button class:list={['btn', { 'btn--icon-right': rb.iconRight }]} type="button" data-popup={rb.popup} style={rb.style ?? undefined}>
                     {rb.icon && <i class:list={['btn-ic', rb.icon]} aria-hidden="true"></i>}
                     {rb.text}
                   </button>
                 ) : (
-                  <a class="btn" href={img(rb.href!)} style={rb.style ?? undefined}>
+                  <a class:list={['btn', { 'btn--icon-right': rb.iconRight }]} href={img(rb.href!)} style={rb.style ?? undefined}>
                     {rb.icon && <i class:list={['btn-ic', rb.icon]} aria-hidden="true"></i>}
                     {rb.text}
                   </a>
@@ -682,7 +682,8 @@ const galleryStyle = (b: {
         if (b.type === 'carousel') {
           return (
             <div
-              class="carou"
+              class:list={['carou', { 'carou--dots': b.dots }]}
+              data-eid={b.eid}
               data-carousel
               data-per={b.perView}
               data-per-mobile={b.perViewMobile}
@@ -691,12 +692,16 @@ const galleryStyle = (b: {
               data-speed={b.speed}
               data-pause={b.pauseOnHover ? 'yes' : 'no'}
               data-infinite={b.infinite ? 'yes' : 'no'}
-              style={`--carou-gap:${b.gap}px`}
+              {/* `box` like every other block type. The carousel branch was the
+                  one that never applied it, so the homepage strip rendered with
+                  none of the 15px the extractor had already captured for it. */}
+              style={[b.box, `--carou-gap:${b.gap}px`].filter(Boolean).join(';')}
             >
               <div class="carou-track">
                 {b.images.map((i) => (
                   <figure class="carou-slide">
-                    <img src={img(i.src)} alt={i.alt} loading="lazy" decoding="async" />
+                    <img src={img(i.src)} alt={i.alt} loading="lazy" decoding="async"
+                         style={b.imgStyle ?? undefined} />
                   </figure>
                 ))}
               </div>
@@ -1446,6 +1451,18 @@ const galleryStyle = (b: {
   .btnrow[style*='center'] { justify-content: center; }
   .btnrow[style*='right'] { justify-content: flex-end; }
 
+  /* Two or more buttons on a row take an equal share of it each, centred in
+     their own share -- not a huddle in the middle of the row.
+
+     The run above is grouped onto one row because on the original these are
+     separate button widgets sitting as equal-width siblings: the homepage hero
+     gives each of its two a 690px half of a 1400px row and centres the button
+     in it, putting them ~450px apart. Centring the pair with a 14px gap drew
+     them touching, at the right vertical position and visibly wrong.
+     space-around reproduces the halves: with two items their centres land at
+     25% and 75% of the row, which is where the original's are. */
+  .btnrow:has(.btn ~ .btn) { justify-content: space-around; gap: 0; }
+
   /* Button styling follows the header CTA: navy, green on hover, square. */
   /* Not `font: inherit`. That shorthand also sets line-height, to the body's
      1.5, and at 0,2,1 it out-specifies `.btn { line-height: 1 }` — so every
@@ -1488,6 +1505,15 @@ const galleryStyle = (b: {
     color: var(--brand-green);
   }
   .btn-ic { margin-inline-end: 8px; }
+  /* `.elementor-button-content-wrapper { flex-direction: row-reverse }` on the
+     original. Scoped to the variant rather than applied to .btn, which is
+     inline-block everywhere else and would reflow every other button. */
+  .btn--icon-right {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    align-items: center;
+  }
+  .btn--icon-right .btn-ic { margin-inline-end: 0; margin-inline-start: 8px; }
   .feature-ic {
     display: block;
     /* Elementor's icon-box puts 15px between the icon and the content, not 10:
@@ -1833,6 +1859,12 @@ const galleryStyle = (b: {
 
 
   /* Carousel: slides-per-view and gap come from the widget's own settings. */
+
+  /* Padding comes from the block's own `box`, inline, because Elementor sizes
+     it per widget: of the nine carousels on the site only the two on the
+     homepage layout carry any, and a blanket rule here was measured making
+     /lp/, /lp-truck-wraps/ and the Mustang page worse while fixing the
+     homepage. */
   .carou { position: relative; }
   .carou-track {
     display: flex;
@@ -1851,6 +1883,28 @@ const galleryStyle = (b: {
     justify-content: center;
     gap: 8px;
     margin-top: 12px;
+  }
+  /* A carousel with pagination reserves a 30px gutter at its foot and positions
+     the bullets into it, rather than stacking them under the slides on a
+     margin. The gutter is held whether or not bullets end up drawn: six logos
+     at six per view is a single page, so Swiper renders none and the original
+     still keeps the 30px. Reserving it is what stops the strip collapsing by a
+     row's worth of height.
+
+     On the track rather than the carousel, so it adds to the widget's own
+     padding instead of being overridden by it -- `box` arrives as an inline
+     style and would win over any padding set here. That nesting is also what
+     the original does: the gutter is on the carousel wrapper, inside the
+     widget container's padding. */
+  .carou--dots .carou-track { margin-bottom: 30px; }
+  .carou--dots .carou-dots {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 30px;
+    align-items: center;
+    margin-top: 0;
   }
   .carou-dots button {
     width: 10px; height: 10px; padding: 0;

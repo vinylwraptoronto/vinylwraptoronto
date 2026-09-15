@@ -187,7 +187,11 @@ const branchCurrent = (item: NavItem): boolean =>
   .nav > ul > li > a {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    /* 10px, measured. The original wraps its caret in a `.sub-arrow` span that
+       carries the spacing itself; the port has no such span, so the gap lives
+       here instead. It was 6px, which with the undersized caret below made
+       every top-level item ~6.5px narrower than the original's. */
+    gap: 10px;
     font-family: 'Poppins', sans-serif;
     font-weight: 500;
     font-size: 16px;
@@ -202,8 +206,13 @@ const branchCurrent = (item: NavItem): boolean =>
   .nav > ul > li > a[aria-current='page'] { color: var(--e-global-color-f32bb28); }
 
   /* Was a border-drawn triangle, because the port shipped no icon font. The
-     original uses fa-caret-down / fa-caret-right. */
-  .caret { font-size: 12px; line-height: 1; }
+     original uses fa-caret-down / fa-caret-right.
+
+     No font-size: the original's caret inherits the nav link's 16px and draws
+     10px wide. The 12px here was left over from the triangle era, when the size
+     was chosen rather than measured, and it survived the switch to the real
+     glyph -- so every caret on the site rendered a quarter under size. */
+  .caret { line-height: 1; }
   .caret--right {
     margin-left: auto;
   }
