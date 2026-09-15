@@ -544,7 +544,22 @@ const branchCurrent = (item: NavItem): boolean =>
     .brand { width: auto; max-width: none; padding: 0 0 0 14px; }
     .brand img { width: 28vw; max-width: none; }
     .wantto-col { width: 20%; }
-    .panel { display: block; background: #fff; }
+    /* Over the page, not part of it. The original's panel is absolutely
+       positioned at z-index 9997 directly under the bar, and opening it leaves
+       the document exactly as tall as it was -- measured: 7376px before and
+       after. The port had it in the flow inside the header, so opening the
+       menu pushed the whole page down by the panel's height, and being
+       unpositioned it also sat UNDER the sticky CTA bar, which painted across
+       the middle of the menu. */
+    .panel {
+      display: block;
+      background: #fff;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 9997;
+    }
   }
 
   /* The live template drops that margin to 0 at the mobile breakpoint, where

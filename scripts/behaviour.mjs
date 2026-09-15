@@ -122,6 +122,12 @@ const linkReachable = () => p.evaluate(()=>{
   return !!a && a.checkVisibility({contentVisibilityAuto:true,opacityProperty:true,visibilityProperty:true});
 });
 ok('mobile menu starts closed', await panelH()===0 && !(await linkReachable()));
+// Opening it must not make the page taller. The original's panel is absolutely
+// positioned over the content; the port had it in the flow inside the header,
+// so opening the menu shoved every page down by the panel's height and left it
+// stacked under the sticky CTA bar.
+const docH = () => p.evaluate(()=>document.body.scrollHeight);
+const docBefore = await docH();
 await p.click('.toggle');
 await p.waitForTimeout(90);
 const mid = await panelH();
@@ -129,6 +135,7 @@ await p.waitForTimeout(500);
 const open = await panelH();
 ok('  burger opens the panel', open>200 && await linkReachable(), `${open}px`);
 ok('  and slides rather than snapping', mid>0 && mid<open, `${mid}px at 90ms of ${open}px`);
+ok('  opens over the page, not into it', await docH()===docBefore, `${docBefore}px either way`);
 await p.click('.toggle');
 await p.waitForTimeout(600);
 ok('  closes again', await panelH()===0 && !(await linkReachable()));
