@@ -24,7 +24,8 @@
          "full": false,
          "eid": "a659bb4"
         }
-       ]
+       ],
+       "padding": "10px"
       },
       {
        "width": 70,
@@ -45,7 +46,8 @@
           "mobile"
          ]
         }
-       ]
+       ],
+       "padding": "10px"
       },
       {
        "width": 15,
@@ -61,19 +63,21 @@
          "hoverBg": "var( --e-global-color-f32bb28 )",
          "textHtml": "<span style=\"font-size:12px\">Get a Quote</span><br>416-746-1381"
         }
-       ]
+       ],
+       "padding": "10px"
       }
      ]
     }
    ],
-   "padding": "0px 0px 0px 0px",
+   "padding": "0px",
    "maxWidth": "80vw",
    "minHeight": null,
    "background": "#FFFFFF",
    "bgImage": null,
    "bgSize": null,
    "bgPosition": null,
-   "bgRepeat": null
+   "bgRepeat": null,
+   "innerPad": "0px"
   },
   {
    "id": "f7f004e",
@@ -165,14 +169,14 @@
         }
        ],
        "background": "rgba(255,255,255,0.9)",
-       "padding": "25px 25px 25px 25px",
+       "padding": "25px",
        "radius": "10px"
       }
      ],
      "gap": 0
     }
    ],
-   "padding": null,
+   "padding": "0px 10px",
    "maxWidth": "80vw",
    "minHeight": "70vh",
    "background": "#000000",
@@ -193,7 +197,7 @@
     "kenBurns": true,
     "zoom": "in"
    },
-   "innerPad": "10px 0"
+   "innerPad": "10px 0px"
   },
   {
    "id": "4e7cf8f",
@@ -327,7 +331,8 @@
          "hoverBg": "var( --e-global-color-f32bb28 )",
          "textHtml": "<span style=\"font-size:12px\">Get a Quote</span><br>416-746-1381"
         }
-       ]
+       ],
+       "padding": "10px"
       },
       {
        "width": 50,
@@ -446,14 +451,15 @@
      ]
     }
    ],
-   "padding": "50px 10px 50px 10px",
+   "padding": "0px 10px",
    "maxWidth": "80vw",
    "minHeight": null,
    "background": null,
    "bgImage": null,
    "bgSize": null,
    "bgPosition": null,
-   "bgRepeat": null
+   "bgRepeat": null,
+   "innerPad": "50px 0px"
   },
   {
    "id": "152937c",
@@ -476,14 +482,15 @@
      "eid": "4890e48"
     }
    ],
-   "padding": "50px 10px 50px 10px",
+   "padding": "0px 10px",
    "maxWidth": "80vw",
    "minHeight": null,
    "background": "#FAFFF0",
    "bgImage": null,
    "bgSize": null,
    "bgPosition": null,
-   "bgRepeat": null
+   "bgRepeat": null,
+   "innerPad": "50px 0px"
   },
   {
    "id": "c50ffbe",
@@ -750,14 +757,15 @@
      ]
     }
    ],
-   "padding": "50px 10px 50px 10px",
+   "padding": "0px 10px",
    "maxWidth": "80vw",
    "minHeight": null,
    "background": null,
    "bgImage": null,
    "bgSize": null,
    "bgPosition": null,
-   "bgRepeat": null
+   "bgRepeat": null,
+   "innerPad": "50px 0px"
   },
   {
    "id": "38d9877",
@@ -788,7 +796,8 @@
          "textStyle": "font-family:\"Montserrat\", Sans-serif;color:#FFFFFF;font-weight:400",
          "eid": "ce3182a"
         }
-       ]
+       ],
+       "padding": "10px"
       },
       {
        "width": 30,
@@ -861,14 +870,15 @@
      ]
     }
    ],
-   "padding": "50px 10px 50px 10px",
+   "padding": "0px 10px",
    "maxWidth": "80vw",
    "minHeight": null,
    "background": "#FAFFF0",
    "bgImage": null,
    "bgSize": null,
    "bgPosition": null,
-   "bgRepeat": null
+   "bgRepeat": null,
+   "innerPad": "50px 0px"
   },
   {
    "id": "da0550f",
@@ -942,7 +952,8 @@
          "hoverBg": "var( --e-global-color-f32bb28 )",
          "textHtml": "<span style=\"font-size:12px\">Get a Quote</span><br>416-746-1381"
         }
-       ]
+       ],
+       "padding": "50px"
       },
       {
        "width": 50,
@@ -990,19 +1001,21 @@
          "hoverBg": "var( --e-global-color-f32bb28 )",
          "textHtml": "<span style=\"font-size:12px\">Get a Quote</span><br>416-746-1381"
         }
-       ]
+       ],
+       "padding": "50px"
       }
      ]
     }
    ],
-   "padding": "100px 10px 100px 10px",
+   "padding": "0px 10px",
    "maxWidth": "80vw",
    "minHeight": null,
    "background": null,
    "bgImage": null,
    "bgSize": null,
    "bgPosition": null,
-   "bgRepeat": null
+   "bgRepeat": null,
+   "innerPad": "100px 0px"
   },
   {
    "id": "7ff167a",
@@ -1022,14 +1035,15 @@
      "eid": "183566e"
     }
    ],
-   "padding": "50px 10px 50px 10px",
+   "padding": "0px 10px",
    "maxWidth": "80vw",
    "minHeight": null,
    "background": "#FAFFF0",
    "bgImage": null,
    "bgSize": null,
    "bgPosition": null,
-   "bgRepeat": null
+   "bgRepeat": null,
+   "innerPad": "50px 0px"
   },
   {
    "id": "5c785d0",
@@ -1066,18 +1080,19 @@
      "openIndex": 0
     }
    ],
-   "padding": "50px 10px 50px 10px",
+   "padding": "0px 10px",
    "maxWidth": "80vw",
    "minHeight": null,
    "background": null,
    "bgImage": null,
    "bgSize": null,
    "bgPosition": null,
-   "bgRepeat": null
+   "bgRepeat": null,
+   "innerPad": "50px 0px"
   },
   {
    "id": "0237d34",
-   "padding": "50px 10px",
+   "padding": "0px 10px",
    "background": "linear-gradient(145deg, var(--e-global-color-d077a13) 38%, var(--e-global-color-8c22d81) 100%)",
    "blocks": [
     {
@@ -1125,7 +1140,8 @@
       }
      ]
     }
-   ]
+   ],
+   "innerPad": "50px 0px"
   },
   {
    "id": "a794ddf",
@@ -1140,14 +1156,15 @@
      "eid": "bdfe363"
     }
    ],
-   "padding": "20px 20px 20px 20px",
+   "padding": "0px 20px",
    "maxWidth": "80vw",
    "minHeight": null,
    "background": null,
    "bgImage": null,
    "bgSize": null,
    "bgPosition": null,
-   "bgRepeat": null
+   "bgRepeat": null,
+   "innerPad": "20px 0px"
   }
  ],
  "kind": "page",

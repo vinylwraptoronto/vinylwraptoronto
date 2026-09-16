@@ -1776,7 +1776,19 @@ const galleryStyle = (b: {
   /* Elementor icon-box. Measured on the live render: the title is 17px/20.4px
      weight 600 in brand green, the text 14px/21px in body ink, and the whole
      box is centred — not the page's default left-aligned h3 + p. */
-  .feature { padding: 16px; background: var(--panel); border-radius: 4px; text-align: center; }
+  /* The original's icon-box draws no panel at all. Checked on every box of
+     five pages -- /lp-truck-wraps/, /box-truck-wrap/, /car-wraps/, / and
+     /full-car-wrap-toronto/ -- and all of them are `padding: 0`, transparent,
+     radius 0. The port gave all 3,292 of them a grey #f8f8f8 card with 16px
+     of padding and a 4px radius, which is 32px of height each and chrome the
+     site does not have.
+
+     `text-align` is deliberately left alone. The original varies it per
+     widget -- /lp-truck-wraps/ is five `start` and five `center`, the other
+     four pages all `start` -- and our page data records it for none of the
+     3,292, so switching the default would be a blanket change on a guess.
+     Recorded in _research/structure.md for a per-element harvest instead. */
+  .feature { text-align: center; }
   /* .elementor-icon-box-title / -description. The leading is 1.2 of whatever
      size the widget declares — frozen at 20.4px it was right only for the
      17px default and 6px too tall on the 12px variants. */
