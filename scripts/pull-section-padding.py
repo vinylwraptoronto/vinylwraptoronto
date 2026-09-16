@@ -56,15 +56,47 @@ const out = await page.evaluate(() => {
     const inner = el.querySelector(':scope > .e-con-inner, :scope > .elementor-container');
     /* A column is Elementor's widget-wrap; its padding is the inset the port
        otherwise supplies generically. */
+    /* A full-width flex row has no `.e-con-inner`: its columns are its own
+       children. Without that third selector the row's columns are never
+       measured and each one keeps the port's generic 10px inset. */
     const cols = [...el.querySelectorAll(
-      ':scope > .e-con-inner > .e-con, :scope > .elementor-container > .elementor-column')]
+      ':scope > .e-con-inner > .e-con, :scope > .e-con, ' +
+      ':scope > .elementor-container > .elementor-column')]
       .map((c) => {
         const w = c.querySelector(':scope > .elementor-widget-wrap') || c;
         return getComputedStyle(w).padding;
       });
+    /* Boxed or full width. Elementor says so in the class rather than in a
+       rule, and the port's own default is boxed -- so a full-width row that
+       is not marked reads as a 1200px container and every column inside it
+       comes out narrow. */
+    const full = el.classList.contains('e-con-full')
+              || el.classList.contains('elementor-section-full_width');
+    /* The row's gutter. The port's generic 20px is Elementor's default and is
+       right where the row does not set one; the rows that set `--gap:0px` put
+       their columns edge to edge. */
+    const gapSrc = inner || el;
+    const gapPx = parseFloat(getComputedStyle(gapSrc).columnGap);
+    /* A loop grid is a widget, not a row of columns, and the port flattens it
+       into one -- so its own gutter and the box its item template draws are
+       nowhere in the section's rules. Both are read off the rendered grid:
+       /our-work/ and /tesla-vinyl-wraps/ put their comparisons in one, at a
+       30px gutter with a 15px card, where the port had 20 and 10. */
+    const grid = el.querySelector('.elementor-loop-container');
+    // `.e-loop-item`, not the grid's first child: Elementor puts a <style> of
+    // its own in front of the items, and it measures 0 on every count.
+    const item = grid && grid.querySelector('.e-loop-item');
+    const card = item && (item.firstElementChild || item);
+    const loop = grid ? {
+      gap: Math.round(parseFloat(getComputedStyle(grid).columnGap)) || 0,
+      pad: card ? getComputedStyle(card).padding : null,
+    } : null;
     res[id] = {
       pad: getComputedStyle(el).padding,
       innerPad: inner ? getComputedStyle(inner).padding : null,
+      full,
+      gap: Number.isFinite(gapPx) ? Math.round(gapPx) : null,
+      loop,
       cols,
     };
   }
@@ -124,10 +156,27 @@ def main():
             if m["innerPad"] and s.get("innerPad") != m["innerPad"]:
                 changed.append(f"{s['id']} innerPad {s.get('innerPad')!r} -> {m['innerPad']!r}")
                 s["innerPad"] = m["innerPad"]
+            if m["full"] and not s.get("fullWidth"):
+                changed.append(f"{s['id']} fullWidth -> True")
+                s["fullWidth"] = True
             # each row's columns, in order
             for b in s.get("blocks", []):
                 if b.get("type") != "columns":
                     continue
+                # A flattened loop grid takes the grid's own gutter and its item
+                # template's padding; a real row takes the container's. 20 and
+                # the generic 10px inset are the port's defaults, so only a row
+                # that differs is written.
+                gap = m["loop"]["gap"] if m["loop"] else m["gap"]
+                if gap is not None and gap != (b.get("gap") if b.get("gap") is not None else 20):
+                    changed.append(f"{s['id']} gap {b.get('gap')!r} -> {gap!r}")
+                    b["gap"] = gap
+                if m["loop"] and m["loop"]["pad"]:
+                    for c in b.get("cols", []):
+                        if c.get("padding") != m["loop"]["pad"]:
+                            changed.append(f"{s['id']} loop item padding "
+                                           f"{c.get('padding')!r} -> {m['loop']['pad']!r}")
+                            c["padding"] = m["loop"]["pad"]
                 for i, c in enumerate(b.get("cols", [])):
                     if i < len(m["cols"]) and m["cols"][i] and c.get("padding") != m["cols"][i]:
                         changed.append(f"{s['id']} col{i} padding {c.get('padding')!r} -> {m['cols'][i]!r}")

@@ -260,6 +260,17 @@ export type Block = (
       pauseOnHover: boolean;
       infinite: boolean;
       dots: boolean;
+      /** Slides moved per step. Elementor's "Slides to Scroll", and 1 where the
+       *  widget does not set it -- which is what decides both the motion and
+       *  the number of bullets: /demo-page-home/ scrolls 6 at a time and so
+       *  draws two bullets for six logos, where a carousel scrolling one draws
+       *  one bullet per slide. */
+      scroll?: number;
+      /** The bullets' own colours, per widget. Every dotted carousel on the
+       *  site sets its own pair, and none of them is the port's generic grey
+       *  and green. */
+      dotColor?: string;
+      dotActive?: string;
       /** Styling Elementor applies to the slide images rather than to the
        *  widget box. The carousel widget has a separate Image style section,
        *  and it writes those rules to `.swiper-slide-image`, not to the

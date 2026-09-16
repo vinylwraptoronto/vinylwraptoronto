@@ -413,7 +413,7 @@ const galleryStyle = (b: {
           if (/^\$[\d,]+\s+\$[\d,]+$/.test(b.text.trim())) {
             const [was, now] = b.text.trim().split(/\s+/);
             return (
-              <Tag class:list={[{ hd: !!b.tag }]} id={id} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
+              <Tag class:list={["price", { hd: !!b.tag }]} id={id} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
                 <span class="ah-was">{was}</span><br /><span class="ah-now">{now}</span>
               </Tag>
             );
@@ -805,6 +805,7 @@ const galleryStyle = (b: {
               data-speed={b.speed}
               data-pause={b.pauseOnHover ? 'yes' : 'no'}
               data-infinite={b.infinite ? 'yes' : 'no'}
+              data-scroll={b.scroll ?? 1}
               {/* `box` like every other block type. The carousel branch was the
                   one that never applied it, so the homepage strip rendered with
                   none of the 15px the extractor had already captured for it. */}
@@ -818,7 +819,17 @@ const galleryStyle = (b: {
                   </figure>
                 ))}
               </div>
-              {b.dots && <div class="carou-dots" role="tablist" aria-label="Slide"></div>}
+              {b.dots && (
+                <div
+                  class="carou-dots"
+                  role="tablist"
+                  aria-label="Slide"
+                  style={[
+                    b.dotColor ? `--dot:${b.dotColor}` : '',
+                    b.dotActive ? `--dot-on:${b.dotActive}` : '',
+                  ].filter(Boolean).join(';') || undefined}
+                />
+              )}
             </div>
           );
         }
@@ -1073,6 +1084,20 @@ const galleryStyle = (b: {
                 const tinted = c.background && c.background.toLowerCase() !== '#ffffff';
                 const style = [
                   `--col-w:${c.width}%`,
+                  /* The share of the row's gutter this column has to give up so
+                     that a full row still fits on one line.
+
+                     A flex row that wraps sizes its items from their basis and
+                     only shrinks what is already on the line, so a 50% column
+                     in a row with a 30px gap has to ask for 50% - 15px or the
+                     second one wraps. Subtracting the WHOLE gutter from every
+                     column, which the port did, keeps the wrap right and makes
+                     every row narrower than the original's: two columns came
+                     out 20px short of the container, three came out 40. It is
+                     the gutter times the share of the row this column is NOT:
+                     15px of a 30px gutter at 50%, 13.3px of a 20px gutter at a
+                     third, nothing at all where the row has no gutter. */
+                  `--col-gutter:${(((b.gap ?? 20) * (1 - Math.min(c.width ?? 100, 100) / 100))).toFixed(2)}px`,
                   tinted ? `background-color:${c.background}` : '',
                   /* A column's padding is its own, tinted or not. Gating it on
                      the background dropped the hero's left column inset --
@@ -1374,8 +1399,8 @@ const galleryStyle = (b: {
      flush against their logos — their box sets margin:-3px, and -3px was the
      whole of the gap. */
   .cols > .col {
-    flex: 1 1 calc(var(--col-w, 100%) - var(--cols-gap, 20px));
-    max-width: calc(var(--col-w, 100%) - var(--cols-gap, 20px));
+    flex: 1 1 calc(var(--col-w, 100%) - var(--col-gutter, var(--cols-gap, 20px)));
+    max-width: calc(var(--col-w, 100%) - var(--col-gutter, var(--cols-gap, 20px)));
     min-width: 0;
     display: flex;
     flex-direction: column;
@@ -1393,11 +1418,27 @@ const galleryStyle = (b: {
      between two rows, reading as a stray control above the next pair rather
      than as part of its own. That is what made 52 buttons look like they were
      on the wrong items, when the count and the placement were right all along. */
-  .col--card {
+  .cols > .col--card {
     border: 1px solid #f3f3f3;
     border-radius: 5px;
     padding: 15px;
   }
+  /* The item's own rhythm, measured on the original: the comparison sits 5px
+     above the title, the title is 18px on 1.3 with 5px clear either side, and
+     the button hangs 15px below it. The port's generic 20px between widgets
+     and 16px under a heading put 59px more into every item than the original
+     has -- which, over six rows here and 35 on /our-work/, is the whole of
+     both pages' height difference. */
+  .cols > .col--card { gap: 0; }
+  .cols > .col--card > .compare { margin-bottom: 5px; }
+  .cols > .col--card :global(h4) {
+    margin: 5px 0;
+    font-size: 18px;
+    line-height: 1.3em;
+    font-weight: 400;
+  }
+  .cols > .col--card > :global(.btnrow) { margin: 15px 0 0; }
+
   .col--card :global(h1),
   .col--card :global(h2),
   .col--card :global(h3),
@@ -1660,19 +1701,42 @@ const galleryStyle = (b: {
   .hlink { color: inherit; font-weight: 400; text-decoration: none; }
   .hlink:hover { color: var(--brand-pink); }
 
-  /* The offer price — measured off the original's animated-headline widget
-     a36b238: the old price struck through in the brand pink at 22px, the price
-     you pay at 35px under it. Elementor draws the strike as a hand-drawn SVG
-     marker path; a straight line-through in the same colour reads identically
-     at this size and costs no markup. */
-  .ah-was {
+  /* The offer price — the animated-headline widget. The old price struck
+     through in the brand pink, the price you pay larger underneath. Elementor
+     draws the strike as a hand-drawn SVG marker path; a straight line-through
+     in the same colour reads identically at this size and costs no markup.
+
+     The widget carries none of this in the block's own `style` — it is null on
+     every one of the 403 records — so all of it lives here, read off the
+     original's per-page CSS and confirmed against the computed values in a
+     browser on both a post (a36b238) and /tesla-vinyl-wraps/ (19b01ef):
+
+       headline   centred, Poppins 600, 22px / 1.2, and 28px on 19b01ef
+       old price  weight 200, #f3f3f3, at the headline's size
+       new price  weight 600, #f7f7f7, 35px / 1.3em, and 45px on 19b01ef
+
+     Without the colours the new price inherited the page's body text — black
+     on the navy offer panel — and without the alignment both lines sat left
+     against a centred original. */
+  .price {
+    text-align: center;
+    font-family: "Poppins", Sans-serif;
     font-size: 22px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .ah-was {
+    font-weight: 200;
     color: #f3f3f3;
     text-decoration: line-through;
     text-decoration-color: var(--brand-pink, #ff0099);
     text-decoration-thickness: 2px;
   }
-  .ah-now { font-size: 35px; line-height: 1.3em; }
+  .ah-now { font-size: 35px; line-height: 1.3em; color: #f7f7f7; }
+
+  /* /tesla-vinyl-wraps/ is the one page that sizes the widget itself. */
+  .price[data-eid="19b01ef"] { font-size: 28px; }
+  .price[data-eid="19b01ef"] .ah-now { font-size: 45px; }
 
   .fig { margin: 0; }
   .fig img { display: block; border-radius: 4px; }
@@ -2208,10 +2272,14 @@ const galleryStyle = (b: {
   }
   .carou-slide img { width: 100%; display: block; }
 
+  /* 6px bullets, 6px of margin each side — Swiper's own geometry, and the same
+     on every dotted carousel the site has. The colours are not: each widget
+     names its own pair, so they arrive as custom properties and the generic
+     grey and green are only the fallback. */
   .carou-dots {
     display: flex;
     justify-content: center;
-    gap: 8px;
+    gap: 12px;
     margin-top: 12px;
   }
   /* A carousel with pagination reserves a 30px gutter at its foot and positions
@@ -2236,14 +2304,18 @@ const galleryStyle = (b: {
     align-items: center;
     margin-top: 0;
   }
-  .carou-dots button {
-    width: 10px; height: 10px; padding: 0;
+  /* `:global`, because the bullets are built by script once the carousel knows
+     how many steps it has — so they never carry the scope attribute Astro adds
+     to the markup, and a scoped rule here matched nothing at all. That is why
+     they have been rendering as the browser's own grey buttons. */
+  .carou-dots :global(button) {
+    width: 6px; height: 6px; padding: 0;
     border-radius: 50%;
     border: 0;
-    background: var(--rule);
+    background: var(--dot, var(--rule));
     cursor: pointer;
   }
-  .carou-dots button[aria-selected='true'] { background: var(--brand-green); }
+  .carou-dots :global(button[aria-selected='true']) { background: var(--dot-on, var(--brand-green)); }
 
   .gallery {
     display: grid;

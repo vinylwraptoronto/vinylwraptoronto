@@ -348,18 +348,62 @@
       const pauseOnHover = el.dataset.pause === 'yes';
 
       const per = () => (window.matchMedia('(max-width: 767px)').matches ? perMobile : perDesktop);
-      const pages = () => Math.max(1, Math.ceil(slides.length / per()));
+
+      /* Elementor moves the strip by its "Slides to Scroll" -- one slide unless
+         the widget says otherwise -- and draws one bullet per step, not one per
+         screenful. Paging a screenful at a time drew three bullets under the
+         Tesla carousel where the original has eight, and jumped the photographs
+         three at a time where the original walks them one by one. */
+      const scroll = Math.max(1, Number(el.dataset.scroll || 1));
+      const loop = infinite && slides.length > per();
+      const pages = () => (loop
+        ? Math.max(1, Math.ceil(slides.length / scroll))
+        : Math.max(1, Math.ceil((slides.length - per()) / scroll) + 1));
+
+      /* A looping carousel needs a screenful of clones after the last slide, or
+         the final steps have nothing left to scroll into and the strip stalls
+         with the last photograph pinned to the left. Swiper does the same. */
+      if (loop) {
+        for (let i = 0; i < Math.max(perDesktop, perMobile); i++) {
+          const c = slides[i % slides.length].cloneNode(true) as HTMLElement;
+          c.setAttribute('aria-hidden', 'true');
+          c.dataset.clone = '';
+          track.appendChild(c);
+        }
+      }
+
+      /* One slide plus the gutter. Measured rather than derived from the track,
+         because the slide's flex basis is a calc over both. */
+      const step = () => {
+        const w = slides[0]?.getBoundingClientRect().width ?? 0;
+        return w + (parseFloat(getComputedStyle(track).columnGap) || 0);
+      };
 
       let page = 0;
+      let rewind = 0;
       const applyPer = () => el.style.setProperty('--per', String(per()));
+      const mark = () => dots?.querySelectorAll('button').forEach((d, i) =>
+        d.setAttribute('aria-selected', String(i === page)));
 
       const go = (p: number) => {
         const total = pages();
-        page = infinite ? (p + total) % total : Math.min(Math.max(p, 0), total - 1);
-        track.style.transition = `transform ${speed}ms ease`;
-        track.scrollTo({ left: page * track.clientWidth, behavior: 'smooth' });
-        dots?.querySelectorAll('button').forEach((d, i) =>
-          d.setAttribute('aria-selected', String(i === page)));
+        window.clearTimeout(rewind);
+        if (loop && p >= total) {
+          /* Into the clones, which look exactly like the first screenful, then
+             back to the real start with the animation off -- so the loop reads
+             as continuous rather than as a rewind across the whole strip. */
+          track.scrollTo({ left: total * scroll * step(), behavior: 'smooth' });
+          page = 0;
+          rewind = window.setTimeout(() => {
+            track.style.scrollBehavior = 'auto';
+            track.scrollLeft = 0;
+            track.style.scrollBehavior = '';
+          }, Math.max(speed, 500) + 120);
+        } else {
+          page = p < 0 ? total - 1 : Math.min(p, total - 1);
+          track.scrollTo({ left: page * scroll * step(), behavior: 'smooth' });
+        }
+        mark();
       };
 
       applyPer();
