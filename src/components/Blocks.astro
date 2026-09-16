@@ -471,10 +471,15 @@ const galleryStyle = (b: {
                   Only inline emphasis reaches here: the harvester refuses a
                   heading containing anything else, and an <a> is already
                   carried as `href` below. */}
-              {b.href
-                ? <a class="hlink" href={img(b.href)}>{b.text}</a>
-                : b.textHtml
-                  ? <Fragment set:html={b.textHtml} />
+              {/* textHtml wins over href. A heading whose anchor covers only
+                  PART of its text -- "Give us a <a>call</a> or fill out the
+                  form below." -- was extracted as a whole-heading link, so the
+                  port made the entire sentence dial the phone. Where the
+                  markup is carried, it says where the link starts and stops. */}
+              {b.textHtml
+                ? <Fragment set:html={b.textHtml} />
+                : b.href
+                  ? <a class="hlink" href={img(b.href)}>{b.text}</a>
                   : b.text}
             </Tag>
           );
