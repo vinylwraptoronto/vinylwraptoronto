@@ -236,9 +236,13 @@ import {
 
   /* #e8fc75d — 30px pink ellipsis, 15px from the title, both linking to
      /vinyl/; the title turns pink when either half is hovered. */
+  /* Elementor's icon-box: the icon sits beside the title with a 15px gap, the
+     two align to the TOP, and the title takes the rest of the row. The port
+     centred them and let the title shrink to its own text, so it measured
+     100px wide where the original's is 504. */
   .brands {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 15px;
     margin: 14px 0 0;
   }
@@ -251,6 +255,7 @@ import {
   /* 500 on the original, not 400 — checked against the live footer on every
      page it appears, which is all 678. */
   .brands-text {
+    flex: 1;
     font-size: 16px;
     font-weight: 500;
     color: #ffffff;

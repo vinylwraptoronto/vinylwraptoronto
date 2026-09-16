@@ -127,7 +127,13 @@ const PAYLOAD = () => {
     .filter(vis).map((h) => `${h.tagName} ${norm(h.innerText)}`);
 
   const forms = [...document.querySelectorAll('form')].map((f) => ({
+    /* Visible fields only. `input:not([type=hidden])` does not cover a
+       textarea, and the original's forms carry a display:none
+       `g-recaptcha-response` one -- so every page reported its form as
+       DIFFERING by a field nobody can see and the port has no reason to
+       carry. */
     fields: [...f.querySelectorAll('input:not([type=hidden]), textarea, select')]
+      .filter((e) => e.getBoundingClientRect().height > 0)
       .map((e) => `${e.tagName.toLowerCase()}:${e.type || ''}[${norm(e.placeholder)}]`),
     submit: norm((f.querySelector('button, input[type=submit]') || {}).innerText || ''),
   }));
