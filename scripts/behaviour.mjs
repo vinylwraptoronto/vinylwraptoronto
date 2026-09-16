@@ -130,11 +130,26 @@ const docH = () => p.evaluate(()=>document.body.scrollHeight);
 // Settle first. A page still pulling in lazy images grows on its own, and
 // comparing a height taken before the open against one taken after would be
 // measuring the images, not the menu.
+// Wait for the lazy images themselves first. Two consecutive equal readings
+// are not proof the page has stopped growing -- images arrive in bursts, and a
+// pause between two of them looks exactly like the end. That is what made this
+// check cry wolf: it captured a height mid-growth and then compared it with a
+// later, larger one, reporting a panel defect that a direct measurement of the
+// same page put at a delta of 0.
+await p.evaluate(async () => {
+  let last = -1, same = 0;
+  for (let i = 0; i < 40 && same < 3; i++) {
+    const n = [...document.images].filter((im) => im.complete && im.naturalWidth > 0).length;
+    same = n === last ? same + 1 : 0;
+    last = n;
+    await new Promise((r) => setTimeout(r, 200));
+  }
+});
 let docBefore = await docH();
-for (let i = 0; i < 20; i++) {
-  await p.waitForTimeout(300);
+for (let i = 0, stable = 0; i < 30 && stable < 3; i++) {
+  await p.waitForTimeout(250);
   const now = await docH();
-  if (now === docBefore) break;
+  stable = now === docBefore ? stable + 1 : 0;
   docBefore = now;
 }
 await p.click('.toggle');
@@ -144,7 +159,9 @@ await p.waitForTimeout(500);
 const open = await panelH();
 ok('  burger opens the panel', open>200 && await linkReachable(), `${open}px`);
 ok('  and slides rather than snapping', mid>0 && mid<open, `${mid}px at 90ms of ${open}px`);
-ok('  opens over the page, not into it', await docH()===docBefore, `${docBefore}px either way`);
+const docAfter = await docH();
+ok('  opens over the page, not into it', docAfter === docBefore,
+   docAfter === docBefore ? `${docBefore}px either way` : `${docBefore}px -> ${docAfter}px`);
 await p.click('.toggle');
 await p.waitForTimeout(600);
 ok('  closes again', await panelH()===0 && !(await linkReachable()));

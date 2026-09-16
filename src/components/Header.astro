@@ -419,6 +419,23 @@ const branchCurrent = (item: NavItem): boolean =>
   }
   .panel ul { list-style: none; margin: 0; padding: 0; }
 
+  /* The green rule that closes off a list. Measured on the original's own
+     panel with Vehicle Wraps > Car Wraps open: EVERY <ul> in it -- the
+     top-level list and each expanded sub-menu alike -- carries
+
+         border-bottom: 2px solid rgb(153, 204, 51)
+
+     and the last row of a sub-menu drops its own grey 1px so the green stands
+     in its place. That is what makes an open group readable: it shows where
+     the sub-menu ends and the parent list picks up again. The port drew a
+     uniform grey line under every row and nothing else, so the three items
+     under Car Wraps ran into Van Wraps with no break.
+
+     #99CC33 is --e-global-color-a8178e9, the same green the rest of the site
+     uses. */
+  .panel ul { border-bottom: 2px solid var(--e-global-color-a8178e9); }
+  .panel li:last-child > .prow { border-bottom: 0; }
+
   /* One row, label and caret centred together as a pair.
 
      The original's row is a single full-width anchor, `display: flex`, with its
