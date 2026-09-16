@@ -135,18 +135,6 @@ const dimsPair = (src: string): { w?: number; h?: number } => {
   return { w: d?.[0], h: d?.[1] };
 };
 
-/** The "Read More Blogs" row, built from the newest posts rather than frozen.
- *
- *  On the original this is an Elementor loop: it asks for the most recent posts
- *  every time the page is served. The scrape could only see the answer it gave
- *  that day, so all 402 pages carried the same two posts for ever -- and by the
- *  time this was measured the client had published three more, none of which
- *  the clone linked from anywhere. The posts themselves were fine; the row
- *  pointing at them was a photograph of a moving thing.
- *
- *  posts.json is rebuilt from D1 on every build, so computing it here means the
- *  row is right at every deploy instead of right once. */
-const RECENT_CARDS_EID = '100f1ef';
 
 const byNewest = [...(posts as any[])]
   .filter((p) => p.published)
@@ -179,57 +167,11 @@ const headlineOf = (p: any): string => {
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'];
 
-/** Is this card block an UNFILTERED "latest posts" loop?
-
- *  1,012 card widgets across the site are loop-shaped -- every card carries a
- *  date and a "Read More" -- and the port recomputed exactly one of them,
- *  leaving the other 610 frozen at whatever was newest when the page was
- *  scraped. On /box-truck-wrap/ that showed two posts the original has since
- *  replaced.
- *
- *  But they are not all the same widget. Checked against the original:
- *
- *    /box-truck-wrap/      the three newest posts site-wide      -> live
- *    /blogs/ai-to-print/   AI posts only, skipping newer ones    -> filtered
- *    /partial-car-wrap-gta/  car-wrap posts only                 -> filtered
- *
- *  So recomputing every loop as "the newest N" would put the wrong posts on
- *  the filtered ones -- a different defect, on more pages. Instead: a block is
- *  a latest-posts loop only if the cards it FROZE are exactly the newest N as
- *  of its own most recent card. A filtered loop fails that, because the
- *  unfiltered list of that date contains posts it left out.
- */
-const slugOfHref = (h: string) => String(h ?? '').replace(/^\/|\/$/g, '');
-const isLatestLoop = (cards: any[]) => {
-  if (!cards?.length || !cards.every((c) => c.date && c.more)) return false;
-  const want = cards.map((c) => slugOfHref(c.href));
-  const pos = want.map((sl) => byNewest.findIndex((p) => slugOfHref(String(p.slug)) === sl));
-  if (pos.some((i) => i < 0)) return false;
-  const asOf = String(byNewest[Math.min(...pos)].published);
-  const expected = byNewest
-    .filter((p) => String(p.published) <= asOf)
-    .slice(0, cards.length)
-    .map((p) => slugOfHref(String(p.slug)));
-  return expected.join('|') === want.join('|');
-};
-
-/* `like` is the block's own first card. Recomputing a loop swaps WHICH posts
-   it lists; it must not change how the widget is configured, and those are
-   per-widget settings the original varies:
-
-     "Read more »" on /box-truck-wrap/ and /custom-food-truck-wraps-in-toronto/
-     "Read More »" on /trailer-decals-lettering/
-
-   and some of these widgets show a category badge while others show none. The
-   port hardcoded "Read More »" and always emitted a badge, so recomputing a
-   loop silently relabelled it and added pills the original does not draw. */
 /** A card thumbnail's intrinsic size.
  *
  *  Card images are lazy, and since the grid stopped forcing `aspect-ratio`
  *  (the original does not crop them) nothing reserves their box until they
- *  load. On a 55-card listing that is thousands of pixels of layout shift:
- *  /truck-lettering-and-decals-toronto/ measured 8,655px tall against the
- *  original's 12,054 purely because its thumbnails had no height yet.
+ *  load. On a 55-card listing that is thousands of pixels of layout shift.
  *
  *  The original avoids it the way WordPress always does -- `width` and
  *  `height` on the img -- and the variant WordPress serves carries them in its
@@ -243,6 +185,29 @@ const thumbBox = (src: string, c: any): { w?: number; h?: number } => {
   const d = dimsOf(src);
   return { w: d?.[0], h: d?.[1] };
 };
+
+/** The widget ids whose loop really is "the newest posts, site-wide".
+ *
+ *  This was a heuristic -- treat a block as live if the cards it FROZE are the
+ *  newest N as of its own most recent card -- and the heuristic is not safe.
+ *  A filtered loop passes it whenever its posts happen to have been the newest
+ *  when the page was scraped, and two of the site's five candidates did:
+ *
+ *    100f1ef    400 blocks   original lists the newest 3   LIVE
+ *    d09f711      7 blocks   original lists the newest 3   LIVE
+ *    31cc265a     1 block    original lists the newest 3   LIVE
+ *    648055be     1 block    carbon-fibre posts only       FILTERED
+ *    7536db10   363 blocks   the page's own topic only     FILTERED
+ *
+ *  The last two were being rewritten to the three newest posts on the site:
+ *  /carbon-fibre-wraps-vinyl-wrap-toronto/ showed "Vehicle Photos for AI Wrap
+ *  Design" where the original shows a Kawasaki Ninja, and the same on 363
+ *  blogs pages. Read off the original, per widget, rather than inferred.
+ *
+ *  A new id belongs here only after the same check: load a page carrying it
+ *  and confirm the original's own loop lists the newest posts.
+ */
+const LIVE_LOOPS = new Set(['100f1ef', 'd09f711', '31cc265a']);
 
 const recentCards = (exclude: string, n: number, like?: any) =>
   byNewest
@@ -737,7 +702,7 @@ const galleryStyle = (b: {
              from the current posts; every other cards block is page content and
              is rendered as captured. */
           const cards =
-            b.eid === RECENT_CARDS_EID || isLatestLoop(b.cards)
+            LIVE_LOOPS.has(b.eid as string)
               ? recentCards(Astro.url.pathname, b.cards.length || 2, b.cards?.[0])
               : b.cards;
           return (
