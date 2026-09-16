@@ -1919,8 +1919,13 @@ const galleryStyle = (b: {
     flex-direction: column;
     height: 100%;
     background: #fff;
-    border: 1px solid #e9e9e9;
-    border-radius: 6px;
+    /* Measured on the original's own card: NO border, a 5px radius and a soft
+       shadow it carries at rest. The port drew a 1px #e9e9e9 border with no
+       shadow, which also cost every thumbnail 2px of width -- the original's
+       runs the full 373 of the column. */
+    border: 0;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
     overflow: hidden;
   }
   .cards > li:hover {
@@ -1944,7 +1949,12 @@ const galleryStyle = (b: {
     object-fit: fill;
     display: block;
   }
-  .cards .card-text { padding: 12px 14px 14px; }
+  /* `0 10px` on the original, with the space under the thumbnail coming from
+     the thumbnail's own 20px margin rather than from padding here. The port's
+     `12px 14px 14px` made the title box 343 wide against the original's 353,
+     so card titles wrapped early on every listing on the site. */
+  .cards .card-thumb { margin-bottom: 20px; }
+  .cards .card-text { padding: 0 10px; }
   .cards h3 {
     /* Same rendering as the span it replaced: the heading is for the document
        outline, not a change of appearance. These are the posts widget's own
@@ -1957,6 +1967,7 @@ const galleryStyle = (b: {
     font-size: 16px;
     line-height: 1.2;
     text-transform: none;
+    margin-bottom: 2px;
   }
   /* .elementor-post__excerpt takes the body's own type; the 14px/1.55 in
      #4a4a4a here was invented. */
@@ -1976,7 +1987,7 @@ const galleryStyle = (b: {
      and now arrives inline from the widget; only the layout is fixed here. */
   .cards a.card-more {
     display: inline-block;
-    margin-top: 8px;
+    margin-top: 0;
     /* The posts widget's own defaults; an instance that sets its own family,
        size, leading, weight or colour arrives inline and wins. */
     font-size: 12px;
@@ -2000,7 +2011,10 @@ const galleryStyle = (b: {
   .cards a.card-more:hover { text-decoration: underline; }
   .card-meta {
     margin-top: auto;
-    padding: 8px 14px 12px;
+    /* The original rules this row off with a green hairline and pads it 10px
+       all round. The port had neither the rule nor the padding. */
+    border-top: 1px solid var(--e-global-color-a8178e9); /* #99CC33 */
+    padding: 10px;
     display: flex;
     flex-wrap: wrap;
     gap: 4px 12px;
