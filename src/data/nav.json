@@ -206,6 +206,11 @@
   "href": "/signage/",
   "children": [
    {
+    "text": "Signage",
+    "href": "/signage/",
+    "children": []
+   },
+   {
     "text": "Storefront Signs",
     "href": "/storefront-signs-toronto/",
     "children": []
@@ -226,6 +231,11 @@
   "text": "Tesla Wraps",
   "href": "/tesla-vinyl-wraps/",
   "children": [
+   {
+    "text": "Tesla Wraps",
+    "href": "/tesla-vinyl-wraps/",
+    "children": []
+   },
    {
     "text": "Tesla Model 3 Wraps",
     "href": "/tesla-model-3-wraps/",

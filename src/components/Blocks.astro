@@ -1824,14 +1824,18 @@ const galleryStyle = (b: {
      It is NOT safe to infer. Elementor writes a rule per icon box, but most
      declare only a gap and INHERIT their alignment from an ancestor, so
      reading the declarations and calling the rest "the default" gets it
-     backwards: that reasoning produced `start` for eight boxes on
-     /lp-truck-wraps/ that the original renders centred. The values reaching
-     `--feat-align` are computed in a browser, per element.
-
-     The fallback stays `center` so a box that has not been measured renders
-     exactly as it did before. */
+     backwards: that reasoning produced `start` for 3,286 boxes, and measuring
+     the computed value in a browser across all 1,074 pages that carry one
+     gives 3,245 CENTRE against four `start`. The port's own default was right
+     all along; only four boxes on the site differ, and only those four are
+     written into the page data. */
   .feature { text-align: var(--feat-align, center); }
-  .feature-ic { margin-bottom: var(--feat-gap, 0); }
+  /* The gap between an icon and its title, measured the same way and with the
+     same result: the site sets 15px on 3,212 of its 3,249 measurable boxes,
+     31 at 5px, four at 10px and two at 0. The port had no gap at all. The
+     defaults here are what the measurement found; the page data carries only
+     the boxes that differ. */
+  .feature-ic { display: block; margin-bottom: var(--feat-gap, 15px); }
   /* .elementor-icon-box-title / -description. The leading is 1.2 of whatever
      size the widget declares — frozen at 20.4px it was right only for the
      17px default and 6px too tall on the 12px variants. */

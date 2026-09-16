@@ -31,6 +31,9 @@ PROBE_PATH = "scripts/.iconbox-align-probe.mjs"
 # The measurement is the expensive half -- a browser over 1,074 pages. Cached
 # so a dry run, an apply and a later re-inspection all share one pass.
 CACHE = "_research/iconbox-align.json"
+# What the stylesheet already draws, so the data carries only the exceptions.
+DEFAULT_ALIGN = "center"
+DEFAULT_GAP = "15px"
 
 PROBE = r"""
 /* One browser, many pages: for each address, the computed text-align and icon
@@ -157,12 +160,27 @@ def apply_measurement(wanted, measured, a):
                     m = got.get(n["eid"])
                     if m:
                         tally[m["align"]] += 1
-                        if n.get("align") != m["align"]:
-                            n["align"] = m["align"]
+                        # Only the exceptions are written. The measurement says
+                        # the site centres 3,245 of its 3,249 measurable icon
+                        # boxes and spaces 3,212 of them at 15px, so those two
+                        # are the stylesheet's defaults and repeating them in
+                        # the data would be 6,000 lines saying what the CSS
+                        # already says.
+                        want = m["align"] if m["align"] != DEFAULT_ALIGN else None
+                        if n.get("align") != want:
+                            if want is None:
+                                n.pop("align", None)
+                            else:
+                                n["align"] = want
                             changed += 1
                         g = m.get("gap")
-                        if g and g != "normal" and n.get("iconGap") != g:
-                            n["iconGap"] = g
+                        g = None if (not g or g == "normal" or g == DEFAULT_GAP) else g
+                        tally[f"gap {m.get('gap')}"] += 1
+                        if n.get("iconGap") != g:
+                            if g is None:
+                                n.pop("iconGap", None)
+                            else:
+                                n["iconGap"] = g
                             changed += 1
                     else:
                         tally["not measured"] += 1

@@ -794,7 +794,8 @@
          "style": null,
          "titleStyle": "font-family:\"Montserrat\", Sans-serif;font-size:20px;color:#FFFFFF;font-weight:600",
          "textStyle": "font-family:\"Montserrat\", Sans-serif;color:#FFFFFF;font-weight:400",
-         "eid": "ce3182a"
+         "eid": "ce3182a",
+         "iconGap": "5px"
         }
        ],
        "padding": "10px"
@@ -812,7 +813,8 @@
          "style": null,
          "titleStyle": "font-family:\"Montserrat\", Sans-serif;font-size:20px;color:#FFFFFF;font-weight:600",
          "textStyle": "font-family:\"Montserrat\", Sans-serif;color:#FFFFFF;font-weight:400",
-         "eid": "1987d40"
+         "eid": "1987d40",
+         "iconGap": "5px"
         }
        ]
       },
@@ -829,7 +831,8 @@
          "style": null,
          "titleStyle": "font-family:\"Montserrat\", Sans-serif;font-size:20px;color:#FFFFFF;font-weight:600",
          "textStyle": "font-family:\"Montserrat\", Sans-serif;color:#FFFFFF;font-weight:400",
-         "eid": "201b366"
+         "eid": "201b366",
+         "iconGap": "5px"
         }
        ]
       },
@@ -846,7 +849,8 @@
          "style": null,
          "titleStyle": "font-family:\"Montserrat\", Sans-serif;font-size:20px;color:#FFFFFF;font-weight:600",
          "textStyle": "font-family:\"Montserrat\", Sans-serif;color:#FFFFFF;font-weight:400",
-         "eid": "bcca499"
+         "eid": "bcca499",
+         "iconGap": "5px"
         }
        ]
       },
@@ -863,7 +867,8 @@
          "style": null,
          "titleStyle": "font-family:\"Montserrat\", Sans-serif;font-size:20px;color:#FFFFFF;font-weight:600",
          "textStyle": "font-family:\"Montserrat\", Sans-serif;color:#FFFFFF;font-weight:400",
-         "eid": "c0d88ab"
+         "eid": "c0d88ab",
+         "iconGap": "5px"
         }
        ]
       }

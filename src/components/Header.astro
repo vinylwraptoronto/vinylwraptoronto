@@ -524,9 +524,28 @@ const branchCurrent = (item: NavItem): boolean =>
      stay in title case. */
   .panel > ul > li > .prow > a { text-transform: uppercase; }
 
-  .plevel2, .plevel3 { display: none; }
+  /* Sub-sections slide, they do not appear. `display: none` -> `block` cannot
+     be transitioned, so every sub-level snapped open in one frame -- the same
+     defect this panel's own open already had, and fixed the same way: an
+     animatable max-height over `overflow: hidden`, with visibility delayed to
+     the end of the close so the links inside are not tabbable while shut.
+
+     200ms, measured off the original: its sub-menu goes 2 -> 118 -> 457 ->
+     698px and settles at 218ms. */
+  .plevel2, .plevel3 {
+    overflow: hidden;
+    max-height: 0;
+    visibility: hidden;
+    transition: max-height 0.2s ease, visibility 0s linear 0.2s;
+  }
   .panel li.open > .plevel2,
-  .panel li.open > .plevel3 { display: block; }
+  .panel li.open > .plevel3 {
+    visibility: visible;
+    transition: max-height 0.2s ease, visibility 0s;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .plevel2, .plevel3 { transition: none; }
+  }
   .plevel2 .prow > a { font-weight: 400; }
   .plevel3 .prow > a { font-weight: 400; font-size: 15px; color: var(--ink); }
 
@@ -655,13 +674,58 @@ const branchCurrent = (item: NavItem): boolean =>
     }, { passive: true });
   }
 
-  // Sub-levels expand in place, as on the live panel.
-  document.querySelectorAll<HTMLButtonElement>('.pexp').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const li = btn.closest('li');
-      if (!li) return;
+  /* Sub-levels expand in place. The whole row is the target, not just the
+     caret: on a phone the caret is a ~20px tap area at the end of a 950px
+     row, and every miss navigates away from the menu instead of opening it.
+
+     The original only does this for the two rows it gives `href="#"` -- About
+     and Vehicle Wraps -- and leaves Signage, Tesla Wraps and Our Work
+     navigating on a row tap with the caret as the only way in. This is
+     deliberately better than the original on that one point, because it is
+     what was asked for; a row with nothing to open still follows its link. */
+  document.querySelectorAll<HTMLElement>('.panel li').forEach((li) => {
+    const row = li.querySelector<HTMLElement>(':scope > .prow');
+    const sub = li.querySelector(':scope > ul');
+    if (!row || !sub) return;
+    const btn = row.querySelector<HTMLButtonElement>(':scope > .pexp');
+    row.addEventListener('click', (e) => {
+      /* A modified click is the reader asking for a new tab; let it through. */
+      const me = e as MouseEvent;
+      if (me.metaKey || me.ctrlKey || me.shiftKey || me.altKey || me.button !== 0) return;
+      e.preventDefault();
       const open = li.classList.toggle('open');
-      btn.setAttribute('aria-expanded', String(open));
+      btn?.setAttribute('aria-expanded', String(open));
+      slide(sub as HTMLElement, open);
     });
   });
+
+  /* max-height has to be a real number to animate, and the content's height is
+     only known at the moment it opens. Once open it is released to `none`, so
+     a level-3 opening inside a level-2 is not clipped by its parent's
+     now-stale height; closing puts the measured height back for one frame so
+     there is something to animate down from. */
+  function slide(sub: HTMLElement, open: boolean) {
+    if (open) {
+      sub.style.maxHeight = `${sub.scrollHeight}px`;
+      const grow = (e: TransitionEvent) => {
+        if (e.propertyName !== 'max-height') return;
+        sub.style.maxHeight = 'none';
+        sub.removeEventListener('transitionend', grow);
+      };
+      sub.addEventListener('transitionend', grow);
+      /* and let any ancestor that is already open take up the new height */
+      for (let up = sub.parentElement?.closest('ul.plevel2, ul.plevel3') as HTMLElement | null;
+           up; up = up.parentElement?.closest('ul.plevel2, ul.plevel3') as HTMLElement | null) {
+        up.style.maxHeight = 'none';
+      }
+    } else {
+      sub.style.maxHeight = `${sub.scrollHeight}px`;
+      requestAnimationFrame(() => { sub.style.maxHeight = '0px'; });
+    }
+  }
+
+  /* A branch the current page sits in is rendered already open, so it needs no
+     transition on arrival -- just room. */
+  document.querySelectorAll<HTMLElement>('.panel li.open > .plevel2, .panel li.open > .plevel3')
+    .forEach((sub) => { sub.style.maxHeight = 'none'; });
 </script>

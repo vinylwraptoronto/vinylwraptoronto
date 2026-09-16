@@ -143,7 +143,15 @@ ok('9 top-level nav links', header.navLinks === 9, String(header.navLinks));
 // phantom sub-entry for each of Home, PPF, Projects and Contact, which have no
 // children on the live site, and double-counted a few branch parents. The live
 // menu is 9 top items and 44 descendants — 53 links, three levels deep.
-ok('44 sub links survived', header.subLinks === 44, String(header.subLinks));
+//
+// 46 here, and the two extra are deliberate. The mobile panel now opens a
+// sub-section when its row is tapped anywhere rather than only on the ~20px
+// caret, which means a row that is ALSO a real page no longer navigates. Two
+// of them were — /signage/ and /tesla-vinyl-wraps/ — so each gained a link to
+// itself as the first item of its own sub-section, which is exactly what
+// "Our Work" already did on the live site. Without them those two pages are
+// unreachable from the panel.
+ok('46 sub links: the original\'s 44 + 2 self-links', header.subLinks === 46, String(header.subLinks));
 
 // --- no reference to the old server ---------------------------------------
 let oldRefs = 0;
