@@ -179,6 +179,40 @@ const headlineOf = (p: any): string => {
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'];
 
+/** Is this card block an UNFILTERED "latest posts" loop?
+
+ *  1,012 card widgets across the site are loop-shaped -- every card carries a
+ *  date and a "Read More" -- and the port recomputed exactly one of them,
+ *  leaving the other 610 frozen at whatever was newest when the page was
+ *  scraped. On /box-truck-wrap/ that showed two posts the original has since
+ *  replaced.
+ *
+ *  But they are not all the same widget. Checked against the original:
+ *
+ *    /box-truck-wrap/      the three newest posts site-wide      -> live
+ *    /blogs/ai-to-print/   AI posts only, skipping newer ones    -> filtered
+ *    /partial-car-wrap-gta/  car-wrap posts only                 -> filtered
+ *
+ *  So recomputing every loop as "the newest N" would put the wrong posts on
+ *  the filtered ones -- a different defect, on more pages. Instead: a block is
+ *  a latest-posts loop only if the cards it FROZE are exactly the newest N as
+ *  of its own most recent card. A filtered loop fails that, because the
+ *  unfiltered list of that date contains posts it left out.
+ */
+const slugOfHref = (h: string) => String(h ?? '').replace(/^\/|\/$/g, '');
+const isLatestLoop = (cards: any[]) => {
+  if (!cards?.length || !cards.every((c) => c.date && c.more)) return false;
+  const want = cards.map((c) => slugOfHref(c.href));
+  const pos = want.map((sl) => byNewest.findIndex((p) => slugOfHref(String(p.slug)) === sl));
+  if (pos.some((i) => i < 0)) return false;
+  const asOf = String(byNewest[Math.min(...pos)].published);
+  const expected = byNewest
+    .filter((p) => String(p.published) <= asOf)
+    .slice(0, cards.length)
+    .map((p) => slugOfHref(String(p.slug)));
+  return expected.join('|') === want.join('|');
+};
+
 const recentCards = (exclude: string, n: number) =>
   byNewest
     .filter((p) => `/${String(p.slug).replace(/^\/|\/$/g, '')}/` !== exclude)
@@ -613,7 +647,7 @@ const galleryStyle = (b: {
              from the current posts; every other cards block is page content and
              is rendered as captured. */
           const cards =
-            b.eid === RECENT_CARDS_EID
+            b.eid === RECENT_CARDS_EID || isLatestLoop(b.cards)
               ? recentCards(Astro.url.pathname, b.cards.length || 2)
               : b.cards;
           return (
