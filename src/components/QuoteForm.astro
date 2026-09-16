@@ -33,9 +33,31 @@ export interface Props {
   /** The same form also writes its own placeholders and submit label. */
   placeholders?: Readonly<Record<string, string>>;
   submit?: string;
+  /** Per-form Elementor values. The BOX of a field is site-wide -- every form
+      on the original is 40px tall with `8px 16px` of padding and a 40px
+      button -- but these three are set per form and differ between them: the
+      landing pages' forms are pill-shaped with a 15px button, the service
+      pages' are nearly square with an 18px one. Left unset, the form renders
+      exactly as it did before. */
+  radius?: string;
+  submitSize?: string;
+  rows?: number;
+  /** Where the submit sits in its form. Measured on the original: it fills the
+      form's width on every service and contact page checked, and is centred at
+      its own width on the two landing pages. The port left-aligned it
+      everywhere, which matched neither. */
+  submitAlign?: 'stretch' | 'center' | 'start';
 }
 const { variant = 'inline', id = 'quote', products, fields, placeholders, submit,
-        photoNote = true } = Astro.props;
+        photoNote = true, radius, submitSize, rows,
+        submitAlign = 'stretch' } = Astro.props;
+/* Custom properties rather than direct declarations: an inline
+   `border-radius` would outrank the stylesheet's own focus and error rules. */
+const formVars = [
+  radius ? `--q-radius:${radius}` : '',
+  submitSize ? `--q-submit-size:${submitSize}` : '',
+  `--q-submit-align:${submitAlign}`,
+].filter(Boolean).join(';') || undefined;
 const vehicleTypes = ['Van', 'Truck', 'Car', 'SUV', 'Trailer', 'Boat',
   'Motorcycle', 'Jet Ski', 'Windows', 'Walls', 'Object', 'Other'];
 
@@ -52,7 +74,7 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
     /api/quote answers 308 to /api/quote/. A 308 keeps the method and body, so
     submissions did go through, but every one paid an extra round trip and
     re-uploaded its photographs to follow the redirect. */}
-<form class={`qform qform--${variant}`} method="post" action="/api/quote/" enctype="multipart/form-data" novalidate>
+<form class={`qform qform--${variant}`} method="post" action="/api/quote/" enctype="multipart/form-data" novalidate style={formVars}>
   {order.map((f) => (
     <>
       {f === 'name' && (
@@ -131,7 +153,7 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
       {f === 'message' && (
         <div class="row">
           <label class="sr-only" for={`${id}-message`}>Message</label>
-          <textarea id={`${id}-message`} name="message" rows="4" placeholder={ph('message', 'Message')}></textarea>
+          <textarea id={`${id}-message`} name="message" rows={rows ?? 4} placeholder={ph('message', 'Message')}></textarea>
         </div>
       )}
     </>
@@ -145,20 +167,33 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
   .qform { display: flex; flex-direction: column; gap: 10px; font-family: 'Poppins', sans-serif; }
   .row { display: flex; flex-direction: column; }
 
+  /* Measured on the original, on every form on every page checked: a text
+     field is 40px tall with `8px 16px` of padding and a textarea takes
+     `5px 14px`. The port used 11px/14px throughout, which made each field
+     47px and each row pitch 57px instead of 50 -- so a five-field form ran
+     ~95px taller than the original's and pushed the hero's content out of
+     the middle of the photograph behind it. */
   .qform input[type='text'],
   .qform input[type='email'],
   .qform input[type='tel'],
   .qform select,
   .qform textarea {
     width: 100%;
-    padding: 11px 14px;
+    padding: 8px 16px;
     font-family: 'Poppins', sans-serif;
     font-size: 15px;
+    /* Explicit, so the box arithmetic is the original's rather than the
+       browser's `normal`: 8 + 21.5 + 8 + 2px border = 40px, and a two-row
+       textarea is 5 + 43 + 5 + 2 = 55. Both are what the original measures. */
+    line-height: 21.5px;
     color: var(--ink-strong);
     background: #fff;
     border: 1px solid #d8d8d8;
-    border-radius: 4px;
+    /* per-form on the original: 25px on the landing pages, 3px on the service
+       pages. 4px is what the port used everywhere and stays the fallback. */
+    border-radius: var(--q-radius, 4px);
   }
+  .qform textarea { padding: 5px 14px; }
   .qform input:focus-visible,
   .qform select:focus-visible,
   .qform textarea:focus-visible {
@@ -193,18 +228,26 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
   .qform input[type='file'] { font-size: 14px; }
 
   .qbtn {
-    align-self: flex-start;
+    align-self: var(--q-submit-align, stretch);
     background-color: var(--e-global-color-d077a13);
     color: #fff;
     font-family: 'Poppins', sans-serif;
     font-weight: 500;
     /* .elementor-button{line-height:1}, uppercase */
-    font-size: 18px;
+    font-size: var(--q-submit-size, 18px);
     line-height: 1;
     text-transform: uppercase;
-    padding: 13px 26px;
+    /* The original's submit is 40px tall with no vertical padding at all --
+       the height comes from the button box, not from the text. Reproduced as
+       a flex box with a min-height so it stays 40px whatever size the label
+       is set to; the port's 13px/26px made it 44px and grew with the font. */
+    padding: 0 24px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border: 0;
-    border-radius: 0;
+    border-radius: var(--q-radius, 0);
     cursor: pointer;
   }
   .qbtn:hover { background-color: var(--e-global-color-a8178e9); }

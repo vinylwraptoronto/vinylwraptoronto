@@ -127,7 +127,8 @@
          "itemStyle": "font-family:\"Montserrat\", Sans-serif;color:#FFFFFF;font-weight:500",
          "eid": "9dd77bf"
         }
-       ]
+       ],
+       "padding": "50px"
       },
       {
        "width": 30,
@@ -156,14 +157,19 @@
           "message": "Enter Requirements and vehicle details"
          },
          "submit": "Submit",
-         "photoNote": false
+         "photoNote": false,
+         "radius": "25px",
+         "submitSize": "15px",
+         "rows": 2,
+         "submitAlign": "center"
         }
        ],
        "background": "rgba(255,255,255,0.9)",
        "padding": "25px 25px 25px 25px",
        "radius": "10px"
       }
-     ]
+     ],
+     "gap": 0
     }
    ],
    "padding": null,
@@ -186,7 +192,8 @@
     "loop": true,
     "kenBurns": true,
     "zoom": "in"
-   }
+   },
+   "innerPad": "10px 0"
   },
   {
    "id": "4e7cf8f",
@@ -1094,7 +1101,11 @@
       "email": "Enter Email*",
       "message": "Enter Requirements and vehicle details"
      },
-     "submit": "Request Quote"
+     "submit": "Request Quote",
+     "radius": "25px",
+     "submitSize": "15px",
+     "rows": 2,
+     "submitAlign": "center"
     },
     {
      "type": "list",

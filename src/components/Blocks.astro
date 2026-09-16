@@ -917,6 +917,10 @@ const galleryStyle = (b: {
               placeholders={b.placeholders}
               submit={b.submit}
               photoNote={b.photoNote}
+              radius={b.radius}
+              submitSize={b.submitSize}
+              rows={b.rows}
+              submitAlign={b.submitAlign}
             />
           );
           return b.style ? <div class="formwrap" style={b.style}>{form}</div> : form;
@@ -951,7 +955,16 @@ const galleryStyle = (b: {
 
         if (b.type === 'columns') {
           return (
-            <div class="cols" style={b.margin ? `margin:${b.margin}` : undefined}>
+            <div
+              class="cols"
+              style={[
+                b.margin ? `margin:${b.margin}` : '',
+                /* Elementor's own row gap. The port used a flat 20px; the hero
+                   rows are flush, and the 20px was coming out of the columns'
+                   widths. */
+                b.gap != null ? `--cols-gap:${b.gap}px` : '',
+              ].filter(Boolean).join(';') || undefined}
+            >
               {b.cols.map((c) => {
                 /* Only a column that sits on a colour of its own gets one; a
                    declared #ffffff is the page background already. */
@@ -959,7 +972,13 @@ const galleryStyle = (b: {
                 const style = [
                   `--col-w:${c.width}%`,
                   tinted ? `background-color:${c.background}` : '',
-                  tinted && c.padding ? `padding:${c.padding}` : '',
+                  /* A column's padding is its own, tinted or not. Gating it on
+                     the background dropped the hero's left column inset --
+                     the original insets that column 50px, which is why its
+                     heading starts 30px further in than the port's did. Only
+                     one other column site-wide declares padding without a
+                     colour, so ungating this moves nothing else. */
+                  c.padding ? `padding:${c.padding}` : '',
                   /* Not gated on `tinted`: a border or shadow is drawn whether
                      or not the column sits on a colour of its own. */
                   c.border ? c.border : '',
@@ -1021,9 +1040,11 @@ const galleryStyle = (b: {
         'sec',
         section?.contentAlign ? `sec--${section.contentAlign}` : null,
         { 'sec--overlaid': section?.overlay || section?.slideshow },
+        { 'sec--tall': !!section?.minHeight },
       ]}
       data-eid={section?.id ?? undefined}
-      style={secStyle || undefined}
+      style={[secStyle, section?.minHeight ? `min-height:${section.minHeight}` : '']
+        .filter(Boolean).join(';') || undefined}
     >
       {section?.slideshow && section.slideshow.images.length > 0 && (
         /* One layer per photograph, all stacked, cross-fading on a timer. The
@@ -1066,7 +1087,11 @@ const galleryStyle = (b: {
         class:list={['container', 'stack', { 'container--full': section?.fullWidth }]}
         style={[
           section?.maxWidth ? `max-width:${section.maxWidth}` : '',
-          section?.minHeight ? `min-height:${section.minHeight}` : '',
+          /* Elementor's inner container carries its own padding, which is not
+             the port's generic 20px gutter. On the hero rows it is `10px 0`:
+             no horizontal inset at all, because the columns inside provide
+             it. The generic gutter was taking 40px off the columns' widths. */
+          section?.innerPad ? `padding:${section.innerPad}` : '',
         ].filter(Boolean).join(';') || undefined}
       >
         {inner}
@@ -1077,6 +1102,20 @@ const galleryStyle = (b: {
 
 <style>
   .sec { padding: 34px 0; }
+
+  /* A section that declares its own min-height is a hero, and Elementor treats
+     it as one: the height belongs to the SECTION, and the inner container is
+     `display:flex; align-items:center` inside it, so the content sits in the
+     middle of the photograph rather than at the top of it.
+
+     The port had the min-height on the inner container instead, with the
+     generic 34px above and below it -- so a 630px hero rendered 698px tall
+     with its heading pinned to the top edge. Over the flat black panel the
+     port used to draw that read as a layout choice; the moment the background
+     slideshow went in, the heading landed on the bright sign in the first
+     photograph. The original's own padding here is `0 10px`, not 34px. */
+  .sec--tall { padding-block: 0; display: flex; }
+  .sec--tall > .container { align-self: center; width: 100%; }
   /* elementor-section-full_width: edge to edge, and no gutter on the inner
      wrapper — the section's own padding is the only inset. */
   .container--full { max-width: none; padding-inline: 0; }
@@ -1194,7 +1233,11 @@ const galleryStyle = (b: {
        69-item grid on /our-work/, and the five-across rows the Tesla pages
        declare at 30% each. Elementor gives those a gap too, so rows touching
        was the port's own doing. */
-    gap: 20px;
+    /* One property, because the gap is also subtracted from every column's
+       width below. Hardcoding 20px in both places meant a row declaring a gap
+       of 0 still lost 20px per column: the hero's columns came out 786/326
+       inside a 1152px row the original fills with 806/346. */
+    gap: var(--cols-gap, 20px);
     width: 100%;
   }
   /* A column is Elementor's `.elementor-widget-wrap`, which frontend.min.css
@@ -1206,8 +1249,8 @@ const galleryStyle = (b: {
      flush against their logos — their box sets margin:-3px, and -3px was the
      whole of the gap. */
   .cols > .col {
-    flex: 1 1 calc(var(--col-w, 100%) - 20px);
-    max-width: calc(var(--col-w, 100%) - 20px);
+    flex: 1 1 calc(var(--col-w, 100%) - var(--cols-gap, 20px));
+    max-width: calc(var(--col-w, 100%) - var(--cols-gap, 20px));
     min-width: 0;
     display: flex;
     flex-direction: column;

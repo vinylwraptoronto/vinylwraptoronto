@@ -192,6 +192,12 @@ export type Block = (
           each landing page has a bare file input; the form further down the
           same page carries the note as a field of its own. */
       photoNote?: boolean;
+      /** Per-form Elementor values; see QuoteForm's Props for why these three
+          are per-form where the field box is site-wide. */
+      radius?: string;
+      submitSize?: string;
+      rows?: number;
+      submitAlign?: 'stretch' | 'center' | 'start';
       /** The landing pages carry a different Elementor form from the site-wide
           one — name, phone, email and a requirements box. Names the fields and
           their order; absent means the site-wide set. */
@@ -335,6 +341,9 @@ export type ColumnsBlock = {
    * verbatim as the original's declaration rather than as a number, because
    * Elementor writes all four sides. */
   margin?: string | null;
+  /** Elementor's own gap between the columns of this row. The port used a flat
+      20px; a hero row is flush, and the 20px came out of the column widths. */
+  gap?: number | null;
 };
 
 /** Sections carry the live template's own padding and container width; the
@@ -360,8 +369,14 @@ export type Section = {
   bgSize?: string | null;
   bgPosition?: string | null;
   bgRepeat?: string | null;
-  /** Declared on the inner container, so a restored banner has a height. */
+  /** The section's own height. Elementor puts it on the SECTION and centres the
+      inner container inside it; the port had it on the container with the
+      generic 34px above and below, so a 630px hero rendered 698px tall with
+      its content pinned to the top edge. */
   minHeight?: string | null;
+  /** The inner container's own padding, where it is not the port's generic
+      20px gutter — `10px 0` on the hero rows. */
+  innerPad?: string | null;
   /** An Elementor background slideshow: photographs cycling behind the section,
    *  optionally with a Ken Burns zoom.
    *
