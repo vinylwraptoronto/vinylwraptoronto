@@ -213,7 +213,17 @@ const isLatestLoop = (cards: any[]) => {
   return expected.join('|') === want.join('|');
 };
 
-const recentCards = (exclude: string, n: number) =>
+/* `like` is the block's own first card. Recomputing a loop swaps WHICH posts
+   it lists; it must not change how the widget is configured, and those are
+   per-widget settings the original varies:
+
+     "Read more »" on /box-truck-wrap/ and /custom-food-truck-wraps-in-toronto/
+     "Read More »" on /trailer-decals-lettering/
+
+   and some of these widgets show a category badge while others show none. The
+   port hardcoded "Read More »" and always emitted a badge, so recomputing a
+   loop silently relabelled it and added pills the original does not draw. */
+const recentCards = (exclude: string, n: number, like?: any) =>
   byNewest
     .filter((p) => `/${String(p.slug).replace(/^\/|\/$/g, '')}/` !== exclude)
     .slice(0, n)
@@ -225,11 +235,12 @@ const recentCards = (exclude: string, n: number) =>
         title: t,
         href: `/${String(p.slug).replace(/^\/|\/$/g, '')}/`,
         image: thumb,
-        badge: metaOf(p, 'article:section') ?? null,
+        badge: like && !like.badge ? null : metaOf(p, 'article:section') ?? null,
         alt: t,
-        author: p.author ?? null,
-        date: d.length === 3 ? `${Number(d[2])} ${MONTHS[Number(d[1]) - 1]} ${d[0]}` : null,
-        more: 'Read More »',
+        author: like && !like.author ? null : p.author ?? null,
+        date: like && !like.date ? null
+          : d.length === 3 ? `${Number(d[2])} ${MONTHS[Number(d[1]) - 1]} ${d[0]}` : null,
+        more: like?.more ?? 'Read More »',
       };
     });
 
@@ -648,7 +659,7 @@ const galleryStyle = (b: {
              is rendered as captured. */
           const cards =
             b.eid === RECENT_CARDS_EID || isLatestLoop(b.cards)
-              ? recentCards(Astro.url.pathname, b.cards.length || 2)
+              ? recentCards(Astro.url.pathname, b.cards.length || 2, b.cards?.[0])
               : b.cards;
           return (
             <ul
