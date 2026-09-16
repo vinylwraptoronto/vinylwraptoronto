@@ -67,7 +67,10 @@ export type Block = (
     }
   | {
       type: 'list';
-      items: { text: string; href?: string | null; icon?: string | null }[];
+      /** `textHtml` where the item's text is markup rather than a plain line.
+          Elementor writes an item's text as HTML and the port took its
+          textContent, so an emphasised lead-in rendered flat. */
+      items: { text: string; href?: string | null; icon?: string | null; textHtml?: string }[];
       style?: string | null;
       /** Elementor sets an icon-list's type and colour on the item text, not on
           the widget, so it needs a key of its own. */
@@ -86,6 +89,9 @@ export type Block = (
           kit capitalizes h3 but not h4. */
       level?: number;
       style?: string | null;
+      /** The title's own markup, where it carries emphasis: the warranty box
+          is "3 Year Warranty<sup>*</sup>" and the port flattened it. */
+      titleHtml?: string;
       /** The widget's own text alignment and icon gap, from the original's
           per-element rule. The port centred every icon box on the site; the
           original centres six of 3,292. */

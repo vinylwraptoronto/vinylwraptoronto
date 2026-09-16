@@ -587,7 +587,17 @@ const galleryStyle = (b: {
               {b.items.map((i) => (
                 <li class:list={{ 'has-ic': !!i.icon }} style={b.itemStyle ?? undefined}>
                   {i.icon && <i class:list={['li-ic', i.icon]} aria-hidden="true"></i>}
-                  {i.href ? <a href={img(i.href)}>{i.text}</a> : i.text}
+                  {/* `textHtml` where the item's text is markup rather than a
+                      plain line -- the original emphasises the lead-in of a
+                      benefit item, `<strong>Protects Original Paint</strong> -
+                      Shields against...`, and the port took its textContent so
+                      the title and its explanation ran together unemphasised.
+                      Inline emphasis only; an <a> is carried as `href`. */}
+                  {i.href
+                    ? <a href={img(i.href)}>{i.text}</a>
+                    : i.textHtml
+                      ? <Fragment set:html={i.textHtml} />
+                      : i.text}
                 </li>
               ))}
             </ul>
@@ -619,7 +629,15 @@ const galleryStyle = (b: {
                   : <span class="feature-ic" aria-hidden="true"><i class={b.icon}></i></span>
               )}
               {b.image && <img src={img(b.image)} alt={b.alt ?? ''} loading="lazy" decoding="async" />}
-              {b.title && <T style={b.titleStyle ?? undefined}>{b.title}</T>}
+              {/* `titleHtml` where the title carries emphasis. The warranty
+                  box is "3 Year Warranty<sup>*</sup>" and the port took its
+                  textContent, so the footnote marker dropped to the baseline
+                  with a space in front of it and read as part of the name. */}
+              {b.title && (
+                <T style={b.titleStyle ?? undefined}>
+                  {b.titleHtml ? <Fragment set:html={b.titleHtml} /> : b.title}
+                </T>
+              )}
               {b.text && <p style={b.textStyle ?? undefined}>{b.text}</p>}
             </div>
           );
