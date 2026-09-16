@@ -28,6 +28,9 @@ from collections import Counter
 PAGES = "src/data/pages"
 SPKI = "KnP1OnzHv/y42eRQmbGwoYTHcSJF448m6CU5mdngwKk="
 PROBE_PATH = "scripts/.iconbox-align-probe.mjs"
+# The measurement is the expensive half -- a browser over 1,074 pages. Cached
+# so a dry run, an apply and a later re-inspection all share one pass.
+CACHE = "_research/iconbox-align.json"
 
 PROBE = r"""
 /* One browser, many pages: for each address, the computed text-align and icon
@@ -81,6 +84,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--only", nargs="*")
+    ap.add_argument("--cached", action="store_true",
+                    help="apply the saved measurement instead of re-measuring")
     a = ap.parse_args()
 
     files = sorted(glob.glob(f"{PAGES}/*.json"))
@@ -109,6 +114,11 @@ def main():
             wanted[slug_to_path(os.path.basename(p)[:-5])] = p
     print(f"{len(wanted)} pages carry an icon box", file=sys.stderr)
 
+    if a.cached and os.path.exists(CACHE):
+        measured = json.loads(open(CACHE, encoding="utf8").read())
+        print(f"using the cached measurement ({len(measured)} pages)", file=sys.stderr)
+        return apply_measurement(wanted, measured, a)
+
     listfile = "scripts/.iconbox-align-paths.txt"
     open(listfile, "w").write("\n".join(wanted))
     open(PROBE_PATH, "w", encoding="utf8").write(PROBE)
@@ -118,11 +128,18 @@ def main():
             print(r.stderr[-600:], file=sys.stderr)
             return
         measured = json.loads(r.stdout.strip().splitlines()[-1])
+        os.makedirs(os.path.dirname(CACHE), exist_ok=True)
+        open(CACHE, "w", encoding="utf8").write(json.dumps(measured, indent=1, sort_keys=True))
+        print(f"measurement cached to {CACHE}", file=sys.stderr)
     finally:
         for f in (PROBE_PATH, listfile):
             if os.path.exists(f):
                 os.unlink(f)
 
+    return apply_measurement(wanted, measured, a)
+
+
+def apply_measurement(wanted, measured, a):
     tally = Counter()
     written = 0
     for path, p in wanted.items():
