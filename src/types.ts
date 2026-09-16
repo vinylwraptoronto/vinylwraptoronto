@@ -189,7 +189,18 @@ export type Block = (
      that starts on a visitor's first sight of it and hides the widget when it
      runs out. There is no fixed deadline to go stale, which is why it can be
      reproduced honestly rather than baked to a date that has passed. */
-  | { type: 'countdown'; interval: number }
+  | {
+      type: 'countdown';
+      interval: number;
+      /* The site's two countdowns are styled nothing alike -- the post pages'
+         is a 61x50 teal chip with 20px digits, and /tesla-vinyl-wraps/ draws a
+         285x125 green panel with 55px digits. The post pages' values are the
+         stylesheet's defaults and these carry the other. */
+      pad?: string;
+      bg?: string;
+      digitSize?: string;
+      labelSize?: string;
+    }
   /* Elementor's divider, between the post body and the post navigation on 402
      post pages: a 1px rule in the kit's green with 15px above and below, which
      is the 31px the original measures. */

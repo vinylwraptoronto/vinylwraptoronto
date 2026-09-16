@@ -429,7 +429,12 @@ const galleryStyle = (b: {
           /* The offer price, on 403 pages, and the one place where flattening a
              widget into plain text changed what a customer is told.
 
-             a36b238 is Elementor's animated-headline widget with
+             Keyed on the TEXT rather than on one element id. 403 headings on
+             the site match this shape; 402 are a36b238 and the 403rd, on
+             /tesla-vinyl-wraps/, is 19b01ef -- so the id test left exactly one
+             page rendering "$4,500 $3,500" as a single run.
+
+             The widget is Elementor's animated-headline with
              marker:strikethrough — the old price struck through in the brand
              pink at 22px, then the price you actually pay at 35px underneath.
              The scrape kept only its text, so both numbers arrived as one
@@ -440,7 +445,7 @@ const galleryStyle = (b: {
              also live in src/data/posts.json, which is rebuilt from D1 on every
              build. b.text is left whole so the table-of-contents anchor on all
              403 pages ("#4-500-3-500") still resolves. */
-          if (b.eid === 'a36b238' && /^\$[\d,]+\s+\$[\d,]+$/.test(b.text.trim())) {
+          if (/^\$[\d,]+\s+\$[\d,]+$/.test(b.text.trim())) {
             const [was, now] = b.text.trim().split(/\s+/);
             return (
               <Tag class:list={[{ hd: !!b.tag }]} id={id} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
@@ -889,7 +894,18 @@ const galleryStyle = (b: {
              script fills it in: an evergreen countdown has no server-side value,
              and four zeroes flashing before it starts would read as expired. */
           return (
-            <div class="cdown" data-eid={b.eid} data-countdown={b.interval} hidden>
+            <div
+              class="cdown"
+              data-eid={b.eid}
+              data-countdown={b.interval}
+              hidden
+              style={[
+                b.pad ? `--cd-pad:${b.pad}` : '',
+                b.bg ? `--cd-bg:${b.bg}` : '',
+                b.digitSize ? `--cd-digit:${b.digitSize}` : '',
+                b.labelSize ? `--cd-label:${b.labelSize}` : '',
+              ].filter(Boolean).join(';') || undefined}
+            >
               {[['days', 'Days'], ['hours', 'Hours'], ['minutes', 'Minutes'], ['seconds', 'Seconds']].map(
                 ([k, label]) => (
                   <div class="cdown-item">
@@ -1945,12 +1961,20 @@ const galleryStyle = (b: {
      10px/5px on the kit's teal, 3px radius, 2.5px of gutter each side, the
      digits Poppins 20px over a 10px label. That comes to the 50px the original
      measures. */
+  /* The site has two countdowns and they are styled nothing alike. Measured on
+     the original:
+
+       402 post pages    item 61x50   pad 10px 5px  teal #14A278  20px / 10px
+       /tesla-vinyl-wraps/ item 285x125 pad 25px    green #99CC33 55px / 18px
+
+     The defaults below are the post pages' -- the instance the port was built
+     from -- and the other carries its own values as data. */
   .cdown { display: flex; max-width: 100%; }
   .cdown-item {
     flex: 1 1 0;
     min-width: 0;
-    padding: 10px 5px;
-    background: var(--e-global-color-8c22d81);
+    padding: var(--cd-pad, 10px 5px);
+    background: var(--cd-bg, var(--e-global-color-8c22d81));
     border-radius: 3px;
     text-align: center;
     color: #fff;
@@ -1960,8 +1984,8 @@ const galleryStyle = (b: {
   .cdown-label { display: block; font-family: 'Poppins', sans-serif; font-weight: 400; }
   /* Leading is 1, not 1.2: the original's digits are 20px on 20 and its labels
      10px on 10, measured on all 402 pages carrying the countdown. */
-  .cdown-digits { font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums; }
-  .cdown-label { font-size: 10px; line-height: 1; }
+  .cdown-digits { font-size: var(--cd-digit, 20px); line-height: 1; font-variant-numeric: tabular-nums; }
+  .cdown-label { font-size: var(--cd-label, 10px); line-height: 1; }
 
   /* related / looped post grids */
   /* The count comes from the widget; auto-fill gave three or more columns
