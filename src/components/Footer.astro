@@ -34,9 +34,14 @@ import {
 
       <h4>Contact Us</h4>
       <ul class="list list--pink">
-        <li><i class={contactIcons.phone} aria-hidden="true"></i><a href={site.phoneHref}>{site.phone}</a></li>
-        <li><i class={contactIcons.email} aria-hidden="true"></i><a href={`mailto:${site.email}`}>{site.email}</a></li>
-        <li><i class={contactIcons.address} aria-hidden="true"></i><a href={site.mapUrl} rel="noopener">{addressFull}</a></li>
+        {/* The icon goes INSIDE the link, which is where the original puts it
+            -- `<a><span class="icon"><i></i></span><span>text</span></a>` --
+            so the whole 320px row is the click target. The port had the icon
+            as a sibling, which left the link starting 22px in and only as
+            wide as its own text. */}
+        <li><a href={site.phoneHref}><i class={contactIcons.phone} aria-hidden="true"></i>{site.phone}</a></li>
+        <li><a href={`mailto:${site.email}`}><i class={contactIcons.email} aria-hidden="true"></i>{site.email}</a></li>
+        <li><a href={site.mapUrl} rel="noopener"><i class={contactIcons.address} aria-hidden="true"></i>{addressFull}</a></li>
         <li>
           <i class={contactIcons.hours} aria-hidden="true"></i>
           <span>
@@ -195,20 +200,24 @@ import {
      and the Contact Us icons are GREEN, and the port had green on the first
      three and pink on Contact. Both at 14px, which is also what the original
      sets -- the port's were 16. */
-  .list > li > i {
+  .list > li > i,
+  .list > li > a > i {
     flex: 0 0 auto;
     width: 14px;
     font-size: 14px;
     text-align: center;
     color: var(--e-global-color-f32bb28); /* #FF0099 */
   }
-  .list--pink > li > i { color: var(--e-global-color-8c22d81); /* #14A278 */ }
+  .list--pink > li > i,
+  .list--pink > li > a > i { color: var(--e-global-color-8c22d81); /* #14A278 */ }
   /* And the Contact Us links themselves are pink, and fill the column rather
      than shrinking to their text: the original's are 320 wide and display
      flex, the port's were white and 102 / 228 / 298. */
   .list--pink > li > a {
     flex: 1;
     display: flex;
+    align-items: baseline;
+    gap: 8px;
     color: var(--e-global-color-f32bb28); /* #FF0099 */
   }
 
