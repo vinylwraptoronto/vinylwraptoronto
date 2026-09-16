@@ -155,7 +155,21 @@ const grab = async (origin) => {
     }
     window.scrollTo(0, 0);
   });
-  await page.waitForTimeout(2000);
+  /* Then wait for the lazy images to actually arrive. On an 11,000px listing
+     the stepped scroll reaches the bottom well before 55 thumbnails have
+     decoded, and measuring there reports them as missing and the page as
+     thousands of pixels short -- both untrue. Settle on the count of complete
+     images rather than on a fixed timeout. */
+  await page.evaluate(async () => {
+    let last = -1, same = 0;
+    for (let i = 0; i < 40 && same < 3; i++) {
+      const n = [...document.images].filter((im) => im.complete && im.naturalWidth > 0).length;
+      same = n === last ? same + 1 : 0;
+      last = n;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+  });
+  await page.waitForTimeout(500);
   const out = await page.evaluate(PAYLOAD);
   await page.close();
   return out;

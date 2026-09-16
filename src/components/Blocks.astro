@@ -223,6 +223,27 @@ const isLatestLoop = (cards: any[]) => {
    and some of these widgets show a category badge while others show none. The
    port hardcoded "Read More »" and always emitted a badge, so recomputing a
    loop silently relabelled it and added pills the original does not draw. */
+/** A card thumbnail's intrinsic size.
+ *
+ *  Card images are lazy, and since the grid stopped forcing `aspect-ratio`
+ *  (the original does not crop them) nothing reserves their box until they
+ *  load. On a 55-card listing that is thousands of pixels of layout shift:
+ *  /truck-lettering-and-decals-toronto/ measured 8,655px tall against the
+ *  original's 12,054 purely because its thumbnails had no height yet.
+ *
+ *  The original avoids it the way WordPress always does -- `width` and
+ *  `height` on the img -- and the variant WordPress serves carries them in its
+ *  own filename (`...-768x403.webp`). That is exact and needs no lookup; the
+ *  card's recorded dimensions are the fallback.
+ */
+const thumbBox = (src: string, c: any): { w?: number; h?: number } => {
+  const m = /-(\d{2,4})x(\d{2,4})\.[a-z0-9]{2,5}(?:\.[a-z0-9]{2,5})?$/i.exec(String(src));
+  if (m) return { w: Number(m[1]), h: Number(m[2]) };
+  if (c?.w && c?.h) return { w: c.w, h: c.h };
+  const d = dimsOf(src);
+  return { w: d?.[0], h: d?.[1] };
+};
+
 const recentCards = (exclude: string, n: number, like?: any) =>
   byNewest
     .filter((p) => `/${String(p.slug).replace(/^\/|\/$/g, '')}/` !== exclude)
@@ -682,6 +703,8 @@ const galleryStyle = (b: {
                       <img
                         src={img(c.image)}
                         alt={c.alt ?? c.title}
+                        width={thumbBox(c.image, c).w}
+                        height={thumbBox(c.image, c).h}
                         loading="lazy"
                         decoding="async"
                       />
