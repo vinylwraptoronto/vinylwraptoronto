@@ -23,7 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 from scrapling.fetchers import Fetcher
 
 OLD = "https://vinylwraptoronto.com"
-WANTED = ("background-color", "color", "border-color")
+WANTED = ("background-color", "color", "border-color", "border-radius")
 
 
 def fetch(url, tries=3):
@@ -38,6 +38,12 @@ def fetch(url, tries=3):
         except Exception:
             pass
     return None
+
+
+def shorthand(v):
+    """`5px 5px 5px 5px` is one corner said four times; keep it as one value."""
+    parts = v.split()
+    return parts[0] if len(set(parts)) == 1 else v
 
 
 def colours_for(styles, eid):
@@ -57,6 +63,8 @@ def colours_for(styles, eid):
     out = {}
     if rest.get("background-color"):
         out["bg"] = rest["background-color"]
+    if rest.get("border-radius"):
+        out["radius"] = shorthand(rest["border-radius"])
     if hover.get("background-color"):
         out["hoverBg"] = hover["background-color"]
     if hover.get("color"):

@@ -64,6 +64,11 @@ export type Block = (
       hoverBg?: string;
       hoverColor?: string;
       hoverBorder?: string;
+      /** The button's corner, where the widget sets one. Elementor's own
+       *  default is 3px and the port drew every button square; the widgets that
+       *  differ say so per element -- 5px on the loop grid's View Pictures,
+       *  25px on the pills. */
+      radius?: string;
     }
   | {
       type: 'list';

@@ -36,7 +36,7 @@ PAGES = "src/data/pages"
 
 # The three declarations worth carrying. Anything else about a button (its type,
 # size, font) the port already has from its own style string.
-WANTED = ("background-color", "color", "border-color")
+WANTED = ("background-color", "color", "border-color", "border-radius")
 
 
 def fetch(url, tries=3):
@@ -84,6 +84,12 @@ def colours_for(styles, eid):
     return rest, hover
 
 
+def shorthand(v):
+    """`5px 5px 5px 5px` is one corner said four times; keep it as one value."""
+    parts = v.split()
+    return parts[0] if len(set(parts)) == 1 else v
+
+
 def page_url(slug):
     # A nested address is stored with __ for the separator, so
     # locations-served__custom-decals-oakville is /locations-served/custom-decals-oakville/.
@@ -129,6 +135,8 @@ def do_page(path):
         new = {}
         if rest.get("background-color"):
             new["bg"] = rest["background-color"]
+        if rest.get("border-radius"):
+            new["radius"] = shorthand(rest["border-radius"])
         if hover.get("background-color"):
             new["hoverBg"] = hover["background-color"]
         if hover.get("color"):
@@ -192,7 +200,7 @@ def main():
         if pretty:
             out = json.dumps(r["doc"], ensure_ascii=False, indent=1)
         else:
-            out = json.dumps(r["doc"], ensure_ascii=False, separators=(",", ":"))
+            out = json.dumps(r["doc"], ensure_ascii=False, separators=(", ", ": "))
         if raw.endswith("\n"):
             out += "\n"
         open(r["path"], "w", encoding="utf8").write(out)

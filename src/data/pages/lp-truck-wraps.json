@@ -61,7 +61,8 @@
          "eid": "5f27727e",
          "bg": "var( --e-global-color-d077a13 )",
          "hoverBg": "var( --e-global-color-f32bb28 )",
-         "textHtml": "<span style=\"font-size:12px\">Get a Quote</span><br>416-746-1381"
+         "textHtml": "<span style=\"font-size:12px\">Get a Quote</span><br>416-746-1381",
+         "radius": "25px"
         }
        ],
        "padding": "10px"
@@ -196,7 +197,8 @@
          ],
          "bg": "var( --e-global-color-a8178e9 )",
          "hoverBg": "var( --e-global-color-f32bb28 )",
-         "textHtml": "Click To Call<br>For Quote<br>Book Install<br>Get It Now"
+         "textHtml": "Click To Call<br>For Quote<br>Book Install<br>Get It Now",
+         "radius": "0px 0px 10px 10px"
         }
        ],
        "background": "rgba(255,255,255,0.9)",
@@ -364,7 +366,8 @@
          "eid": "51953a48",
          "bg": "var( --e-global-color-d077a13 )",
          "hoverBg": "var( --e-global-color-f32bb28 )",
-         "textHtml": "<span style=\"font-size:12px\">Price My Truck Decals</span><br>416-746-1381"
+         "textHtml": "<span style=\"font-size:12px\">Price My Truck Decals</span><br>416-746-1381",
+         "radius": "25px"
         }
        ],
        "padding": "10px"
@@ -476,7 +479,8 @@
          "eid": "18021adf",
          "bg": "var( --e-global-color-d077a13 )",
          "hoverBg": "var( --e-global-color-f32bb28 )",
-         "textHtml": "<span style=\"font-size:12px\">Get Full Wrap Quote</span><br>416-746-1381"
+         "textHtml": "<span style=\"font-size:12px\">Get Full Wrap Quote</span><br>416-746-1381",
+         "radius": "25px"
         }
        ]
       }
@@ -712,7 +716,8 @@
          "eid": "4f371b53",
          "bg": "var( --e-global-color-d077a13 )",
          "hoverBg": "var( --e-global-color-f32bb28 )",
-         "textHtml": "<span style=\"font-size:12px\">Get a Quote</span><br>416-746-1381"
+         "textHtml": "<span style=\"font-size:12px\">Get a Quote</span><br>416-746-1381",
+         "radius": "25px"
         }
        ],
        "padding": "50px"
@@ -762,7 +767,8 @@
          "eid": "380c4e6c",
          "bg": "var( --e-global-color-d077a13 )",
          "hoverBg": "var( --e-global-color-f32bb28 )",
-         "textHtml": "<span style=\"font-size:12px\">Get a Quote</span><br>416-746-1381"
+         "textHtml": "<span style=\"font-size:12px\">Get a Quote</span><br>416-746-1381",
+         "radius": "25px"
         }
        ],
        "padding": "50px"

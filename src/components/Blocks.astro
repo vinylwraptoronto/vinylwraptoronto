@@ -115,7 +115,8 @@ const navTitle = (text: string, dir: 'prev' | 'next'): string =>
  *  fallbacks in `.btn:hover` keep a button without harvested colours looking
  *  the way it did before. */
 const btnStyle = (b: { style?: string | null; bg?: string; hoverBg?: string;
-                       hoverColor?: string; hoverBorder?: string }): string | undefined =>
+                       hoverColor?: string; hoverBorder?: string;
+                       radius?: string }): string | undefined =>
   [
     b.style,
     /* As a custom property, not `background-color` itself. Set directly it
@@ -126,6 +127,7 @@ const btnStyle = (b: { style?: string | null; bg?: string; hoverBg?: string;
     b.hoverBg && `--btn-hover-bg:${b.hoverBg}`,
     b.hoverColor && `--btn-hover-color:${b.hoverColor}`,
     b.hoverBorder && `--btn-hover-border:${b.hoverBorder}`,
+    b.radius && `--btn-radius:${b.radius}`,
   ].filter(Boolean).join(';') || undefined;
 
 /** The upload's own dimensions, shaped like tileOf's result so the two are
@@ -1800,7 +1802,11 @@ const galleryStyle = (b: {
     font-size: 15px;
     line-height: 1;
     padding: 12px 24px;
-    border-radius: 0;
+    /* Elementor's own default, which the port had as 0 -- so every button on
+       the site drew square corners where the original rounds them. The widgets
+       that set their own (5px on the loop grid's View Pictures, 25px on the
+       pills) arrive as `radius`. */
+    border-radius: var(--btn-radius, 3px);
     text-decoration: none;
     /* Buttons ease over 0.3s on the original, where the nav takes 0.4s. The
        port had every hover on the site snapping instantly. */
