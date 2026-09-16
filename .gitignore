@@ -39,3 +39,6 @@ db/blog_rows.json
 # each at 1440; the whole site's worth would be gigabytes in history. The
 # durable record of what they showed is _research/structure.md.
 _research/screenshots/
+
+# Probe files written by scripts/pull-iconbox-align.py while it runs.
+scripts/.iconbox-align-*

@@ -139,7 +139,7 @@ def main():
             continue
         pretty = raw.lstrip().startswith("{\n")
         out = (json.dumps(doc, ensure_ascii=False, indent=1) if pretty
-               else json.dumps(doc, ensure_ascii=False, separators=(",", ":")))
+               else json.dumps(doc, ensure_ascii=False, separators=(", ", ": ")))
         if raw.endswith("\n"):
             out += "\n"
         open(p, "w", encoding="utf8").write(out)

@@ -988,7 +988,8 @@
          "text": "Colour change wraps start at $2,500 for select vehicles/finishes. Final pricing depends on size, curves, and coverage.",
          "href": null,
          "style": "text-align:start;font-family:\"Montserrat\", Sans-serif;font-size:16px;line-height:1.3em;color:#000000;font-weight:500",
-         "eid": "429670a"
+         "eid": "429670a",
+         "textHtml": "Colour change wraps start at <strong>$2,500 </strong>for select vehicles/finishes. Final pricing depends on size, curves, and coverage."
         },
         {
          "type": "button",

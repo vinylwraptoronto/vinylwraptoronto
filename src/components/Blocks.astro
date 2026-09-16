@@ -455,7 +455,22 @@ const galleryStyle = (b: {
              on 27px leading against the original's 18. */
           return (
             <Tag class:list={[{ hd: !!b.tag }]} id={id} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
-              {b.href ? <a class="hlink" href={img(b.href)}>{b.text}</a> : b.text}
+              {/* `textHtml` where the heading's content is markup rather than a
+                  line of text. Elementor writes a heading as HTML, and the port
+                  took its textContent -- so "Colour change wraps start at
+                  <strong>$2,500</strong> for select vehicles" rendered with
+                  nothing emphasised, on the one heading of these pages whose
+                  emphasis is the price. `text` stays as it is, because the
+                  table-of-contents anchors are built from it.
+
+                  Only inline emphasis reaches here: the harvester refuses a
+                  heading containing anything else, and an <a> is already
+                  carried as `href` below. */}
+              {b.href
+                ? <a class="hlink" href={img(b.href)}>{b.text}</a>
+                : b.textHtml
+                  ? <Fragment set:html={b.textHtml} />
+                  : b.text}
             </Tag>
           );
         }
@@ -582,7 +597,22 @@ const galleryStyle = (b: {
         if (b.type === 'feature') {
           const T = `h${Math.min(Math.max(b.level ?? 3, 1), 6)}` as 'h3';
           return (
-            <div class="feature" data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
+            <div
+              class="feature"
+              data-eid={b.eid}
+              data-hide={b.hide?.join(" ")}
+              style={[
+                b.box,
+                b.style,
+                /* Harvested per widget from the original's own inline rule,
+                   `.elementor-element-<eid> .elementor-icon-box-wrapper
+                    { text-align: ...; gap: ... }`. Custom properties rather
+                   than direct declarations so the stylesheet keeps its say
+                   over anything these do not set. */
+                b.align ? `--feat-align:${b.align}` : '',
+                b.iconGap ? `--feat-gap:${b.iconGap}` : '',
+              ].filter(Boolean).join(";") || undefined}
+            >
               {b.icon && (
                 b.iconHref
                   ? <a class="feature-ic" href={img(b.iconHref)} tabindex="-1" aria-hidden="true"><i class={b.icon}></i></a>
@@ -1788,7 +1818,20 @@ const galleryStyle = (b: {
      four pages all `start` -- and our page data records it for none of the
      3,292, so switching the default would be a blanket change on a guess.
      Recorded in _research/structure.md for a per-element harvest instead. */
-  .feature { text-align: center; }
+  /* Alignment comes from the widget, where it has been measured, and falls
+     back to what the port has always drawn.
+
+     It is NOT safe to infer. Elementor writes a rule per icon box, but most
+     declare only a gap and INHERIT their alignment from an ancestor, so
+     reading the declarations and calling the rest "the default" gets it
+     backwards: that reasoning produced `start` for eight boxes on
+     /lp-truck-wraps/ that the original renders centred. The values reaching
+     `--feat-align` are computed in a browser, per element.
+
+     The fallback stays `center` so a box that has not been measured renders
+     exactly as it did before. */
+  .feature { text-align: var(--feat-align, center); }
+  .feature-ic { margin-bottom: var(--feat-gap, 0); }
   /* .elementor-icon-box-title / -description. The leading is 1.2 of whatever
      size the widget declares — frozen at 20.4px it was right only for the
      17px default and 6px too tall on the 12px variants. */

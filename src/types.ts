@@ -4,6 +4,11 @@ export type Block = (
       type: 'heading';
       level: number;
       text: string;
+      /** The heading's own markup, where its content is more than a line of
+          text. Elementor writes a heading as HTML and the port took its
+          textContent, so an emphasised price rendered unemphasised. Only
+          inline emphasis is carried; `text` stays for the ToC anchors. */
+      textHtml?: string;
       href?: string | null;
       style?: string | null;
       /** Elementor lets a heading widget render as `p` or `div`. Set only in
@@ -81,6 +86,11 @@ export type Block = (
           kit capitalizes h3 but not h4. */
       level?: number;
       style?: string | null;
+      /** The widget's own text alignment and icon gap, from the original's
+          per-element rule. The port centred every icon box on the site; the
+          original centres six of 3,292. */
+      align?: string;
+      iconGap?: string;
       /* Same again for an icon-box: title and description are styled
          separately, and these are the widgets that sit on the tinted panels —
          without their own colour they came out body-ink on navy. */
