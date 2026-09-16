@@ -58,7 +58,8 @@
          "href": "tel:416-746-1381",
          "eid": "5f27727e",
          "bg": "var( --e-global-color-d077a13 )",
-         "hoverBg": "var( --e-global-color-f32bb28 )"
+         "hoverBg": "var( --e-global-color-f32bb28 )",
+         "textHtml": "<span style=\"font-size:12px\">Get a Quote</span><br>416-746-1381"
         }
        ]
       }
@@ -142,7 +143,22 @@
          "eid": "106be713",
          "hide": [
           "mobile"
-         ]
+         ],
+         "fields": [
+          "name",
+          "email",
+          "phone",
+          "photos",
+          "message"
+         ],
+         "placeholders": {
+          "name": "Enter Name*",
+          "email": "Enter Email*",
+          "phone": "Enter Phone Number*",
+          "message": "Enter Requirements and vehicle details"
+         },
+         "submit": "Submit",
+         "photoNote": false
         },
         {
          "type": "image",
@@ -170,9 +186,13 @@
           "tablet"
          ],
          "bg": "var( --e-global-color-a8178e9 )",
-         "hoverBg": "var( --e-global-color-f32bb28 )"
+         "hoverBg": "var( --e-global-color-f32bb28 )",
+         "textHtml": "Click To Call<br>For Quote<br>Book Install<br>Get It Now"
         }
-       ]
+       ],
+       "background": "rgba(255,255,255,0.9)",
+       "padding": "25px 25px 25px 25px",
+       "radius": "10px"
       }
      ]
     }
@@ -184,7 +204,21 @@
    "bgImage": null,
    "bgSize": null,
    "bgPosition": null,
-   "bgRepeat": null
+   "bgRepeat": null,
+   "slideshow": {
+    "images": [
+     "/wp-content/uploads/2026/03/Truck-Wrap.webp",
+     "/wp-content/uploads/2026/02/Vehicle-Wrap-Banner-3.webp",
+     "/wp-content/uploads/2026/02/Vehicle-Wrap-Banner-2.webp",
+     "/wp-content/uploads/2026/02/Vehicle-Wrap-Banner-1.webp"
+    ],
+    "duration": 5000,
+    "transition": "fade",
+    "transitionMs": 500,
+    "loop": true,
+    "kenBurns": true,
+    "zoom": "in"
+   }
   },
   {
    "id": "c65e7c2",
@@ -318,7 +352,8 @@
          "href": "tel:416-746-1381",
          "eid": "51953a48",
          "bg": "var( --e-global-color-d077a13 )",
-         "hoverBg": "var( --e-global-color-f32bb28 )"
+         "hoverBg": "var( --e-global-color-f32bb28 )",
+         "textHtml": "<span style=\"font-size:12px\">Price My Truck Decals</span><br>416-746-1381"
         }
        ]
       },
@@ -428,7 +463,8 @@
          "href": "tel:416-746-1381",
          "eid": "18021adf",
          "bg": "var( --e-global-color-d077a13 )",
-         "hoverBg": "var( --e-global-color-f32bb28 )"
+         "hoverBg": "var( --e-global-color-f32bb28 )",
+         "textHtml": "<span style=\"font-size:12px\">Get Full Wrap Quote</span><br>416-746-1381"
         }
        ]
       }
@@ -654,7 +690,8 @@
          "href": "tel:416-746-1381",
          "eid": "4f371b53",
          "bg": "var( --e-global-color-d077a13 )",
-         "hoverBg": "var( --e-global-color-f32bb28 )"
+         "hoverBg": "var( --e-global-color-f32bb28 )",
+         "textHtml": "<span style=\"font-size:12px\">Get a Quote</span><br>416-746-1381"
         }
        ]
       },
@@ -701,7 +738,8 @@
          "href": "tel:416-746-1381",
          "eid": "380c4e6c",
          "bg": "var( --e-global-color-d077a13 )",
-         "hoverBg": "var( --e-global-color-f32bb28 )"
+         "hoverBg": "var( --e-global-color-f32bb28 )",
+         "textHtml": "<span style=\"font-size:12px\">Get a Quote</span><br>416-746-1381"
         }
        ]
       }
@@ -1049,7 +1087,8 @@
        "a": "<p>Lifespan depends on film type, exposure, and care. We use trusted films and pro installation methods to maximize durability.</p>"
       }
      ],
-     "eid": "30906853"
+     "eid": "30906853",
+     "openIndex": 0
     }
    ],
    "padding": "50px 10px 50px 10px",

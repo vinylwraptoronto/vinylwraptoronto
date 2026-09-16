@@ -664,3 +664,49 @@
     window.addEventListener('resize', onScroll, { passive: true });
   })();
 </script>
+
+<script>
+  /* Background slideshows: cycle the layers a section stacked behind its
+     content. The photographs, the timings and the Ken Burns zoom all come from
+     the section's own data, harvested off the original's `data-settings` --
+     none of it is in a stylesheet, which is why the port shipped these
+     sections as flat colour.
+
+     Paused while the section is off screen, so a hero at the top of a long
+     page is not repainting behind the reader all the way down it. */
+  (() => {
+    const shows = document.querySelectorAll<HTMLElement>('[data-slideshow]');
+    if (!shows.length) return;
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    shows.forEach((show) => {
+      const slides = [...show.querySelectorAll<HTMLElement>('.sec-slide')];
+      if (slides.length < 2 || still) return;
+
+      const hold = Number(show.dataset.duration) || 5000;
+      const loop = show.dataset.loop !== 'no';
+      let at = 0;
+      let timer: number | undefined;
+
+      const step = () => {
+        const next = at + 1;
+        if (next >= slides.length && !loop) return;
+        slides[at].removeAttribute('data-on');
+        at = next % slides.length;
+        /* Re-adding the attribute restarts the Ken Burns animation; without
+           the reflow between, the browser coalesces the two changes and the
+           zoom only ever runs on the first slide. */
+        void slides[at].offsetWidth;
+        slides[at].setAttribute('data-on', '');
+      };
+
+      const start = () => { timer ??= window.setInterval(step, hold); };
+      const stop = () => { window.clearInterval(timer); timer = undefined; };
+
+      new IntersectionObserver(
+        ([e]) => (e.isIntersecting ? start() : stop()),
+        { rootMargin: '0px' },
+      ).observe(show);
+    });
+  })();
+</script>

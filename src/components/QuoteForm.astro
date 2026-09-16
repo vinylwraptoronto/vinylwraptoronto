@@ -24,11 +24,18 @@ export interface Props {
       the original never asks for here. Naming the fields renders only those,
       in the order given. */
   fields?: readonly string[];
+  /** The upload field's visible note. The live forms differ on this: the one
+      further down each landing page carries "Upload Photos (If any. Allowed
+      file formats: ...)" as a field of its own, and the hero form has a bare
+      file input with nothing above it. The port printed the note on every
+      form that takes a file. */
+  photoNote?: boolean;
   /** The same form also writes its own placeholders and submit label. */
   placeholders?: Readonly<Record<string, string>>;
   submit?: string;
 }
-const { variant = 'inline', id = 'quote', products, fields, placeholders, submit } = Astro.props;
+const { variant = 'inline', id = 'quote', products, fields, placeholders, submit,
+        photoNote = true } = Astro.props;
 const vehicleTypes = ['Van', 'Truck', 'Car', 'SUV', 'Trailer', 'Boat',
   'Motorcycle', 'Jet Ski', 'Windows', 'Walls', 'Object', 'Other'];
 
@@ -105,9 +112,11 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
           than what the copy promises. */}
       {f === 'photos' && (
         <div class="row">
-          <p class="uploadnote">
-            Upload Photos (<span>If any. Allowed file formats: jpg, jpeg, png, heic &amp; pdf</span>)
-          </p>
+          {photoNote && (
+            <p class="uploadnote">
+              Upload Photos (<span>If any. Allowed file formats: jpg, jpeg, png, heic &amp; pdf</span>)
+            </p>
+          )}
           <label class="sr-only" for={`${id}-photos`}>Photos</label>
           <input
             id={`${id}-photos`}

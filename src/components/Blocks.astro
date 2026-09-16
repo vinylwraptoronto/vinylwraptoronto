@@ -487,12 +487,12 @@ const galleryStyle = (b: {
                 rb.popup ? (
                   <button class:list={['btn', { 'btn--icon-right': rb.iconRight }]} type="button" data-popup={rb.popup} style={btnStyle(rb)}>
                     {rb.icon && <i class:list={['btn-ic', rb.icon]} aria-hidden="true"></i>}
-                    {rb.text}
+                    {rb.textHtml ? <span set:html={rb.textHtml} /> : rb.text}
                   </button>
                 ) : (
                   <a class:list={['btn', { 'btn--icon-right': rb.iconRight }]} href={img(rb.href!)} style={btnStyle(rb)}>
                     {rb.icon && <i class:list={['btn-ic', rb.icon]} aria-hidden="true"></i>}
-                    {rb.text}
+                    {rb.textHtml ? <span set:html={rb.textHtml} /> : rb.text}
                   </a>
                 )
               ))}
@@ -754,8 +754,8 @@ const galleryStyle = (b: {
         if (b.type === 'faq') {
           return (
             <div class="faq">
-              {b.items.map((qa) => (
-                <details>
+              {b.items.map((qa, i) => (
+                <details open={b.openIndex === i ? true : undefined}>
                   <summary>{qa.q}</summary>
                   <div class="rt" set:html={imgHtml(qa.a)} />
                 </details>
@@ -916,6 +916,7 @@ const galleryStyle = (b: {
               fields={b.fields}
               placeholders={b.placeholders}
               submit={b.submit}
+              photoNote={b.photoNote}
             />
           );
           return b.style ? <div class="formwrap" style={b.style}>{form}</div> : form;
@@ -1019,11 +1020,37 @@ const galleryStyle = (b: {
       class:list={[
         'sec',
         section?.contentAlign ? `sec--${section.contentAlign}` : null,
-        { 'sec--overlaid': section?.overlay },
+        { 'sec--overlaid': section?.overlay || section?.slideshow },
       ]}
       data-eid={section?.id ?? undefined}
       style={secStyle || undefined}
     >
+      {section?.slideshow && section.slideshow.images.length > 0 && (
+        /* One layer per photograph, all stacked, cross-fading on a timer. The
+           section already carries its background colour, which is what shows
+           through while the first image loads -- and is exactly what the port
+           used to show for the whole life of the page. */
+        <div
+          class:list={['sec-slides', { 'sec-slides--kb': section.slideshow.kenBurns }]}
+          aria-hidden="true"
+          data-slideshow
+          data-duration={section.slideshow.duration}
+          data-loop={section.slideshow.loop ? 'yes' : 'no'}
+          style={`--slide-fade:${section.slideshow.transitionMs}ms;` +
+            `--slide-hold:${section.slideshow.duration}ms;` +
+            `--slide-zoom-from:${section.slideshow.zoom === 'out' ? 1.15 : 1};` +
+            `--slide-zoom-to:${section.slideshow.zoom === 'out' ? 1 : 1.15}`}
+        >
+          {section.slideshow.images.map((src, i) => (
+            <div
+              class="sec-slide"
+              data-i={i}
+              data-on={i === 0 ? '' : undefined}
+              style={`background-image:url(${img(src)})`}
+            />
+          ))}
+        </div>
+      )}
       {section?.overlay && (
         <div
           class="sec-ovl"
@@ -1058,6 +1085,43 @@ const galleryStyle = (b: {
      and its content, so the content has to be lifted above it. */
   .sec--overlaid { position: relative; }
   .sec-ovl { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+
+  /* The background slideshow. Behind the overlay and the content, both of which
+     already sit above z-index 0, so a section can fade photographs under the
+     same tint the original paints over them. */
+  /* z-index 0, not -1. At -1 the layers paint behind the section's own
+     background, and every section with a slideshow also carries a background
+     colour -- so the photographs were there, correctly cycling, underneath an
+     opaque panel. At 0 they sit above the colour and below both the overlay
+     (also 0, and later in the DOM) and the content, which `sec--overlaid`
+     lifts to 1. */
+  .sec-slides { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+  .sec-slide {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    opacity: 0;
+    transition: opacity var(--slide-fade, 500ms) ease-in-out;
+  }
+  .sec-slide[data-on] { opacity: 1; }
+  /* Ken Burns: the zoom runs for the whole time a slide is shown, fade
+     included, which is why the duration is the hold plus one transition. The
+     original zooms in by default and out when its zoom_direction says so. */
+  .sec-slides--kb .sec-slide[data-on] {
+    animation: sec-kb calc(var(--slide-hold, 5000ms) + var(--slide-fade, 500ms)) linear forwards;
+  }
+  @keyframes sec-kb {
+    from { transform: scale(var(--slide-zoom-from, 1)); }
+    to { transform: scale(var(--slide-zoom-to, 1.15)); }
+  }
+  /* Reduced motion keeps the photographs and drops the movement: the first
+     slide stays, nothing cycles and nothing zooms. */
+  @media (prefers-reduced-motion: reduce) {
+    .sec-slide { transition: none; }
+    .sec-slides--kb .sec-slide[data-on] { animation: none; }
+  }
   .sec--overlaid > .container { position: relative; z-index: 1; }
   .sec:first-child { padding-top: 26px; }
 

@@ -39,6 +39,13 @@ export type Block = (
       style?: string | null;
       /** Font Awesome classes, e.g. "fas fa-phone-alt". */
       icon?: string | null;
+      /** The label's own markup, where it has any. Eleven of the site's
+       *  buttons stack a small caption over the phone number --
+       *  `<span style="font-size:12px">Get a Quote</span><br>416-746-1381` --
+       *  and the port took the element's text, so they rendered as one
+       *  full-size line. Every word was present, which is why a text census
+       *  never flagged them; the shape was gone. Plain labels keep `text`. */
+      textHtml?: string;
       /** Resting and hover colours, read off the original's own per-element
        *  rules by scripts/pull-button-colours.py.
        *
@@ -181,6 +188,10 @@ export type Block = (
   | {
       type: 'form';
       style?: string | null;
+      /** Whether the upload field prints its visible note. The hero form on
+          each landing page has a bare file input; the form further down the
+          same page carries the note as a field of its own. */
+      photoNote?: boolean;
       /** The landing pages carry a different Elementor form from the site-wide
           one — name, phone, email and a requirements box. Names the fields and
           their order; absent means the site-wide set. */
@@ -226,7 +237,14 @@ export type Block = (
        *  each logo, and dropped their 1px border entirely. */
       imgStyle?: string;
     }
-  | { type: 'faq'; items: { q: string; a: string }[] }
+  | {
+      type: 'faq';
+      items: { q: string; a: string }[];
+      /** The item the original ships expanded, if any. Elementor writes it as
+       *  `open` on the `<details>`, and the port opened none -- so the answer
+       *  the original shows on arrival was hidden on both landing pages. */
+      openIndex?: number;
+    }
   | {
       /* Elementor Pro's share-buttons widget: one full-width row per network,
          icon and label, in each network's own brand colour. `url` is the page
@@ -344,6 +362,28 @@ export type Section = {
   bgRepeat?: string | null;
   /** Declared on the inner container, so a restored banner has a height. */
   minHeight?: string | null;
+  /** An Elementor background slideshow: photographs cycling behind the section,
+   *  optionally with a Ken Burns zoom.
+   *
+   *  None of this is in a stylesheet -- Elementor writes the image list and the
+   *  timings into the section's `data-settings` as JSON -- so the port, which
+   *  read CSS, took the background COLOUR and nothing else and rendered a flat
+   *  panel where the original cycles photographs. Harvested by
+   *  scripts/pull-slideshows.py.
+   *
+   *  Three sections carry one. Ten more declare a slideshow with an empty
+   *  gallery, which renders nothing on the original either and is skipped. */
+  slideshow?: {
+    images: string[];
+    /** How long each image is held, in ms. */
+    duration: number;
+    transition: string;
+    /** The cross-fade itself, in ms. */
+    transitionMs: number;
+    loop: boolean;
+    kenBurns: boolean;
+    zoom: string;
+  } | null;
   /** Elementor's `.elementor-background-overlay`: a tint or gradient painted
       between the section's background image and its content. The thank-you
       hero fades its photograph into navy this way, which the port dropped, so
