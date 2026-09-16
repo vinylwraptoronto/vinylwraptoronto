@@ -1103,6 +1103,24 @@ const galleryStyle = (b: {
 <style>
   .sec { padding: 34px 0; }
 
+  /* Elementor's column wrap -- `.elementor-widget-wrap.elementor-element-populated`
+     under `elementor-column-gap-default` -- carries `padding: 10px`, and the
+     port had nothing there. It is the same 10px twice over:
+
+       - the posts grid measured 1180 inside a 1200 container on the original
+         and 1200 on the port, so every card was 373 against 380;
+       - the H1 of a `padding: 50px 0` section starts 60px into it on the
+         original and 50 on the port.
+
+     A column that declares its own padding keeps it: the value is written
+     inline from the page data and outranks this. */
+  .container.stack { padding: 10px; }
+  /* Except where the container holds a row of columns -- then the 10px is the
+     columns' own, not the container's, and applying it at both levels would
+     inset the content twice. */
+  .container.stack:has(> .cols) { padding: 0; }
+  .cols > .col { padding: 10px; }
+
   /* A section that declares its own min-height is a hero, and Elementor treats
      it as one: the height belongs to the SECTION, and the inner container is
      `display:flex; align-items:center` inside it, so the content sits in the
@@ -1163,6 +1181,11 @@ const galleryStyle = (b: {
   }
   .sec--overlaid > .container { position: relative; z-index: 1; }
   .sec:first-child { padding-top: 26px; }
+  /* ...but not on a hero. A section that declares its own min-height carries
+     no vertical padding on the original -- the rule above outranks
+     `.sec--tall` on specificity, so the first hero on a page was being pushed
+     26px down inside its own fixed height. */
+  .sec--tall:first-child { padding-top: 0; }
 
   /* Blog pagination.
      Values taken from the original's own inline Elementor CSS for this widget

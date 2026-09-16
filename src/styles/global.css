@@ -73,9 +73,19 @@ p { margin: 0 0 16px; }
 label { display: inline-block; line-height: 1; vertical-align: middle; }
 
 .container {
+  /* Elementor's `--container-max-width` is a CONTENT width: measured on the
+     original at 1440, 1100, 900 and 390, its `.e-con-inner` carries
+     `padding: 0` at every one of them, so the container is 1200 wide inside a
+     1440 viewport and runs edge to edge below that. The port added a flat
+     20px gutter inside the same max-width, which made every content column
+     40px narrower than the original's -- the posts grid came out 1160 against
+     1180, and every card 367 against 373.
+
+     The inset on the original comes from the columns inside, which carry
+     their own padding, not from the container. */
   max-width: var(--container-max-width);
   margin-inline: auto;
-  padding-inline: var(--gutter);
+  padding-inline: 0;
 }
 
 /* Elementor's widget rhythm: `.elementor-widget:not(:last-child)` carries
