@@ -190,13 +190,27 @@ import {
   .col--process .list > li:not(:first-child) { margin-block-start: calc(3px / 2); }
   /* These were CSS dots standing in for the icons the original actually
      draws — a phone, an envelope, a map pin, a clock, and so on. */
+  /* The two lists' icon colours were the wrong way round. Measured on the
+     original's own footer: the Workflow / Faster / Warranty icons are PINK
+     and the Contact Us icons are GREEN, and the port had green on the first
+     three and pink on Contact. Both at 14px, which is also what the original
+     sets -- the port's were 16. */
   .list > li > i {
     flex: 0 0 auto;
     width: 14px;
+    font-size: 14px;
     text-align: center;
-    color: var(--e-global-color-8c22d81); /* #14A278 */
+    color: var(--e-global-color-f32bb28); /* #FF0099 */
   }
-  .list--pink > li > i { color: var(--e-global-color-f32bb28); /* #FF0099 */ }
+  .list--pink > li > i { color: var(--e-global-color-8c22d81); /* #14A278 */ }
+  /* And the Contact Us links themselves are pink, and fill the column rather
+     than shrinking to their text: the original's are 320 wide and display
+     flex, the port's were white and 102 / 228 / 298. */
+  .list--pink > li > a {
+    flex: 1;
+    display: flex;
+    color: var(--e-global-color-f32bb28); /* #FF0099 */
+  }
 
   /* measured on the live column: Poppins 400, 16px/16px, white */
   .areas-more {
@@ -282,15 +296,22 @@ import {
     justify-content: center;
     gap: 10px 12px;
     margin: 15px 0 0;
-    padding: 0 0 14px;
+    padding: 0;
   }
+  /* Elementor's social-icon widget draws a rounded SQUARE, not a circle: 32px
+     across with a 10% radius and no padding of its own -- the 20px glyph sets
+     the size from the inside. The port used `0.3em` of padding and a 50%
+     radius, which gave circles that were also 30px rather than 32 and, on the
+     narrower glyphs, not square at all (Tumblr came out 25 wide). */
   .social a {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 20px;
-    padding: 0.3em;
-    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 10%;
     color: var(--e-global-color-d077a13);
     background-color: #ffffff;
     text-decoration: none;
@@ -304,17 +325,21 @@ import {
   /* #b853c7a — white credit bar. The legal menu (#3aaf8a14) takes 40% and the
      copyright and credit (#3ca93c3b) the other 60%, boxed to the same 1400px
      as the row above so the two line up. */
+  /* The 10px belongs to the full-width white strip, not to the boxed row
+     inside it: that is what makes the inner row exactly 1400 wide at x=20 on
+     a 1440 viewport, which is where the original puts it. The port had
+     `12px 15px` on the inner row instead, so it started at 35 and ran 1370. */
   .credit {
     background-color: #ffffff;
     max-width: 1400px;
     margin-inline: auto;
-    padding: 12px 15px;
+    padding: 0;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     color: var(--e-global-color-text);
   }
-  .creditbar { background: #ffffff; }
+  .creditbar { background: #ffffff; padding: 10px; }
   .credit p,
   .credit h5 { margin: 0; }
   /* The credit line, re-measured against the original element by element:
@@ -332,7 +357,9 @@ import {
     color: inherit;
   }
   .by {
-    width: 60%;
+    /* The other half. 60/40 put the copyright 122px wider than the original's
+       and the legal menu 152px narrower. */
+    width: 50%;
     text-align: end;
     font-size: 12px;
     line-height: 18px;
@@ -349,14 +376,31 @@ import {
   /* #37ceb7c is a nav menu with align-justify — the three links spread across
      their column rather than sitting in a tight cluster at its left edge. */
   .legal {
-    width: 40%;
+    /* Half the row, not 40%: the original's legal menu and its copyright
+       column are 700 and 700 inside a 1400 box. */
+    width: 50%;
     display: flex;
-    justify-content: space-between;
     list-style: none;
     margin: 0;
     padding: 0;
     font-size: 14px;
     line-height: 20px;
+  }
+  /* Elementor's align-justify nav menu grows every item to fill the row and
+     centres its label, each with `13px 20px` of its own. The port rendered
+     bare inline links, so "Privacy Policy" was a 95x20 target where the
+     original gives 252x46, and the whole white bar was 46px tall instead of
+     the port's 20. */
+  /* `flex: 1` is `1 1 0%`, which makes all three the same width. Elementor
+     grows them from their content, so the original's are 252 / 231 / 216 --
+     proportional to their labels -- where equal thirds give 233 each. */
+  .legal li { flex: 1 1 auto; display: flex; }
+  .legal a {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 13px 20px;
   }
 
   /* The template's own breakpoints: 50/50 with the quote card full width on
@@ -382,5 +426,7 @@ import {
     .legal,
     .by { width: 100%; text-align: start; }
     .legal { justify-content: flex-start; gap: 20px; flex-wrap: wrap; }
+    .legal li { flex: 0 0 auto; }
+    .legal a { padding: 0; }
   }
 </style>

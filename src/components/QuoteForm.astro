@@ -189,9 +189,13 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
     color: var(--ink-strong);
     background: #fff;
     border: 1px solid #d8d8d8;
-    /* per-form on the original: 25px on the landing pages, 3px on the service
-       pages. 4px is what the port used everywhere and stays the fallback. */
-    border-radius: var(--q-radius, 4px);
+    /* Per-form, but with a measured default rather than a guessed one: 3px on
+       /trailer-decals-lettering/, /box-truck-wrap/, /full-trailer-wrap/,
+       /jeep-suv-full-wraps/, /car-wraps/, /car-wraps-toronto/ and
+       /contact-us/ -- every page checked outside the two landing pages, which
+       are 25px. The port used 4px on the fields and 0 on the button, which is
+       not a value the site uses anywhere. */
+    border-radius: var(--q-radius, 3px);
   }
   .qform textarea { padding: 5px 14px; }
   .qform input:focus-visible,
@@ -247,7 +251,7 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
     align-items: center;
     justify-content: center;
     border: 0;
-    border-radius: var(--q-radius, 0);
+    border-radius: var(--q-radius, 3px);
     cursor: pointer;
   }
   .qbtn:hover { background-color: var(--e-global-color-a8178e9); }

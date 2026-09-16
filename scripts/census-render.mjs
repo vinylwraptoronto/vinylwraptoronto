@@ -29,6 +29,11 @@ const WIDTHS = [1440, 900, 390];
 const CONC = Number(arg('--concurrency', '6'));
 const BOXES = !process.argv.includes('--no-boxes');
 const SPKI = 'KnP1OnzHv/y42eRQmbGwoYTHcSJF448m6CU5mdngwKk=';
+/* The deployed site by default, or a local build with
+   `--new http://127.0.0.1:4399`. A page pass wants to measure what is about to
+   ship rather than what shipped last time -- otherwise every fix reads as
+   still broken until after it is deployed. */
+const NEW_ORIGIN = arg('--new', 'https://astro.vinylwraptoronto.com');
 
 /* Runs inside the page. Returns everything comparable about the laid-out
    document; matching between the two sides happens in Node, below. */
@@ -199,10 +204,10 @@ let cursor = 0, finished = 0;
 
 const one = async (path) => {
   const rec = { path };
-  for (const [side, host] of [['old', 'vinylwraptoronto.com'], ['new', 'astro.vinylwraptoronto.com']]) {
+  for (const [side, host] of [['old', 'https://vinylwraptoronto.com'], ['new', NEW_ORIGIN]]) {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     try {
-      await page.goto(`https://${host}${path}`, { waitUntil: 'load', timeout: 120000 });
+      await page.goto(`${host}${path}`, { waitUntil: 'load', timeout: 120000 });
       rec[side] = await census(page);
     } catch (e) {
       rec[`${side}_error`] = String(e.message).split('\n')[0].slice(0, 120);

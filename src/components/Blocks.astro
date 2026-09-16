@@ -1838,10 +1838,19 @@ const galleryStyle = (b: {
   }
   .cards > li:hover h3 a { color: var(--brand-pink); }
   .cards a { text-decoration: none; color: var(--brand-navy); }
+  /* Elementor's posts widget is set to `elementor-fit-height` on every grid
+     checked -- /trailer-decals-lettering/, /box-truck-wrap/, /blog/,
+     /car-wraps/ -- which means the thumbnail box takes the IMAGE'S OWN ratio
+     and nothing is cropped. Tiles in one row are deliberately different
+     heights on the original: 197 beside 211 beside 211.
+
+     The port forced 16/10 with `object-fit: cover`, so every thumbnail on the
+     site was cropped to a shape the original never asks for. */
   .cards img {
     width: 100%;
-    aspect-ratio: 16 / 10;
-    object-fit: cover;
+    height: auto;
+    aspect-ratio: auto;
+    object-fit: fill;
     display: block;
   }
   .cards .card-text { padding: 12px 14px 14px; }
