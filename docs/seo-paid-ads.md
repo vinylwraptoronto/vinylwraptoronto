@@ -158,6 +158,20 @@ at build, have the CMP call `window.vwtConsent(true|false)`. GTM's own tags
 will honour the signal only once consent settings are configured on each tag
 in the container — that is account-side work.
 
+Behaviour as built (verified with network stubbed, Phase 2):
+
+| State | Google tags | Meta Pixel | Clarity | `vwt_attr` cookie |
+|---|---|---|---|---|
+| Default build (`PUBLIC_CONSENT_DEFAULT` unset) | run, no consent signal | run | run | set |
+| Denied build, before any choice | ad/analytics storage denied | `revoke` before init | **runs; not consent-aware** | **set; not consent-gated** |
+| `vwtConsent(true)` (granted/changed) | `consent update` granted | `grant` | unchanged | unchanged |
+| `vwtConsent(false)` (withdrawn) | `consent update` denied | `revoke` | **unchanged; keeps running** | **kept** |
+
+`vwtConsent` stores nothing: remembering a visitor's choice across pages is the
+CMP's job and must call it on every page load. Clarity has no consent hook and
+the first-party attribution cookie is not gated, so a CMP integration must
+decide whether to gate both (business/legal decision, not made here).
+
 ### Not done, and why
 
 - **reCAPTCHA:** not on the original, not added. Protection is the origin
