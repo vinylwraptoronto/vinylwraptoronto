@@ -38,6 +38,22 @@ const { sections, blocks, toc, primaryHeadingEid: suppliedPrimaryHeadingEid } = 
  *  sections. A before/after pair in a column is drawn at half the content
  *  width and one at section level at the full width, which is the difference
  *  between a 768-wide file being ample and it being an upscale. */
+/* "Learn More" / "More" say nothing out of context. Where a generic heading
+   link shares its address with an earlier heading link on the same card
+   ("Full Car Wraps"), name it after that service. The visible text stays
+   first in the name, as label-in-name requires. */
+const GENERIC_LINK = /^(learn more|read more|more|view more|see more|click here|here)$/i;
+const genericLinkLabel = (arr: Block[], i: number, b: any): string | undefined => {
+  if (!GENERIC_LINK.test((b.text ?? '').trim())) return undefined;
+  for (let j = i - 1; j >= 0; j--) {
+    const p = arr[j] as any;
+    if (p.type === 'heading' && p.href === b.href && p.text && !GENERIC_LINK.test(p.text.trim())) {
+      return `${b.text.trim()}: ${p.text.trim()}`;
+    }
+  }
+  return undefined;
+};
+
 /** The image widget's Width control as custom properties, read by `.fig--iw img`. */
 const imgWidthVars = (w?: { d?: string; t?: string; m?: string }): string | undefined => {
   if (!w) return undefined;
@@ -468,7 +484,7 @@ const galleryStyle = (b: {
               {b.textHtml
                 ? <Fragment set:html={b.textHtml} />
                 : b.href
-                  ? <a class="hlink" href={img(b.href)}>{b.text}</a>
+                  ? <a class="hlink" href={img(b.href)} aria-label={genericLinkLabel(blocksArr, i, b)}>{b.text}</a>
                   : b.text}
             </Tag>
           );
