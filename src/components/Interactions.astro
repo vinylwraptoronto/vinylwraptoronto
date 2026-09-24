@@ -130,7 +130,7 @@
      navy here. */
   :global(.compare-pair[data-juxtapose] figure:nth-of-type(2) figcaption) {
     right: 10px;
-    background: var(--e-global-color-f32bb28, #ff0099);
+    background: #b8006e;
   }
 
   /* The gallery link must not change how the grid lays out. */
@@ -532,7 +532,6 @@
       let pct = 50;
       const apply = () => {
         pair.style.setProperty('--split', `${pct}%`);
-        pair.setAttribute('aria-valuenow', String(Math.round(pct)));
       };
       const setSplit = (clientX: number) => {
         const r = pair.getBoundingClientRect();
@@ -540,14 +539,10 @@
         apply();
       };
 
-      /* Operable without a mouse. The slider is a real control, and a drag was
-         the only way to move it -- which left it unusable by keyboard and
-         unannounced to a screen reader. */
-      pair.tabIndex = 0;
-      pair.setAttribute('role', 'slider');
-      pair.setAttribute('aria-label', 'Reveal the wrapped vehicle');
-      pair.setAttribute('aria-valuemin', '0');
-      pair.setAttribute('aria-valuemax', '100');
+      /* The pair is a labelled group. Its two arrow buttons provide keyboard
+         operation without nesting focusable controls inside another control. */
+      pair.setAttribute('role', 'group');
+      pair.setAttribute('aria-label', 'Before and after comparison');
       apply();
       pair.addEventListener('keydown', (e: KeyboardEvent) => {
         const step = e.shiftKey ? 10 : 2;

@@ -8,7 +8,7 @@ import Analytics from '../components/Analytics.astro';
 import ClickSparks from '../components/ClickSparks.astro';
 import { site } from '../data/site';
 import { img, imgOrigin } from '../lib/img';
-import { analyticsFor } from '../../seo.config';
+import { analyticsFor } from '../../seo.config.mjs';
 import { repairLd, breadcrumbsFor } from '../lib/ld';
 import type { HeadData } from '../types';
 import '../styles/tokens.css';
@@ -61,6 +61,7 @@ const {
   title, description = '', canonical, ogImage, robots, head, pageCss, offer = false,
   chrome = 'full', progress = false, montserrat = false,
 } = Astro.props;
+const analytics = analyticsFor(Astro.url.pathname);
 const canonicalUrl = canonical ?? new URL(Astro.url.pathname, site.url).href;
 const ogImageUrl = ogImage ? new URL(img(ogImage), site.url).href : undefined;
 
@@ -187,9 +188,9 @@ const iconHref = new URL(img(site.favicon), site.url).href;
         noscript has to be here rather than in the head: an <iframe> is not
         valid there, and a browser with scripting off never reaches a tag that
         depends on one. */}
-    {analyticsFor(Astro.url.pathname) && (
+    {analytics && (
       <noscript
-        set:html={`<iframe src="https://www.googletagmanager.com/ns.html?id=${analyticsFor(Astro.url.pathname).gtm}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`}
+        set:html={`<iframe src="https://www.googletagmanager.com/ns.html?id=${analytics.gtm}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`}
       />
     )}
     <a class="skip" href="#main">Skip to content</a>

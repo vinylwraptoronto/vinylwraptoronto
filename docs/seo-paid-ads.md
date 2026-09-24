@@ -169,24 +169,38 @@ in the container — that is account-side work.
   is a decision for whoever owns the account.
 - **Sitemap XSLT, Keystatic:** not needed; `/admin/pages/` is the editing UI.
 
-## 3. Validation — what must still be run
+## 3. Validation — run on 2026-09-24
 
-None of this ran here (no `node`/`npm` execution, no network, no browser).
+The branch now owns a repeatable `npm run check` gate. It runs Astro type
+checks, browser rendering and interactions, the complete route/link/image
+crawl, SEO lint, axe accessibility checks, paid-tracking tests and Lighthouse.
 
-```bash
-npm ci
-npm run build              # pull-posts → astro build → check-seo (gates the build)
-node scripts/sweep.mjs     # links, images, sitemaps
-npx astro check            # types
-node scripts/check-seo.mjs --report
-```
+- `npm ci`: passed (478 packages).
+- `npm run build`: passed; 1,684 HTML pages checked and zero SEO regressions.
+- `npm run check:astro`: 0 errors (13 deprecation/unused-code hints remain).
+- Browser checks: 15/15 rendering checks and 21/21 interaction checks passed.
+- Route crawl: 1,688 pages, 13 sitemaps, 229,082 internal links and 11,240
+  image references; zero broken entries, links, images or empty pages.
+- Accessibility: automated WCAG 2.0/2.1/2.2 A/AA rules passed on ten priority
+  routes at desktop and mobile sizes (20 combinations). This is automated
+  coverage, not a claim of complete manual WCAG conformance.
+- Tracking: 6/6 default-mode tests and 7/7 consent-denied tests passed. They
+  cover click attribution, contact events, consent grant, one-event lead
+  deduplication, absence of contact PII and honeypot suppression. The quote
+  endpoint was intercepted; no real lead or conversion was sent.
+- Lighthouse mobile (performance/accessibility/best-practices/SEO): `/`
+  67/100/58/92, `/car-wraps/` 73/99/58/92, `/contact/` 76/100/58/92. The
+  best-practices deductions are the local HTTP origin, third-party analytics
+  cookies and their resulting inspector warning; the gate found no actionable
+  code-level best-practices failure. Performance is recorded but not gated.
 
-Expected from the lint after this branch: `regressions against the original 0`,
-`BreadcrumbList blocks, generated ≈ 45`, and the four graph-defect failures at
-zero. If `check-seo` fails on `canonical is not on https://vinylwraptoronto.com`,
-a page has a non-production `url` — that is a real finding, not a lint bug.
+`npm audit --omit=dev` reports 8 dependency advisories (1 critical, 4 high,
+2 moderate, 1 low) in Astro 5 / the Cloudflare adapter and transitive build
+packages. The offered fix upgrades Astro and the adapter across major versions,
+so it is a separate migration and release blocker rather than an automatic
+`--force` change inside this SEO patch.
 
-Then on staging (`npm run deploy` with the Cloudflare token):
+Still required on staging (`npm run deploy` with the Cloudflare token):
 
 - view-source `/`: address reads `24 Ronson Dr, Unit 1 / Etobicoke / ON`,
   no `legalName`, image URLs absolute on `img.vinylwraptoronto.com`, no

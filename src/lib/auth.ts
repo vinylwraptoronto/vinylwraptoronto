@@ -129,9 +129,15 @@ async function derive(
 
   for (let round = 0; round < rounds; round++) {
     roundSalt[salt.length] = round;
-    const key = await crypto.subtle.importKey('raw', material, 'PBKDF2', false, ['deriveBits']);
+    const key = await crypto.subtle.importKey(
+      'raw',
+      material.buffer as ArrayBuffer,
+      'PBKDF2',
+      false,
+      ['deriveBits'],
+    );
     const bits = await crypto.subtle.deriveBits(
-      { name: 'PBKDF2', salt: roundSalt, iterations, hash: 'SHA-256' },
+      { name: 'PBKDF2', salt: roundSalt.buffer as ArrayBuffer, iterations, hash: 'SHA-256' },
       key,
       KEY_BYTES * 8,
     );

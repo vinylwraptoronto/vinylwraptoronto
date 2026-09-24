@@ -9,7 +9,13 @@
     "preview": "astro preview",
     "astro": "astro",
     "deploy": "bash scripts/deploy.sh",
-    "check": "node scripts/verify.mjs && node scripts/sweep.mjs && node scripts/check-seo.mjs && node scripts/behaviour.mjs",
+    "check": "npm run check:astro && npm run check:browser && npm run check:routes && npm run check:seo && npm run check:a11y && npm run check:tracking && npm run check:lighthouse",
+    "check:astro": "astro check",
+    "check:browser": "node scripts/verify.mjs && node scripts/behaviour.mjs",
+    "check:routes": "node scripts/sweep.mjs",
+    "check:a11y": "node scripts/accessibility.mjs",
+    "check:tracking": "node scripts/tracking.mjs",
+    "check:lighthouse": "node scripts/lighthouse.mjs",
     "check:images": "node scripts/sweep.mjs && node scripts/img-check.mjs",
     "posts:pull": "node scripts/pull-posts.mjs",
     "galleries:pull": "node scripts/pull-galleries.mjs",
@@ -21,6 +27,12 @@
     "astro": "^5.14.1"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@axe-core/playwright": "^4.13.0",
+    "chrome-launcher": "^1.2.1",
+    "lighthouse": "^13.5.0",
+    "playwright": "^1.63.0",
+    "typescript": "^5.9.3",
     "wrangler": "^4.59.2"
   }
 }

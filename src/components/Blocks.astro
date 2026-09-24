@@ -26,11 +26,13 @@ export interface Props {
       The TOC widget almost always sits inside a column, so a renderer that
       only looked at `sections` saw an empty list and drew nothing. */
   toc?: TocEntry[];
+  /** The one heading promoted to the document H1, threaded through columns. */
+  primaryHeadingEid?: string;
 }
 
 type TocEntry = { eid?: string; text: string; level: number; id: string };
 
-const { sections, blocks, toc } = Astro.props;
+const { sections, blocks, toc, primaryHeadingEid: suppliedPrimaryHeadingEid } = Astro.props;
 
 /** True when this call is rendering the inside of a column rather than whole
  *  sections. A before/after pair in a column is drawn at half the content
@@ -41,6 +43,18 @@ const inColumn = !!blocks;
 const groups: { section?: Section; blocks: Block[]; bare: boolean }[] = blocks
   ? [{ blocks, bare: true }]
   : (sections ?? []).map((s) => ({ section: s, blocks: s.blocks, bare: false }));
+
+const headingBlocks = (items: Block[], into: Extract<Block, { type: 'heading' }>[] = []) => {
+  for (const block of items) {
+    if (block.type === 'heading' && !block.tag) into.push(block);
+    if (block.type === 'columns') for (const col of block.cols) headingBlocks(col.blocks, into);
+  }
+  return into;
+};
+const pageHeadings = blocks ? [] : headingBlocks((sections ?? []).flatMap((section) => section.blocks));
+const primaryHeadingEid = suppliedPrimaryHeadingEid ??
+  (pageHeadings.find((heading) => heading.level === 1) ??
+   pageHeadings.find((heading) => heading.level === 2) ?? pageHeadings[0])?.eid;
 
 const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined);
 
@@ -56,7 +70,7 @@ const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined
  *
  *  Run `node scripts/img-dims.mjs --write` after adding uploads. */
 const dimsOf = (src: string): [number, number] | undefined =>
-  (imgDims as Record<string, [number, number]>)[src.split('?')[0]];
+  (imgDims as unknown as Record<string, [number, number]>)[src.split('?')[0]];
 
 /** What a gallery tile should actually request, and at what size.
  *
@@ -75,7 +89,7 @@ const dimsOf = (src: string): [number, number] | undefined =>
  *  Run `node scripts/gallery-thumbs.mjs --write` after adding gallery images. */
 const tileOf = (src: string, masonry?: boolean): { src: string; w?: number; h?: number } => {
   const box = masonry ? 300 : 768;
-  const hit = (galleryThumbs as Record<string, [string, number, number]>)[`${box}:${src}`];
+  const hit = (galleryThumbs as unknown as Record<string, [string, number, number]>)[`${box}:${src}`];
   if (hit) return { src: hit[0], w: hit[1], h: hit[2] };
   const d = dimsOf(src);
   return { src, w: d?.[0], h: d?.[1] };
@@ -390,7 +404,8 @@ const galleryStyle = (b: {
   const blocksArr = group.blocks;
   const inner = blocksArr.map((b, i) => {
         if (b.type === 'heading') {
-          const Tag = (b.tag ?? `h${Math.min(Math.max(b.level, 1), 6)}`) as 'h1';
+          const level = b.eid === primaryHeadingEid ? 1 : b.level === 1 ? 2 : b.level;
+          const Tag = (b.tag ?? `h${Math.min(Math.max(level, 1), 6)}`) as 'h1';
           const id = b.eid ? tocIds.get(b.eid) : undefined;
 
           /* The offer price, on 403 pages, and the one place where flattening a
@@ -485,13 +500,13 @@ const galleryStyle = (b: {
                   is no query handler on a static site, so the option value is
                   the archive address itself and the handler navigates to it —
                   same control, same options, same destination. */}
-              <script is:inline>
-                document.querySelectorAll('select[data-catnav]').forEach((s) => {
-                  s.addEventListener('change', () => {
-                    if (s.value) window.location.href = s.value;
+              <script is:inline set:html={`
+                document.querySelectorAll('select[data-catnav]').forEach(function (select) {
+                  select.addEventListener('change', function () {
+                    if (select.value) window.location.href = select.value;
                   });
                 });
-              </script>
+              `} />
             </div>
           );
         }
@@ -523,7 +538,7 @@ const galleryStyle = (b: {
           );
           return (
             <figure class={b.full ? 'fig fig--full' : 'fig'} data-eid={b.eid} data-hide={b.hide?.join(" ")}>
-              {b.href ? <a href={img(b.href)}>{pic}</a> : pic}
+              {b.href ? <a href={img(b.href)} aria-label={b.alt || 'View image details'}>{pic}</a> : pic}
             </figure>
           );
         }
@@ -740,7 +755,7 @@ const galleryStyle = (b: {
                         <h3 class="elementor-post__title">; a span instead took
                         1,223 headings out of the document outline. */}
                     <h3 style={b.titleStyle ?? undefined}><a href={c.href}>{c.title}</a></h3>
-                    {c.desc && <p class="card-desc" style={b.descStyle ?? undefined}>{c.desc}</p>}
+                    {'desc' in c && c.desc && <p class="card-desc" style={b.descStyle ?? undefined}>{c.desc}</p>}
                     {c.more && (
                       <a
                         class="card-more"
@@ -769,7 +784,7 @@ const galleryStyle = (b: {
               class="postnav"
               aria-label="Post navigation"
               data-eid={b.eid}
-              style={[b.box, b.style].filter(Boolean).join(';') || undefined}
+              style={b.box ?? undefined}
             >
               {b.prev && (
                 <a class="postnav-prev" href={b.prev.href} rel="prev">
@@ -796,6 +811,8 @@ const galleryStyle = (b: {
 
         if (b.type === 'carousel') {
           return (
+            /* `box` belongs on the carousel container; the image style is a
+               separate per-slide rule. */
             <div
               class:list={['carou', { 'carou--dots': b.dots }]}
               data-eid={b.eid}
@@ -808,9 +825,6 @@ const galleryStyle = (b: {
               data-pause={b.pauseOnHover ? 'yes' : 'no'}
               data-infinite={b.infinite ? 'yes' : 'no'}
               data-scroll={b.scroll ?? 1}
-              {/* `box` like every other block type. The carousel branch was the
-                  one that never applied it, so the homepage strip rendered with
-                  none of the 15px the extractor had already captured for it. */}
               style={[b.box, `--carou-gap:${b.gap}px`].filter(Boolean).join(';')}
             >
               <div class="carou-track">
@@ -1138,7 +1152,7 @@ const galleryStyle = (b: {
                     class:list={['col', { 'col--tinted': tinted, 'col--card': isCard }]}
                     style={style}
                   >
-                    <Astro.self blocks={c.blocks} toc={tocEntries} />
+                    <Astro.self blocks={c.blocks} toc={tocEntries} primaryHeadingEid={primaryHeadingEid} />
                   </div>
                 );
               })}
@@ -1688,9 +1702,9 @@ const galleryStyle = (b: {
      later one simply won. */
   /* The original's links reset the weight; the surrounding copy is 300, so
      without this every in-content link came out a stop light. */
-  .rt :global(a) { color: var(--brand-pink); text-decoration: none; font-weight: 400; }
+  .rt :global(a) { color: #b8006e; text-decoration: underline; text-underline-offset: 0.15em; font-weight: 400; }
   .rt :global(a:hover) { text-decoration: underline; }
-  .rt :global(a:hover) { color: var(--brand-pink); }
+  .rt :global(a:hover) { color: #8f0055; }
   .rt :global(h2),
   .rt :global(h3),
   .rt :global(h4) { margin-top: 24px; }
@@ -1702,6 +1716,30 @@ const galleryStyle = (b: {
      that reason. */
   .hlink { color: inherit; font-weight: 400; text-decoration: none; }
   .hlink:hover { color: var(--brand-pink); }
+
+  /* Readable variants for the source design's dark navy panels. Several
+     captured widgets carried dark inline text colours onto that background. */
+  .sec[style*='d077a13' i] :is(.rt, .feature, .ilist, .hd) { color: #fff !important; }
+  .sec[style*='d077a13' i] :is(.rt, .feature, .ilist, .hd) :global(*) { color: inherit !important; }
+  .sec[style*='d077a13' i] .hlink { color: #fff !important; text-decoration: underline; }
+  .sec[style*='d077a13' i] :global(.qform .checks label),
+  .sec[style*='d077a13' i] :global(.qform .uploadnote),
+  .sec[style*='d077a13' i] :global(.qform input[type='file']) { color: #fff !important; }
+  .sec[style*='d077a13' i] :global(a:not(.btn)) { color: #fff !important; }
+  .sec[style*='8c22d81' i] :is(.rt, .feature, .ilist, .hd),
+  .sec[style*='8c22d81' i] :is(.rt, .feature, .ilist, .hd) :global(*) { color: #111 !important; }
+  .col[style*='d077a13' i] :is(h1, h2, h3, h4, h5, h6, .rt, .feature, .ilist, .hd),
+  .col[style*='d077a13' i] :is(h1, h2, h3, h4, h5, h6, .rt, .feature, .ilist, .hd) :global(*) { color: #fff !important; }
+  .col[style*='d077a13' i] :global(.qform .checks label),
+  .col[style*='d077a13' i] :global(.qform .uploadnote),
+  .col[style*='d077a13' i] :global(.qform input[type='file']) { color: #fff !important; }
+  .col[style*='8c22d81' i] :is(h1, h2, h3, h4, h5, h6, .rt, .feature, .ilist, .hd),
+  .col[style*='8c22d81' i] :is(h1, h2, h3, h4, h5, h6, .rt, .feature, .ilist, .hd) :global(*) { color: #111 !important; }
+  .feature h3 { color: #08735a !important; }
+  #client-submissions,
+  .ilist a { color: #b8006e !important; }
+  .card-more { color: #b8006e !important; }
+  .card-meta { color: #595959 !important; }
 
   /* The offer price — the animated-headline widget. The old price struck
      through in the brand pink, the price you pay larger underneath. Elementor
@@ -1812,6 +1850,8 @@ const galleryStyle = (b: {
        port had every hover on the site snapping instantly. */
     transition: all 0.3s ease;
   }
+  .btn[style*='a8178e9' i] { color: #111 !important; }
+  .btn[data-popup='popup-limited-offer'] { background: #b8006e !important; color: #fff !important; }
   /* Each button's own hover, carried inline from the original's per-element
      rules. The fallbacks are the commonest case, so a button whose colours
      were never harvested still behaves sensibly.
@@ -2017,7 +2057,7 @@ const galleryStyle = (b: {
     background: var(--cd-bg, var(--e-global-color-8c22d81));
     border-radius: 3px;
     text-align: center;
-    color: #fff;
+    color: #111;
   }
   .cdown-item + .cdown-item { margin-left: 5px; }
   .cdown-digits,
@@ -2315,10 +2355,11 @@ const galleryStyle = (b: {
      to the markup, and a scoped rule here matched nothing at all. That is why
      they have been rendering as the browser's own grey buttons. */
   .carou-dots :global(button) {
-    width: 6px; height: 6px; padding: 0;
+    width: 24px; height: 24px; padding: 9px;
+    background-clip: content-box;
     border-radius: 50%;
     border: 0;
-    background: var(--dot, var(--rule));
+    background-color: var(--dot, var(--rule));
     cursor: pointer;
   }
   .carou-dots :global(button[aria-selected='true']) { background: var(--dot-on, var(--brand-green)); }

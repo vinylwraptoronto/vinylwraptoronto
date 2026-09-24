@@ -266,7 +266,7 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
     border-radius: var(--q-radius, 3px);
     cursor: pointer;
   }
-  .qbtn:hover { background-color: var(--e-global-color-a8178e9); }
+  .qbtn:hover { background-color: var(--e-global-color-a8178e9); color: #111; }
   .qbtn[disabled] { opacity: 0.6; cursor: default; }
 
   .qstatus { margin: 0; font-size: 14px; min-height: 1.2em; }
@@ -322,6 +322,7 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
       /* The campaign this visitor arrived from, if any, so the lead email and
          the lead event both say which ad earned it. */
       let attribution = '';
+      const honeypotFilled = Boolean(form.querySelector<HTMLInputElement>('input[name="website"]')?.value);
       try {
         attribution = decodeURIComponent(document.cookie.match(/(?:^|;\s*)vwt_attr=([^;]*)/)?.[1] ?? '');
       } catch { /* a cookie we did not write */ }
@@ -339,6 +340,7 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
              for the Pixel. Pushed once, here, on the server's 200 -- not on
              the click -- so a rejected or failed submission records nothing.
              Carries no field values. */
+          if (honeypotFilled) return;
           let campaign: Record<string, string> = {};
           try { campaign = attribution ? JSON.parse(attribution) : {}; } catch { /* not ours */ }
           const w = window as unknown as {

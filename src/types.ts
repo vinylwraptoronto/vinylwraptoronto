@@ -243,7 +243,7 @@ export type Block = (
   | ({
       type: 'filtergallery';
       filters: { index: string; label: string }[];
-      items: { src: string; title: string; tag: string; alt?: string }[];
+      items: { src: string; title?: string; tag?: string; alt?: string }[];
     } & GalleryGrid)
   | {
       type: 'postnav';
