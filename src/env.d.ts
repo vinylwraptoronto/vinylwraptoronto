@@ -15,6 +15,15 @@ interface Env {
   QUOTE_TO_EMAIL?: string;
 }
 
+/** Build-time variables. Both are optional and both have a documented default. */
+interface ImportMetaEnv {
+  /** Image host override -- see src/lib/img.ts. */
+  readonly PUBLIC_IMG_BASE?: string;
+  /** "denied" emits the Consent Mode v2 default before any tag loads -- see
+   *  Analytics.astro. Unset means the original's posture: everything fires. */
+  readonly PUBLIC_CONSENT_DEFAULT?: 'denied' | 'granted';
+}
+
 type Runtime = import('@astrojs/cloudflare').Runtime<Env>;
 
 declare namespace App {

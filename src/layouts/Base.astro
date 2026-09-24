@@ -9,6 +9,7 @@ import ClickSparks from '../components/ClickSparks.astro';
 import { site } from '../data/site';
 import { img, imgOrigin } from '../lib/img';
 import { analyticsFor } from '../../seo.config';
+import { repairLd, breadcrumbsFor } from '../lib/ld';
 import type { HeadData } from '../types';
 import '../styles/tokens.css';
 import '../styles/global.css';
@@ -117,8 +118,14 @@ if (!source.length) {
    landing pages serve Yoast's @graph and a separate FAQPage, as the original
    does. Every other address carries a single object and renders exactly as
    before. */
-const ldBlocks = (head?.ld == null ? [] : Array.isArray(head.ld) ? head.ld : [head.ld])
+const carriedLd = (head?.ld == null ? [] : Array.isArray(head.ld) ? head.ld : [head.ld])
   .filter(Boolean)
+  /* Corrected at render, not in the page JSON -- see src/lib/ld.ts for the
+     five defects every ported graph carried from the original. */
+  .map(repairLd);
+/* Generated, and the only block that is: the menu position of this page. */
+const crumbs = breadcrumbsFor(Astro.url.pathname);
+const ldBlocks = [...carriedLd, ...(crumbs ? [crumbs] : [])]
   .map((block) => JSON.stringify(block).replace(/</g, '\\u003c'));
 
 const iconHref = new URL(img(site.favicon), site.url).href;
