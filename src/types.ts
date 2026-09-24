@@ -26,6 +26,12 @@ export type Block = (
       href?: string | null;
       /** Sits in a zero-padding column on the live site, so it runs edge to edge. */
       full?: boolean;
+      /** The image widget's own Width control, per breakpoint (desktop, tablet
+       *  <=1024px, mobile <=767px), as Elementor writes it into the page CSS:
+       *  `.elementor-element-ID img { width: 70% }`. Absent when the widget sets
+       *  none, in which case the image fills its column. Harvested by
+       *  scripts/pull-image-widths.mjs. */
+      imgWidth?: { d?: string; t?: string; m?: string };
     }
   | {
       type: 'button';

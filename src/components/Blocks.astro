@@ -38,6 +38,13 @@ const { sections, blocks, toc, primaryHeadingEid: suppliedPrimaryHeadingEid } = 
  *  sections. A before/after pair in a column is drawn at half the content
  *  width and one at section level at the full width, which is the difference
  *  between a 768-wide file being ample and it being an upscale. */
+/** The image widget's Width control as custom properties, read by `.fig--iw img`. */
+const imgWidthVars = (w?: { d?: string; t?: string; m?: string }): string | undefined => {
+  if (!w) return undefined;
+  const v = [w.d && `--iw:${w.d}`, w.t && `--iw-t:${w.t}`, w.m && `--iw-m:${w.m}`].filter(Boolean).join(';');
+  return v || undefined;
+};
+
 const inColumn = !!blocks;
 
 const groups: { section?: Section; blocks: Block[]; bare: boolean }[] = blocks
@@ -537,7 +544,7 @@ const galleryStyle = (b: {
             />
           );
           return (
-            <figure class={b.full ? 'fig fig--full' : 'fig'} data-eid={b.eid} data-hide={b.hide?.join(" ")}>
+            <figure class={`${b.full ? 'fig fig--full' : 'fig'}${b.imgWidth ? ' fig--iw' : ''}`} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={imgWidthVars(b.imgWidth)}>
               {b.href ? <a href={img(b.href)} aria-label={b.alt || 'View image details'}>{pic}</a> : pic}
             </figure>
           );
@@ -1787,6 +1794,12 @@ const galleryStyle = (b: {
 
   .fig { margin: 0; }
   .fig img { display: block; border-radius: 4px; }
+  /* The image widget's Width control. A breakpoint that sets none inherits the
+     next larger one, as Elementor's cascade does; a widget with no desktop value keeps
+     natural size. */
+  .fig--iw img { width: var(--iw, auto); max-width: 100%; height: auto; margin-inline: auto; /* Elementor image widgets centre their image */ }
+  @media (max-width: 1024px) { .fig--iw img { width: var(--iw-t, var(--iw, auto)); } }
+  @media (max-width: 767px) { .fig--iw img { width: var(--iw-m, var(--iw-t, var(--iw, auto))); } }
 
   /* Zero-padding column on the live site: the image runs edge to edge, so it
      breaks out of the centred content container. */
