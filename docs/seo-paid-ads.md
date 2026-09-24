@@ -3,11 +3,12 @@
 Prepared 2026-09-23. Read alongside [seo.md](seo.md) (the port's SEO record)
 and [address-comparison.md](address-comparison.md) (the URL parity audit).
 
-**Status: implemented, NOT built, NOT deployed, NOT verified on staging.** The
-environment this was written in could not run `node`, `npm`, `curl`, a
-browser, or any git write command. Every claim below about behaviour is a
-claim about the code as written; the validation section says exactly what
-still has to be run, and by whom.
+**Status: implemented, built, deployed and tested on staging.** Cloudflare
+Worker version `f7a61734-9f1e-4d56-a739-d84f705d53a1` serves 100% of traffic
+at `https://astro.vinylwraptoronto.com/`. The staging hostname remains
+`noindex, nofollow`; the production hostname remains on the original
+WordPress site and was not changed. Section 3 records the local and live
+validation evidence.
 
 **Resumed 2026-09-23 (second bridge run).** Same limits held: `npm`, `node
 <script>`, `gh api`, `git checkout` and `git switch` each stopped at a
@@ -39,13 +40,13 @@ substitute for the commands in §3.
 
 ### Firecrawl
 
-**Not run, still blocked.** No `FIRECRAWL_API_KEY` is configured, the local
-MCP template holds only a placeholder, and the claude.ai Firecrawl connector
-that appeared in the second run was not used because it is not the
-authenticated integration this task specified. No substitute crawler was run
-in its place, in either run. The route inventory above comes from
-the repository's own stored copy of the original's sitemap index (eleven
-children, 678 URLs, `src/data/sitemap-groups.json`), not from a live crawl.
+The authenticated ChatGPT Firecrawl connector successfully mapped 695 unique
+URLs from the live site (683 public non-XML pages). The route list and map job
+metadata are retained locally under ignored `.firecrawl/` evidence. Compared
+with the repository's 681 stored pages, the map found five live-only routes
+and three stored-only routes. The connector's full crawl action still returns
+`INVALID_ARGUMENT`, so rendered-content extraction is not complete; this is
+recorded as a connector-action defect rather than an authentication blocker.
 
 ### Migration regressions (introduced by the port) — none new
 
@@ -200,25 +201,29 @@ packages. The offered fix upgrades Astro and the adapter across major versions,
 so it is a separate migration and release blocker rather than an automatic
 `--force` change inside this SEO patch.
 
-Still required on staging (`npm run deploy` with the Cloudflare token):
+### Live staging validation — 2026-09-24
 
-- view-source `/`: address reads `24 Ronson Dr, Unit 1 / Etobicoke / ON`,
-  no `legalName`, image URLs absolute on `img.vinylwraptoronto.com`, no
-  `"price":"0"`; `/car-wraps/` carries a BreadcrumbList Home › Car Wraps.
-- Rich Results Test on `/`, `/car-wraps/`, `/lp/` (FAQPage must still be
-  detected).
-- `curl -I https://astro.vinylwraptoronto.com/` → `x-robots-tag: noindex, nofollow`.
-- Land on `/car-wraps/?gclid=TEST&utm_source=google&utm_campaign=x` → cookie
-  `vwt_attr` present; submit the form with **`website` filled** (honeypot) →
-  200, no email, no dataLayer event; submit normally → one `generate_lead`
-  in `dataLayer`, one `Lead` in Meta Pixel Helper, one Ads conversion in Tag
-  Assistant, and the lead email shows a `Campaign` row. Double-click submit →
-  still one of each. Use QUOTE_TO_EMAIL pointed at a test inbox first.
-- Tap a `tel:` link and the WhatsApp link → `phone_click` / `whatsapp_click`.
-- With `PUBLIC_CONSENT_DEFAULT=denied` built to a preview: Tag Assistant shows
-  consent default denied; `vwtConsent(true)` → update granted.
-- Lighthouse mobile + desktop on `/`, `/car-wraps/`, `/contact/`; keyboard
-  through the form (the honeypot must not receive focus).
+- Cloudflare OAuth authentication and Workers write access were verified.
+- Worker version `f7a61734-9f1e-4d56-a739-d84f705d53a1` was promoted to 100%.
+- The ten priority pages, sitemap index and robots file return 200 over HTTPS.
+- Every checked staging response sends `X-Robots-Tag: noindex, nofollow` and
+  every checked page keeps its canonical on `https://vinylwraptoronto.com/`.
+- `/catalogues/`, `/partial-trailer-wrap/`, `/author/admin/` and `/vinyl/`
+  return the intended 301 redirects; `/admin/` redirects to login.
+- Mobile and desktop browser smoke tests on `/`, `/car-wraps/` and `/contact/`
+  found one H1, no horizontal overflow and no console errors.
+- Axe WCAG A/AA scans passed on all six route/viewport combinations.
+- Live tracking checks passed 5/5: click attribution, one phone event, current
+  consent posture, one successful lead event and PII exclusion. The quote
+  request was intercepted in the browser; no real lead or conversion was sent.
+- Live mobile Lighthouse (performance/accessibility/best-practices/SEO): `/`
+  63/100/77/61, `/car-wraps/` 92/99/77/61, `/contact/` 87/100/77/61. Staging
+  `noindex` intentionally lowers SEO; Lighthouse also flags inherited generic
+  link text. Homepage LCP was 11.6 seconds and remains an optimisation target.
+
+Still requires authorized account-side testing: Rich Results Test, GTM and
+Tag Assistant inspection, Google Ads/Meta event receipt, Resend delivery to a
+test inbox, and Consent Mode activation through an approved CMP.
 
 ## 4. Account-side checklist
 
