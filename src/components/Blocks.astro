@@ -1092,7 +1092,10 @@ const galleryStyle = (b: {
                    rows are flush, and the 20px was coming out of the columns'
                    widths. */
                 b.gap != null ? `--cols-gap:${b.gap}px` : '',
+                b.flex?.justify ? `justify-content:${b.flex.justify}` : '',
+                b.flex?.align ? `align-items:${b.flex.align}` : '',
               ].filter(Boolean).join(';') || undefined}
+              data-flexrow={b.flex ? '' : undefined}
             >
               {b.cols.map((c) => {
                 /* Only a column that sits on a colour of its own gets one; a
@@ -1100,6 +1103,7 @@ const galleryStyle = (b: {
                 const tinted = c.background && c.background.toLowerCase() !== '#ffffff';
                 const style = [
                   `--col-w:${c.width}%`,
+                  c.mobileWidth != null ? `--col-mw:${c.mobileWidth}%` : '',
                   /* The share of the row's gutter this column has to give up so
                      that a full row still fits on one line.
 
@@ -1487,6 +1491,9 @@ const galleryStyle = (b: {
      of full-bleed images at 990px. */
   @media (max-width: 767px) {
     .cols > .col { flex-basis: 100%; max-width: 100%; }
+    /* An Elementor flex container is not a section row: its children keep
+       their own mobile width (--width in the 767px rule) and the line wraps. */
+    .cols[data-flexrow] > .col { flex-basis: var(--col-mw, 100%); max-width: var(--col-mw, 100%); }
   }
 
   /* Ported post bodies are a different type scale from the page chrome: 17px

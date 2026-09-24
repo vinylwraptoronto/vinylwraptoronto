@@ -374,7 +374,16 @@ export type ColumnsBlock = {
     border?: string | null;
     shadow?: string | null;
     radius?: string | null;
+    /** Width at Elementor's mobile breakpoint (percent), from a container's
+        `--width` in its max-width:767px rule. Only meaningful with `flex`. */
+    mobileWidth?: number | null;
   }[];
+  /** Set where the row is an Elementor flex *container* (e-con) rather than a
+      legacy section row: the children keep their share of the line at mobile
+      and wrap, instead of stacking full-width as section columns do.
+      `justify`/`align` are the container's own justify-content/align-items,
+      which Elementor writes as --justify-content / --align-items. */
+  flex?: { justify?: string | null; align?: string | null } | null;
   /** The row's own outer margin.
    *
    * Elementor builds a row like this as an *inner section*, which can carry a
