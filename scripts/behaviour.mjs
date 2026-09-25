@@ -12,17 +12,17 @@
  *
  *   npx astro build && node scripts/behaviour.mjs
  */
-import { chromium } from 'playwright';
+import { launchChromium } from './lib/browser.mjs';
 import { createServer } from 'node:http';
 import fs from 'node:fs'; import path from 'node:path';
-const DIST='/home/user/vinylwraptoronto/dist', PORT=8155;
+const DIST=path.resolve('dist'), PORT=8155;
 const M={'.html':'text/html','.css':'text/css','.js':'text/javascript','.webp':'image/webp','.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.svg':'image/svg+xml','.woff2':'font/woff2','.pdf':'application/pdf'};
 const s=createServer((q,r)=>{let f=path.join(DIST,decodeURIComponent(q.url.split('?')[0]));
  if(fs.existsSync(f)&&fs.statSync(f).isDirectory())f=path.join(f,'index.html');
  if(!fs.existsSync(f)){r.writeHead(404);return r.end('x');}
  r.writeHead(200,{'content-type':M[path.extname(f)]||'application/octet-stream'});r.end(fs.readFileSync(f));});
 await new Promise(r=>s.listen(PORT,'127.0.0.1',r));
-const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+const b=await launchChromium({headless:true});
 const p=await b.newPage({viewport:{width:1440,height:1000}});
 const U=`http://127.0.0.1:${PORT}`;
 const out=[];

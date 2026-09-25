@@ -74,7 +74,7 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
     /api/quote answers 308 to /api/quote/. A 308 keeps the method and body, so
     submissions did go through, but every one paid an extra round trip and
     re-uploaded its photographs to follow the redirect. */}
-<form class={`qform qform--${variant}`} method="post" action="/api/quote/" enctype="multipart/form-data" novalidate style={formVars}>
+<form class={`qform qform--${variant}`} data-form={id} method="post" action="/api/quote/" enctype="multipart/form-data" novalidate style={formVars}>
   {order.map((f) => (
     <>
       {f === 'name' && (
@@ -158,6 +158,18 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
       )}
     </>
   ))}
+
+  {/* Honeypot. Off screen, out of the tab order and hidden from assistive
+      technology, so no person fills it; a bot that fills every field does.
+      /api/quote/ answers such a submission with a quiet 200 and stores
+      nothing, so the bot learns nothing either. */}
+  <div class="hp" aria-hidden="true">
+    <label for={`${id}-website`}>Website</label>
+    <input id={`${id}-website`} name="website" type="text" tabindex="-1" autocomplete="off" />
+  </div>
+  {/* The click that brought this visitor here (gclid, utm_*), read from the
+      first-party cookie at submit time -- see Analytics.astro. */}
+  <input type="hidden" name="attribution" value="" />
 
   <button type="submit" class="qbtn">{submit ?? 'Send Message'}</button>
   <p class="qstatus" role="status" aria-live="polite"></p>
@@ -254,7 +266,7 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
     border-radius: var(--q-radius, 3px);
     cursor: pointer;
   }
-  .qbtn:hover { background-color: var(--e-global-color-a8178e9); }
+  .qbtn:hover { background-color: var(--e-global-color-a8178e9); color: #111; }
   .qbtn[disabled] { opacity: 0.6; cursor: default; }
 
   .qstatus { margin: 0; font-size: 14px; min-height: 1.2em; }
@@ -267,6 +279,8 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
     overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
   }
+  /* Not display:none -- some bots skip fields they can see are hidden. */
+  .hp { position: absolute; left: -9999px; top: 0; width: 1px; height: 1px; overflow: hidden; }
 </style>
 
 <script>
@@ -279,6 +293,11 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      /* One request per press. The button is disabled below, but a second
+         Enter in a field, or a double tap on a slow connection, can arrive
+         before that paints -- and every duplicate is a duplicate lead email
+         and a duplicate conversion. */
+      if (form.dataset.busy) return;
 
       // Native validation, but reported without the browser's default bubbles
       // so required fields flag consistently across browsers.
@@ -295,9 +314,21 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
         return;
       }
 
+      form.dataset.busy = '1';
       button.disabled = true;
       status.dataset.state = '';
       status.textContent = 'Sending…';
+
+      /* The campaign this visitor arrived from, if any, so the lead email and
+         the lead event both say which ad earned it. */
+      let attribution = '';
+      const honeypotFilled = Boolean(form.querySelector<HTMLInputElement>('input[name="website"]')?.value);
+      try {
+        attribution = decodeURIComponent(document.cookie.match(/(?:^|;\s*)vwt_attr=([^;]*)/)?.[1] ?? '');
+      } catch { /* a cookie we did not write */ }
+      const attrField = form.querySelector<HTMLInputElement>('input[name="attribution"]');
+      if (attrField) attrField.value = attribution;
+
       try {
         const res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
         const data = await res.json().catch(() => ({}) as Record<string, unknown>);
@@ -305,6 +336,25 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
           status.dataset.state = 'ok';
           status.textContent = 'Thanks — your message has been sent. We will be in touch shortly.';
           form.reset();
+          /* The lead, as a dataLayer event for GTM and GA4 and as a Meta Lead
+             for the Pixel. Pushed once, here, on the server's 200 -- not on
+             the click -- so a rejected or failed submission records nothing.
+             Carries no field values. */
+          if (honeypotFilled) return;
+          let campaign: Record<string, string> = {};
+          try { campaign = attribution ? JSON.parse(attribution) : {}; } catch { /* not ours */ }
+          const w = window as unknown as {
+            dataLayer?: unknown[];
+            fbq?: (...a: unknown[]) => void;
+            gtag?: (...a: unknown[]) => void;
+          };
+          (w.dataLayer = w.dataLayer || []).push({
+            event: 'generate_lead',
+            form_id: form.dataset.form || 'quote',
+            page_path: location.pathname,
+            attribution: campaign,
+          });
+          w.fbq?.('track', 'Lead');
           /* The Google Ads lead conversion.
            *
            * The original's form navigates to /thank-you/, and that page fires
@@ -316,11 +366,7 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
            * Fired here with the same conversion label the original uses, so
            * nothing has to change in the Ads account. /thank-you/ still carries
            * its own copy for anyone who arrives there directly. */
-          (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag?.(
-            'event',
-            'conversion',
-            { send_to: 'AW-11342080648/Hac5CN7WneMYEIjVqaAq' },
-          );
+          w.gtag?.('event', 'conversion', { send_to: 'AW-11342080648/Hac5CN7WneMYEIjVqaAq' });
         } else {
           status.dataset.state = 'err';
           status.textContent =
@@ -332,6 +378,7 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
         status.textContent = 'Sorry, that did not send. Please call 416-746-1381 instead.';
       } finally {
         button.disabled = false;
+        delete form.dataset.busy;
       }
     });
   });

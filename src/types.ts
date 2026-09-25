@@ -26,6 +26,12 @@ export type Block = (
       href?: string | null;
       /** Sits in a zero-padding column on the live site, so it runs edge to edge. */
       full?: boolean;
+      /** The image widget's own Width control, per breakpoint (desktop, tablet
+       *  <=1024px, mobile <=767px), as Elementor writes it into the page CSS:
+       *  `.elementor-element-ID img { width: 70% }`. Absent when the widget sets
+       *  none, in which case the image fills its column. Harvested by
+       *  scripts/pull-image-widths.mjs. */
+      imgWidth?: { d?: string; t?: string; m?: string };
     }
   | {
       type: 'button';
@@ -243,7 +249,7 @@ export type Block = (
   | ({
       type: 'filtergallery';
       filters: { index: string; label: string }[];
-      items: { src: string; title: string; tag: string; alt?: string }[];
+      items: { src: string; title?: string; tag?: string; alt?: string }[];
     } & GalleryGrid)
   | {
       type: 'postnav';
@@ -374,7 +380,16 @@ export type ColumnsBlock = {
     border?: string | null;
     shadow?: string | null;
     radius?: string | null;
+    /** Width at Elementor's mobile breakpoint (percent), from a container's
+        `--width` in its max-width:767px rule. Only meaningful with `flex`. */
+    mobileWidth?: number | null;
   }[];
+  /** Set where the row is an Elementor flex *container* (e-con) rather than a
+      legacy section row: the children keep their share of the line at mobile
+      and wrap, instead of stacking full-width as section columns do.
+      `justify`/`align` are the container's own justify-content/align-items,
+      which Elementor writes as --justify-content / --align-items. */
+  flex?: { justify?: string | null; align?: string | null } | null;
   /** The row's own outer margin.
    *
    * Elementor builds a row like this as an *inner section*, which can carry a

@@ -40,7 +40,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { verification, analyticsFor } from '../seo.config.mjs';
+import { verification, analyticsFor, productionOrigin, previewHosts } from '../seo.config.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const DIST = path.join(ROOT, 'dist');
@@ -86,10 +86,21 @@ const fails = [];
 const opportunity = { noLd: [], noDesc: [] };
 const warn = { titleLen: [], descLen: [] };
 let pages = 0, carried = 0, ld = 0, alt = 0, noalt = 0, skipped = 0, noindex = 0;
-let tokenPages = 0, analyticsPages = 0;
+let tokenPages = 0, analyticsPages = 0, crumbs = 0;
+
+/* What a block must not say, however well it parses. Each of these shipped on
+   the original for years and validated as JSON the whole time; src/lib/ld.ts
+   corrects them at render and this is what notices if that stops happening. */
+const LD_DEFECTS = [
+  [/"(?:@id|url|contentUrl)":"\/wp-content\/uploads\//, 'JSON-LD carries a relative upload URL'],
+  [/"legalName":"content"/, 'JSON-LD legalName is the unfilled placeholder "content"'],
+  [/"addressLocality":"Unit 1"/, 'JSON-LD puts the unit number in addressLocality'],
+  [/"@type":"Offer","price":"0"/, 'JSON-LD advertises a zero-price offer'],
+];
+const previewHost = new RegExp(previewHosts.map((h) => h.replace(/\./g, '\\.')).join('|'));
 
 for (const f of walk(DIST)) {
-  let rel = '/' + path.relative(DIST, f).replace(/index\.html$/, '');
+  let rel = '/' + path.relative(DIST, f).replaceAll('\\', '/').replace(/index\.html$/, '');
   if (!rel.endsWith('/')) rel += '/';
   if (SKIP.test(rel)) { skipped++; continue; }
   const html = fs.readFileSync(f, 'utf8');
@@ -105,15 +116,24 @@ for (const f of walk(DIST)) {
   if (!title || !title[1].trim()) fails.push([rel, 'missing title']);
   else if (title[1].length < 10 || title[1].length > 60) warn.titleLen.push([rel, title[1].length]);
 
-  if (!/<link[^>]+rel=["']canonical["'][^>]+href=["']https?:\/\//i.test(html))
-    fails.push([rel, 'missing canonical']);
+  const canonical = html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["'](https?:\/\/[^"']*)/i);
+  if (!canonical) fails.push([rel, 'missing canonical']);
+  else if (!canonical[1].startsWith(productionOrigin + '/'))
+    fails.push([rel, `canonical is not on ${productionOrigin}: ${canonical[1]}`]);
+
+  const ogUrl = html.match(/<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']*)/i);
+  if (ogUrl?.[1] && previewHost.test(ogUrl[1]))
+    fails.push([rel, `og:url names a preview host: ${ogUrl[1]}`]);
 
   const blocks = [...html.matchAll(
     /<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)];
   for (const b of blocks) {
     ld++;
     try { JSON.parse(b[1]); }
-    catch (e) { fails.push([rel, `JSON-LD does not parse — ${e.message}`]); }
+    catch (e) { fails.push([rel, `JSON-LD does not parse — ${e.message}`]); continue; }
+    for (const [re, why] of LD_DEFECTS) if (re.test(b[1])) fails.push([rel, why]);
+    if (previewHost.test(b[1])) fails.push([rel, 'JSON-LD names a preview host']);
+    if (b[1].includes('"BreadcrumbList"')) crumbs++;
   }
 
   /* --- against the original, where there is an original --- */
@@ -188,6 +208,7 @@ p('  added by this build', pages - carried);
 p('not pages, skipped', skipped);
 p('noindex pages', noindex);
 p('JSON-LD blocks, all parsing', ld);
+p('  BreadcrumbList blocks, generated', crumbs);
 p('pages carrying their tokens', tokenPages);
 p('pages carrying the analytics tags', analyticsPages);
 p('images with alt', alt);

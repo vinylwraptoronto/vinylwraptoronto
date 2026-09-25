@@ -120,6 +120,17 @@ Each break applied to one page in a copy of `dist`, one at a time:
   `src/lib/seo.ts` — which runs in the browser on every keystroke *and* again on
   the server at save, so the stored score is never one the client chose.
 
+## Since this was measured
+
+`schema generated: 0` is no longer true, and `carried verbatim` now means
+carried and corrected. `src/lib/ld.ts` repairs five defects every ported graph
+had (the unit number in `addressLocality`, `legalName: "content"`, relative
+image URLs, the zero-price `Offer`, and `&amp;` inside JSON strings) at render
+time, and generates a `BreadcrumbList` for every page the main menu links to.
+The lint now fails on any of those defects reappearing, on a canonical off the
+production origin, and on a preview hostname inside a canonical, an `og:url`
+or a JSON-LD block. See [seo-paid-ads.md](seo-paid-ads.md).
+
 ## Open, and not acted on
 
 - **80 indexable pages carry no structured data.** The original has none either,

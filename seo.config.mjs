@@ -22,6 +22,15 @@
  * place for them.
  */
 
+/** The only origin a canonical, an og:url or a sitemap entry may carry. The
+ *  preview at astro.vinylwraptoronto.com serves production canonicals on
+ *  purpose until cutover, and the lint fails any page that says otherwise. */
+export const productionOrigin = 'https://vinylwraptoronto.com';
+
+/** Hostnames that must never appear in a canonical, an og:url or a JSON-LD
+ *  block: the preview and the workers.dev address. */
+export const previewHosts = ['astro.vinylwraptoronto.com', 'workers.dev'];
+
 /** @typedef {{name: string, content: string, homeOnly?: boolean}} Verification */
 
 /**
@@ -87,4 +96,28 @@ export const analytics = {
 export const analyticsFor = (pathname) =>
   analytics.excludePaths.includes(pathname) ? null : analytics;
 
-export default { verification, verificationFor, analytics, analyticsFor };
+/**
+ * The dataLayer contract the site emits, for whoever maintains the GTM
+ * container. Every event is pushed once, on a confirmed outcome or a single
+ * user action, and carries `page_path`. Nothing here carries a name, an email
+ * address, a phone number or a message.
+ *
+ *   generate_lead    the quote form was accepted by /api/quote/ (HTTP 200)
+ *                    { form_id, page_path, attribution }
+ *   phone_click      a tel: link was activated        { link_url, page_path }
+ *   whatsapp_click   a WhatsApp link was activated    { link_url, page_path }
+ *   email_click      a mailto: link was activated     { link_url, page_path }
+ *
+ * `attribution` is the first-party record of the click that brought the
+ * visitor here -- see attributionKeys -- and is also posted with the form so
+ * the lead email names its campaign.
+ */
+export const dataLayerEvents = ['generate_lead', 'phone_click', 'whatsapp_click', 'email_click'];
+
+/** Query parameters kept in the `vwt_attr` cookie for 90 days, last click wins. */
+export const attributionKeys = [
+  'gclid', 'gbraid', 'wbraid', 'dclid', 'msclkid', 'fbclid',
+  'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+];
+
+export default { verification, verificationFor, analytics, analyticsFor, productionOrigin };

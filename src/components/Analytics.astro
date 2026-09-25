@@ -13,16 +13,51 @@
  * defined by an earlier sibling — silently stop working. The failure looks
  * exactly like success in "view source".
  */
-import { analyticsFor } from '../../seo.config';
+import { analyticsFor, attributionKeys } from '../../seo.config.mjs';
 
 export interface Props {
   pathname: string;
 }
 const a = analyticsFor(Astro.props.pathname);
+
+/*
+ * Consent Mode v2, prepared and switched off.
+ *
+ * The original has no consent banner and fires every tag unconditionally, and
+ * the port reproduces that. There is no consent platform to wire to yet, and
+ * denying storage by default with nothing to grant it again would silently
+ * zero every conversion the client's campaigns are measured on.
+ *
+ * So the default is emitted only when PUBLIC_CONSENT_DEFAULT=denied is set at
+ * build time. When it is, every Google tag starts with ad and analytics
+ * storage denied, the Meta Pixel starts revoked, and a consent platform (or a
+ * banner) calls window.vwtConsent(true) to grant both. Until a platform is
+ * chosen, leave it unset and the site measures exactly as the original does.
+ */
+const consentDenied = import.meta.env.PUBLIC_CONSENT_DEFAULT === 'denied';
 ---
 
 {a && (
   <>
+    {consentDenied && (
+      <script is:inline set:html={`
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('consent', 'default', {
+          ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied',
+          analytics_storage: 'denied',
+          functionality_storage: 'granted', security_storage: 'granted',
+          wait_for_update: 500
+        });
+        window.vwtConsent = function (granted) {
+          var s = granted ? 'granted' : 'denied';
+          gtag('consent', 'update', { ad_storage: s, ad_user_data: s, ad_personalization: s, analytics_storage: s });
+          if (window.fbq) fbq('consent', granted ? 'grant' : 'revoke');
+          window.dataLayer.push({ event: granted ? 'consent_granted' : 'consent_denied' });
+        };
+      `} />
+    )}
+
     {/* Google tag (gtag.js) — GA4 */}
     <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${a.ga4}`}></script>
     <script is:inline set:html={`
@@ -51,6 +86,7 @@ const a = analyticsFor(Astro.props.pathname);
       t.src=v;s=b.getElementsByTagName(e)[0];
       s.parentNode.insertBefore(t,s)}(window,document,'script',
       'https://connect.facebook.net/en_US/fbevents.js');
+      ${consentDenied ? "fbq('consent', 'revoke');" : ''}
       fbq('init', '${a.metaPixel}');
       fbq('track', 'PageView');
     `} />
@@ -90,6 +126,37 @@ const a = analyticsFor(Astro.props.pathname);
         t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
         y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
       })(window, document, "clarity", "script", "${a.clarity}");
+    `} />
+
+    {/* Attribution and the contact-action events. First party only: the
+        click ids and UTMs a paid visit arrives with are kept in a cookie for
+        90 days (last click wins) so the quote form can name its campaign, and
+        a tap on the phone, WhatsApp or email link is pushed to the dataLayer
+        once for GTM and GA4 to record. No personal data is read or sent. */}
+    <script is:inline set:html={`
+      (function () {
+        var keys = ${JSON.stringify(attributionKeys)};
+        var q = new URLSearchParams(location.search), got = {}, any = false;
+        keys.forEach(function (k) { var v = q.get(k); if (v) { got[k] = v.slice(0, 200); any = true; } });
+        if (any) {
+          got.landing = location.pathname; got.at = new Date().toISOString();
+          try {
+            document.cookie = 'vwt_attr=' + encodeURIComponent(JSON.stringify(got)) +
+              ';path=/;max-age=7776000;SameSite=Lax' + (location.protocol === 'https:' ? ';Secure' : '');
+          } catch (e) {}
+        }
+        document.addEventListener('click', function (e) {
+          var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+          if (!a) return;
+          var h = a.getAttribute('href') || '';
+          var ev = h.indexOf('tel:') === 0 ? 'phone_click'
+                 : /whatsapp\\.com|wa\\.me/.test(h) ? 'whatsapp_click'
+                 : h.indexOf('mailto:') === 0 ? 'email_click' : null;
+          if (!ev) return;
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({ event: ev, link_url: h, page_path: location.pathname });
+        });
+      })();
     `} />
   </>
 )}

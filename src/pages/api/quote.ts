@@ -62,6 +62,22 @@ const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
 
+/** Only the keys Analytics.astro writes, each clipped, joined one per line. */
+const ATTRIBUTION_KEYS = new Set([
+  'gclid', 'gbraid', 'wbraid', 'dclid', 'msclkid', 'fbclid',
+  'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'landing', 'at',
+]);
+function attributionLines(raw: string): string {
+  if (!raw || raw.length > 2000) return '';
+  let parsed: unknown;
+  try { parsed = JSON.parse(raw); } catch { return ''; }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return '';
+  return Object.entries(parsed as Record<string, unknown>)
+    .filter(([k, v]) => ATTRIBUTION_KEYS.has(k) && typeof v === 'string' && v)
+    .map(([k, v]) => `${k}=${String(v).slice(0, 200)}`)
+    .join('; ');
+}
+
 const json = (body: unknown, status: number) =>
   new Response(JSON.stringify(body), {
     status,
@@ -93,6 +109,12 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   }
 
   const get = (k: string) => String(form.get(k) ?? '').trim();
+
+  /* The honeypot. No person can reach the field; a bot that fills every input
+     does. Answered exactly like a success so the sender cannot tell it was
+     caught, and nothing is stored or sent. */
+  if (get('website')) return json({ ok: true }, 200);
+
   const name = get('name');
   const email = get('email');
   const phone = get('phone');
@@ -104,6 +126,11 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   const product = get('product');
   const wrapType = form.getAll('wrap_type').map(String).join(', ');
   const photos = form.getAll('photos').filter((f): f is File => f instanceof File && f.size > 0);
+  /* Which ad click brought them, as `key=value` lines for the notification.
+     Read from the form field the page filled off its first-party cookie, so
+     the shop can see which campaign a lead came from. Not stored in D1: the
+     submissions table deliberately holds nothing that tracks a person. */
+  const attribution = attributionLines(get('attribution'));
 
   if (!name || !email || !phone) {
     return json({ error: 'Name, email and phone are required.' }, 400);
@@ -198,6 +225,7 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
     ['Product', product],
     ['Message', message],
     ['Photos attached', String(photos.length)],
+    ['Campaign', attribution],
   ];
   const html = `<h2>Quote request</h2><table cellpadding="6">${rows
     .filter(([, v]) => v)
