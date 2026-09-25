@@ -1196,7 +1196,9 @@ const galleryStyle = (b: {
   const secStyle = [
     section?.padding ? `padding:${section.padding}` : '',
     section?.background && section.background.toLowerCase() !== '#ffffff'
-      ? `background-color:${section.background}`
+      ? (section.background.startsWith('linear-gradient(')
+          ? `background-image:${section.background}`
+          : `background-color:${section.background}`)
       : '',
     section?.bgImage ? `background-image:url(${img(section.bgImage)})` : '',
     section?.bgImage ? `background-size:${section.bgSize ?? 'cover'}` : '',
