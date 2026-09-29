@@ -44,7 +44,6 @@ try {
   await form.locator('[name="email"]').fill('verification@example.test');
   await form.locator('[name="phone"]').fill('4165550100');
   await form.locator('.qbtn').click();
-  await form.evaluate((element) => element.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
   await form.locator('.qstatus[data-state="ok"]').waitFor({ state: 'attached' });
   const leadEvents = await page.evaluate(() => (window.dataLayer || []).filter((entry) => entry?.event === 'generate_lead'));
   check('successful quote records one lead', leadEvents.length === 1, `${leadEvents.length} event(s)`);

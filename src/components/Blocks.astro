@@ -422,7 +422,7 @@ const galleryStyle = (b: {
 };
 ---
 
-{groups.map((group) => {
+{groups.map((group, gi) => {
   const section = group.section;
   const blocksArr = group.blocks;
   const inner = blocksArr.map((b, i) => {
@@ -549,13 +549,34 @@ const galleryStyle = (b: {
         }
 
         if (b.type === 'image') {
+          /* Phase 8A: on Home the LCP element is this exact figure -- the
+             page's first section, first block -- and it was marked
+             loading="lazy" with no fetchpriority, so the browser deferred
+             its own largest paint. Every other `image` block (mid-page,
+             gallery, or nested inside a column via the recursive
+             `Astro.self blocks={c.blocks}` call) is unaffected: this only
+             matches the very first block of the very first top-level
+             section on the page.
+             Phase 8C follow-up: `b.hide` marks one of a set of
+             art-directed, breakpoint-specific images (see
+             `[data-hide~=...]{display:none}` in global.css). `display:none`
+             does not stop an eager/high-priority fetch, so blindly matching
+             i===0 here would force-load the desktop-only variant even on
+             mobile/tablet where it's hidden and a *different* block is the
+             one actually visible. Those pages already get a targeted
+             per-breakpoint `<link rel="preload">` from [...slug].astro, so
+             we exclude any hide-tagged block here and only eager-load a
+             true single, unconditional first image (e.g. web-story
+             covers). */
+          const isLcpCandidate = !inColumn && gi === 0 && i === 0 && !b.hide?.length;
           const pic = (
             <img
               src={img(b.src)}
               alt={b.alt}
               width={num(b.width)}
               height={num(b.height)}
-              loading="lazy"
+              loading={isLcpCandidate ? 'eager' : 'lazy'}
+              fetchpriority={isLcpCandidate ? 'high' : undefined}
               decoding="async"
             />
           );
@@ -1119,6 +1140,7 @@ const galleryStyle = (b: {
                 b.flex?.align ? `align-items:${b.flex.align}` : '',
               ].filter(Boolean).join(';') || undefined}
               data-flexrow={b.flex ? '' : undefined}
+              data-reverse={b.reverse?.length ? b.reverse.join(' ') : undefined}
             >
               {b.cols.map((c) => {
                 /* Only a column that sits on a colour of its own gets one; a
@@ -1309,6 +1331,12 @@ const galleryStyle = (b: {
   /* elementor-section-full_width: edge to edge, and no gutter on the inner
      wrapper — the section's own padding is the only inset. */
   .container--full { max-width: none; padding-inline: 0; }
+  /* A full-width section holding only edge-to-edge images is Elementor's
+     zero-padding column: the homepage banner sits flush under the header, and
+     the port's flat 10px `.stack` padding put it 10px down and 10px short of
+     the section's bottom (20px over production at every width). Sections with
+     any other block keep the stack padding. */
+  .container.container--full.stack:not(:has(> :not(.fig--full))) { padding: 0; }
 
   /* Elementor's background overlay sits between the section's own background
      and its content, so the content has to be lifted above it. */
@@ -1455,6 +1483,16 @@ const galleryStyle = (b: {
      the section's own vertical rhythm either. */
   .cols > .col > :global(:first-child) { margin-top: 0; }
 
+  /* Elementor's kit sets `.elementor-heading-title{margin:0}`, so a heading
+     WIDGET carries no margin of its own; only headings inside rich text keep
+     the reset's 16px (they are not direct children of the stack/column).
+     The global `h1..h6{margin:0 0 16px}` was adding 16px under every heading
+     widget on top of the 20px widget gap: the homepage's intro and each card
+     row were taller than production by that much per heading. Inline `box`
+     margins still win. Measured 2026-09 on / at 390/820/1440. */
+  .stack > :is(h1, h2, h3, h4, h5, h6),
+  .cols > .col > :is(h1, h2, h3, h4, h5, h6) { margin-bottom: 0; }
+
   /* A column holding a before/after slider is a card, which is how the original
      draws the 69 on /our-work/: `border-width: 1px; border-color: #F3F3F3;
      padding: 15px; border-radius: 5px`, with the title and the View Pictures
@@ -1514,6 +1552,18 @@ const galleryStyle = (b: {
      row on the site stacked from 1024px down, where the original still shows
      them side by side — a three-across row of truck photos became one column
      of full-bleed images at 990px. */
+  /* Elementor's `elementor-reverse-tablet` / `-mobile` on a section: at that
+     breakpoint the row becomes a column and runs last-to-first, so the right
+     hand column (the contact form) comes first. The columns take the full row
+     width, as Elementor's own rule gives them. Carried as `reverse` on the
+     columns block; a row that does not declare it is untouched. */
+  @media (max-width: 1024px) {
+    .cols[data-reverse~='tablet'] { flex-direction: column-reverse; flex-wrap: nowrap; }
+    .cols[data-reverse~='tablet'] > .col { flex: 0 0 auto; width: 100%; max-width: 100%; }
+  }
+  @media (max-width: 767px) {
+    .cols[data-reverse~='tablet']:not([data-reverse~='mobile']) { flex-direction: column; }
+  }
   @media (max-width: 767px) {
     .cols > .col { flex-basis: 100%; max-width: 100%; }
     /* An Elementor flex container is not a section row: its children keep
@@ -2104,6 +2154,25 @@ const galleryStyle = (b: {
      10px on 10, measured on all 402 pages carrying the countdown. */
   .cdown-digits { font-size: var(--cd-digit, 20px); line-height: 1; font-variant-numeric: tabular-nums; }
   .cdown-label { font-size: var(--cd-label, 10px); line-height: 1; }
+  /* Phone sizes: the original's Tesla countdown drops 55/18px to 30/13px on
+     10px padding at 390 (measured on production). Kept as a cap, so the post
+     pages' 20/10px digits and labels are unchanged. At the desktop label size,
+     "Minutes" and "Seconds" are wider than a quarter-width box and spilled
+     4px past the viewport. */
+  @media (max-width: 767px) {
+    .cdown-digits { font-size: min(var(--cd-digit, 20px), 30px); }
+    .cdown-label { font-size: min(var(--cd-label, 10px), 13px); }
+    .cdown[style*="--cd-pad"] .cdown-item { padding: 10px; }
+  }
+
+  /* Rotated category badges (commercial/personal-vehicle-wraps). The original
+     turns these headings -90deg on tablet and desktop and lays them flat on
+     phones (--e-transform-rotateZ on the widget). Unrotated, "PERFORATED" at
+     30px was 188px in a 170px box and pushed the page 18px wide at 820. Keyed
+     on the badge's unique 200px/150px margin so no other heading is touched. */
+  @media (min-width: 768px) {
+    .col h3[style*="margin:200px 0px 150px 0px"] { transform: rotate(-90deg); }
+  }
 
   /* related / looped post grids */
   /* The count comes from the widget; auto-fill gave three or more columns
