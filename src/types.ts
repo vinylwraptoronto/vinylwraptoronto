@@ -365,6 +365,9 @@ export type GalleryGrid = {
     single stream of blocks, so every row rendered as a vertical stack. */
 export type ColumnsBlock = {
   type: 'columns';
+  /** Elementor's `elementor-reverse-tablet` / `-mobile`: at those breakpoints
+      the stacked columns run last-to-first. */
+  reverse?: ('tablet' | 'mobile')[];
   /** `background` is set only where the column sits on its own colour, and
       `padding` rides along with it — a navy panel needs the original's inset
       or its widgets run into the edge. */
