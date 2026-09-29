@@ -55,11 +55,17 @@ export interface Props {
    * Requested only where it is used: the other 1,683 addresses would be paying
    * for a stylesheet and a font file they never reference. */
   montserrat?: boolean;
+  /** The homepage hero's three art-directed images, one per breakpoint —
+      see src/pages/[...slug].astro for how this is derived. Preloaded by
+      the same media query each one is shown under, so the browser fetches
+      only the one that matches the current viewport: never all three, and
+      earlier than Blocks.astro's `loading="lazy"` would otherwise start it. */
+  heroPreload?: { media: string; href: string }[];
 }
 
 const {
   title, description = '', canonical, ogImage, robots, head, pageCss, offer = false,
-  chrome = 'full', progress = false, montserrat = false,
+  chrome = 'full', progress = false, montserrat = false, heroPreload = [],
 } = Astro.props;
 const analytics = analyticsFor(Astro.url.pathname);
 const canonicalUrl = canonical ?? new URL(Astro.url.pathname, site.url).href;
@@ -144,6 +150,10 @@ const iconHref = new URL(img(site.favicon), site.url).href;
         that connection alongside the document rather than on first <img>. */}
     {imgOrigin && <link rel="preconnect" href={imgOrigin} crossorigin="anonymous" />}
     {imgOrigin && <link rel="dns-prefetch" href={imgOrigin} />}
+
+    {heroPreload.map((h) => (
+      <link rel="preload" as="image" media={h.media} href={h.href} fetchpriority="high" />
+    ))}
 
     <link rel="icon" href={iconHref} sizes="32x32" />
     <link rel="icon" href={iconHref} sizes="192x192" />
