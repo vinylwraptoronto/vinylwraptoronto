@@ -18,6 +18,7 @@ import { applyPageSeo, type PageSeoOverride } from '../lib/pageseo';
 import { withGalleries } from '../lib/gallery';
 import { blogPageMeta, blogSections, pageCount, PER_PAGE, type BlogEntry } from '../lib/bloglist';
 import { membersOf } from '../lib/archive';
+import { img } from '../lib/img';
 
 export const prerender = true;
 
@@ -176,6 +177,36 @@ const dateLabel = page.published
       day: 'numeric',
     })
   : null;
+
+/* Art-directed hero: the first section of a page can carry three image
+   blocks, one per breakpoint, each hiding the other two via the
+   `[data-hide]` rules in global.css (see the comment there). Because the
+   non-matching two never get a layout box, Blocks.astro's `loading="lazy"`
+   on them is never triggered — but neither is the one that *does* show,
+   until the browser's lazy-loading heuristic discovers it, which costs LCP
+   time on the one image that actually paints.
+
+   Preloading it by the same three media queries fixes that without
+   touching Blocks.astro: the browser evaluates each `media` at parse time
+   and fetches only the one that matches the current viewport, so this
+   stays a single request per breakpoint — never all three. */
+const HERO_MEDIA: Record<string, string> = {
+  'mobile,tablet': '(min-width: 1025px)',
+  'desktop,mobile': '(min-width: 768px) and (max-width: 1024px)',
+  'desktop,tablet': '(max-width: 767px)',
+};
+const heroBlocks = (page.sections[0]?.blocks ?? []).filter(
+  (b): b is Extract<Block, { type: 'image' }> =>
+    b.type === 'image' && Array.isArray(b.hide) && b.hide.length === 2,
+);
+const heroCoversAllBreakpoints =
+  heroBlocks.length === 3 &&
+  new Set(heroBlocks.flatMap((b) => b.hide as string[])).size === 3;
+const heroPreload = heroCoversAllBreakpoints
+  ? heroBlocks
+      .map((b) => ({ media: HERO_MEDIA[[...b.hide!].sort().join(',')], href: img(b.src) }))
+      .filter((h): h is { media: string; href: string } => !!h.media)
+  : [];
 ---
 
 <Base
@@ -186,6 +217,7 @@ const dateLabel = page.published
   robots={page.robots}
   head={page.head}
   pageCss={page.css}
+  heroPreload={heroPreload}
   offer={needsOffer}
   chrome={page.chrome ?? 'full'}
   progress={needsProgress}
