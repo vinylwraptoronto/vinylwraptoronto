@@ -1,0 +1,12 @@
+
+> vinylwraptoronto@0.1.0 check:tracking
+> node scripts/tracking.mjs
+
+PASS  paid-click attribution cookie
+PASS  phone click dataLayer event
+PASS  consent gate remains opt-in
+PASS  successful quote records one lead (1 event(s))
+PASS  lead event contains no contact PII
+PASS  honeypot response is not counted as a lead (1 total event(s))
+
+6/6 tracking checks passed

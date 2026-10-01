@@ -1,0 +1,64 @@
+
+> vinylwraptoronto@0.1.0 check:seo
+> node scripts/check-seo.mjs
+
+
+SEO LINT
+
+  pages............................. 1684
+    carried from the original....... 1619
+    added by this build............. 65
+  not pages, skipped................ 3
+  noindex pages..................... 938
+  JSON-LD blocks, all parsing....... 1655
+    BreadcrumbList blocks, generated 49
+  pages carrying their tokens....... 1617
+  pages carrying the analytics tags. 1682
+  images with alt................... 9476
+  images without alt................ 1762
+  title outside 10-60............... 137
+  description outside 50-160........ 63
+  regressions against the original.. 0
+
+OPPORTUNITIES — the original has none of these either, so they are
+not failures. They are what the port could add on top.
+
+  indexable, no structured data..... 80
+  indexable, no meta description.... 198
+
+  no structured data (first 12):
+    /avery-dennison-full-van-wrap/
+    /covid-19-social-distancing-vinyl-wrap/
+    /gtalx-event/
+    /locations-served/custom-decals-oakville/
+    /locations-served/custom-vinyl-wraps-markham/
+    /locations-served/custom-wraps-mississauga/
+    /locations-served/custom-wraps-north-york/
+    /locations-served/custom-wraps-scarborough/
+    /locations-served/custom-wraps-toronto/
+    /locations-served/vehicle-graphics-brampton/
+    /printing-shop-toronto-yes-were-open/
+    /wraps-before-after/1995-renault-master-t35d-partial-wrap/
+
+TITLE LENGTH — the original's own text, not failed (first 8 of 137):
+    63 chars  /2-tone-stripes-ford-mustang-avery-3m/
+    61 chars  /3m-vinyl-wraps/
+    76 chars  /a-rock-inspired-transformation-custom-van-halen-inspired-wrap-for-a-dodge-ram-1500/
+    62 chars  /aeropark-ford-transit-van-decals/
+    62 chars  /benefits-of-vinyl-wraps-for-real-estate/
+    62 chars  /blog/
+    78 chars  /blog/page/10/
+    78 chars  /blog/page/11/
+
+DESCRIPTION LENGTH — the original's own text, not failed (first 8 of 63):
+     4 chars  /5-secrets-to-a-perfect-car-wrap-vwt/
+    14 chars  /best-time-vehicle-wrap-toronto/
+    11 chars  /blogs/signage/window-graphics/
+   188 chars  /boat-wrap-benefits-baja-38-toronto/
+    11 chars  /boost-your-branding-game-vinyl-decals/
+    24 chars  /box-truck-wrap-in-toronto-atm-systems/
+     4 chars  /car-wrap-how-we-do-it-at-vwt/
+    37 chars  /chevrolet-silverado-bumper-wrap-matte-black/
+
+SEO LINT PASSED.
+

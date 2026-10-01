@@ -1,0 +1,9 @@
+
+> vinylwraptoronto@0.1.0 check:lighthouse
+> node scripts/lighthouse.mjs
+
+/ performance=74 accessibility=100 best-practices=100 seo=100
+/car-wraps/ performance=71 accessibility=99 best-practices=100 seo=92
+/contact/ performance=77 accessibility=100 best-practices=100 seo=100
+
+PASS  Lighthouse accessibility/SEO/actionable best-practices thresholds met (performance and local HTTP/cookie diagnostics reported, not gated)

@@ -1,0 +1,61 @@
+[after] mobile run1: formFactor=mobile screenEmulation.mobile=true throttling={"rttMs":150,"throughputKbps":1638.4,"requestLatencyMs":562.5,"downloadThroughputKbps":1474.56,"uploadThroughputKbps":675,"cpuSlowdownMultiplier":4}
+[after] mobile run1: performance=74 accessibility=100 best-practices=100 seo=100
+[after] mobile run2: formFactor=mobile screenEmulation.mobile=true throttling={"rttMs":150,"throughputKbps":1638.4,"requestLatencyMs":562.5,"downloadThroughputKbps":1474.56,"uploadThroughputKbps":675,"cpuSlowdownMultiplier":4}
+[after] mobile run2: performance=77 accessibility=100 best-practices=100 seo=100
+[after] mobile run3: formFactor=mobile screenEmulation.mobile=true throttling={"rttMs":150,"throughputKbps":1638.4,"requestLatencyMs":562.5,"downloadThroughputKbps":1474.56,"uploadThroughputKbps":675,"cpuSlowdownMultiplier":4}
+[after] mobile run3: performance=76 accessibility=100 best-practices=100 seo=100
+[after] desktop run1: formFactor=desktop screenEmulation.mobile=false throttling={"rttMs":40,"throughputKbps":10240,"requestLatencyMs":562.5,"downloadThroughputKbps":1474.5600000000002,"uploadThroughputKbps":675,"cpuSlowdownMultiplier":1}
+[after] desktop run1: performance=98 accessibility=100 best-practices=100 seo=100
+[after] desktop run2: formFactor=desktop screenEmulation.mobile=false throttling={"rttMs":40,"throughputKbps":10240,"requestLatencyMs":562.5,"downloadThroughputKbps":1474.5600000000002,"uploadThroughputKbps":675,"cpuSlowdownMultiplier":1}
+[after] desktop run2: performance=98 accessibility=100 best-practices=100 seo=100
+[after] desktop run3: formFactor=desktop screenEmulation.mobile=false throttling={"rttMs":40,"throughputKbps":10240,"requestLatencyMs":562.5,"downloadThroughputKbps":1474.5600000000002,"uploadThroughputKbps":675,"cpuSlowdownMultiplier":1}
+[after] desktop run3: performance=98 accessibility=100 best-practices=100 seo=100
+
+[after] SUMMARY {
+  "mobile": [
+    {
+      "run": 1,
+      "perf": 74,
+      "a11y": 100,
+      "bp": 100,
+      "seo": 100
+    },
+    {
+      "run": 2,
+      "perf": 77,
+      "a11y": 100,
+      "bp": 100,
+      "seo": 100
+    },
+    {
+      "run": 3,
+      "perf": 76,
+      "a11y": 100,
+      "bp": 100,
+      "seo": 100
+    }
+  ],
+  "desktop": [
+    {
+      "run": 1,
+      "perf": 98,
+      "a11y": 100,
+      "bp": 100,
+      "seo": 100
+    },
+    {
+      "run": 2,
+      "perf": 98,
+      "a11y": 100,
+      "bp": 100,
+      "seo": 100
+    },
+    {
+      "run": 3,
+      "perf": 98,
+      "a11y": 100,
+      "bp": 100,
+      "seo": 100
+    }
+  ]
+}

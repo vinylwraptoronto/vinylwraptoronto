@@ -1,0 +1,44 @@
+
+> vinylwraptoronto@0.1.0 check:browser
+> node scripts/verify.mjs && node scripts/behaviour.mjs
+
+PASS  Poppins renders (not falling back)  (poppins=570.33 bogus=477.38)
+PASS  body computes to Poppins  (Poppins, sans-serif)
+PASS  submenu present
+PASS  submenu hidden at rest (base rule wins)  (display=none)
+PASS  submenu opens on hover  (display=block)
+PASS  submenu closes on leave  (display=none)
+PASS  header border is 2px #99CC33  (rgb(153, 204, 51) 2px)
+PASS  header background white  (rgb(255, 255, 255))
+PASS  "I want to" column is navy #15334C  (rgb(21, 51, 76))
+PASS  9 top-level nav links  (9)
+PASS  46 sub links: the original's 44 + 2 self-links  (46)
+PASS  zero asset references to the old server  (0 found)
+PASS  404.html exists
+PASS  every page declares prerender
+PASS  no failed same-origin requests on the homepage
+
+15/15 checks passed
+PASS  "I want to" popup opens
+PASS    popup has its links  (17)
+PASS    closes on Escape
+PASS  quote popup opens from sticky bar
+PASS    contains the quote form
+PASS  carousel present
+PASS    dots suppressed when all slides fit  (0 dots at 1440px)
+PASS  header hides on scroll down  (top=-200)
+PASS    and comes back on scroll up  (top=0)
+PASS  form blocks empty submit
+PASS  gallery filter narrows the set  (64 of 341)
+PASS  lightbox opens on an image
+PASS  buttons change colour on hover  (rgb(21, 51, 76) -> rgb(20, 162, 120))
+PASS  mobile menu starts closed
+PASS    burger opens the panel  (290px)
+PASS    and slides rather than snapping  (167px at 90ms of 290px)
+PASS    opens over the page, not into it  (13358px either way)
+PASS    closes again
+*** FAIL    opens over the CTA bar, not under it  (no-overlap)
+PASS  comparison slider enhanced
+PASS    drag handle present
+
+20/21 behaviour checks passed

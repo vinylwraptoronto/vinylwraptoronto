@@ -1,0 +1,4 @@
+Files dist-before/_worker.js/index.js and dist-after/_worker.js/index.js differ
+Only in dist-after/_worker.js: manifest_BLHl80y-.mjs
+Only in dist-before/_worker.js: manifest_BoCskFVY.mjs
+Files dist-before/fonts/roboto.css and dist-after/fonts/roboto.css differ

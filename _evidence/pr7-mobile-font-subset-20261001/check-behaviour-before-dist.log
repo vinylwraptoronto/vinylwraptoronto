@@ -1,0 +1,23 @@
+PASS  "I want to" popup opens
+PASS    popup has its links  (17)
+PASS    closes on Escape
+PASS  quote popup opens from sticky bar
+PASS    contains the quote form
+PASS  carousel present
+PASS    dots suppressed when all slides fit  (0 dots at 1440px)
+PASS  header hides on scroll down  (top=-200)
+PASS    and comes back on scroll up  (top=0)
+PASS  form blocks empty submit
+PASS  gallery filter narrows the set  (64 of 341)
+PASS  lightbox opens on an image
+PASS  buttons change colour on hover  (rgb(21, 51, 76) -> rgb(20, 162, 120))
+PASS  mobile menu starts closed
+PASS    burger opens the panel  (290px)
+PASS    and slides rather than snapping  (136px at 90ms of 290px)
+PASS    opens over the page, not into it  (13524px either way)
+PASS    closes again
+PASS    opens over the CTA bar, not under it  (menu)
+PASS  comparison slider enhanced
+PASS    drag handle present
+
+21/21 behaviour checks passed
