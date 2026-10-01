@@ -29,7 +29,17 @@ let totalAfter = 0;
 
 for (const name of files) {
   const file = path.join(dir, name);
-  if (!fs.existsSync(file)) continue;
+  if (!fs.existsSync(file)) {
+    // QA finding: silently skipping a missing font/icon stylesheet let a
+    // broken build (e.g. a renamed/removed public/fonts/*.css) pass build
+    // and ship pages whose <link rel="stylesheet"> 404s. Fail loudly instead:
+    // every one of these four files is expected to exist in dist/fonts
+    // because Base.astro always links poppins.css/roboto.css/fontawesome.css
+    // and conditionally links montserrat.css.
+    console.error(`minify-static-css: expected font/icon stylesheet missing: ${file}`);
+    process.exitCode = 1;
+    continue;
+  }
   const before = fs.readFileSync(file, 'utf8');
   const { code, warnings } = await transform(before, {
     loader: 'css',
