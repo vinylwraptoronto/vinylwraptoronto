@@ -1,0 +1,59 @@
+{
+  "url": "http://127.0.0.1:8163/",
+  "label": "local-after-seo-only",
+  "generatedAt": "2026-10-01T16:46:15.005Z",
+  "mobile": [
+    {
+      "performance": 72,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100
+    },
+    {
+      "performance": 72,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100
+    },
+    {
+      "performance": 76,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100
+    }
+  ],
+  "desktop": [
+    {
+      "performance": 97,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100
+    },
+    {
+      "performance": 97,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100
+    },
+    {
+      "performance": 97,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100
+    }
+  ],
+  "medians": {
+    "mobile": {
+      "performance": 72,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100
+    },
+    "desktop": {
+      "performance": 97,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 100
+    }
+  }
+}

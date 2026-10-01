@@ -35,7 +35,15 @@ export const wantToPopup = {
         { text: 'Maintenance Tips', href: '/protect-your-vinyl-vehicle-wrap/' },
         { text: 'Why Get Lettering & Decals?', href: '/truck-decals-lettering-in-toronto/' },
         { text: 'Top 5 Wrap Fails', href: '/top-5-vehicle-wrap-fails-2021/' },
-        { text: 'More', href: '/blog/' },
+        /* The original's own "More" link, out on its own with no heading or
+           list above it the way Blocks.astro's generic links sit under one --
+           so an aria-label (that pattern's fix) changes the accessible name
+           but not what Lighthouse's own link-text SEO audit reads, which is
+           the visible text only. "Posts" is the one word everything else in
+           this column already states (Cost, Tips, Fails); adding it here
+           makes this link say what the other five already do, rather than
+           inventing new content. */
+        { text: 'More Posts', href: '/blog/' },
       ],
     },
     {
