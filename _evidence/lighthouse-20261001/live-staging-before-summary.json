@@ -1,0 +1,59 @@
+{
+  "url": "https://astro.vinylwraptoronto.com/",
+  "label": "live-staging-before",
+  "generatedAt": "2026-10-01T16:30:42.681Z",
+  "mobile": [
+    {
+      "performance": 84,
+      "accessibility": 100,
+      "best-practices": 96,
+      "seo": 61
+    },
+    {
+      "performance": 83,
+      "accessibility": 100,
+      "best-practices": 96,
+      "seo": 61
+    },
+    {
+      "performance": 84,
+      "accessibility": 100,
+      "best-practices": 96,
+      "seo": 61
+    }
+  ],
+  "desktop": [
+    {
+      "performance": 98,
+      "accessibility": 100,
+      "best-practices": 96,
+      "seo": 61
+    },
+    {
+      "performance": 98,
+      "accessibility": 100,
+      "best-practices": 96,
+      "seo": 61
+    },
+    {
+      "performance": 98,
+      "accessibility": 100,
+      "best-practices": 96,
+      "seo": 61
+    }
+  ],
+  "medians": {
+    "mobile": {
+      "performance": 84,
+      "accessibility": 100,
+      "best-practices": 96,
+      "seo": 61
+    },
+    "desktop": {
+      "performance": 98,
+      "accessibility": 100,
+      "best-practices": 96,
+      "seo": 61
+    }
+  }
+}
