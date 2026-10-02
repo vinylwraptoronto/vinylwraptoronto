@@ -15,13 +15,21 @@ const { server, origin } = await serveDist(8161);
 const browser = await launchChromium({ headless: true });
 const failures = [];
 
-// StickyBar fades in 1000ms after load and its opacity/transform transition
-// takes a further 450ms to settle (src/components/StickyBar.astro). Scanning
-// before that leaves `.sb-wrap` at opacity:0, which structurally hides any
-// contrast or focus-order issue in `.sb-btn--msg` from axe. Wait for the real
-// `data-shown` marker the component sets, then for the CSS transition to
-// finish (or reduced-motion to have skipped it) before running axe, with a
-// bounded timeout and a diagnostic error rather than a silent pass-through.
+// StickyBar fades in 1000ms after load and reveals itself via a clip-path +
+// transform transition that takes a further 450ms to settle
+// (src/components/StickyBar.astro) — it never animates opacity, because an
+// opacity fade was measured to blend the pill below AA contrast mid-transition.
+// Scanning before the clip-path/transform finish leaves `.sb-btn--msg`
+// partially clipped or offset, which can hide real contrast/focus-order
+// issues from axe. Checking `opacity >= 0.99` is vacuous here: this element's
+// opacity is always 1, so that condition is true immediately and never
+// actually waits for the clip/transform to resolve. Wait for the real
+// `data-shown` marker the component sets, then for clip-path and transform to
+// reach their final settled values — true under full motion (after the
+// 0.45s transition) and equally true under prefers-reduced-motion / no
+// animation support (the transition is skipped and the final values apply
+// immediately) — with a bounded timeout and a diagnostic error rather than a
+// silent pass-through or a fixed sleep.
 async function waitForStickyBarSettled(page, routeLabel) {
   const bar = page.locator('[data-sticky-bar]');
   if ((await bar.count()) === 0) {
@@ -39,9 +47,14 @@ async function waitForStickyBarSettled(page, routeLabel) {
         const element = document.querySelector(selector);
         if (!element) return false;
         const style = getComputedStyle(element);
-        // Either the transition has finished (opacity settled at 1) or
-        // prefers-reduced-motion removed the transition entirely.
-        return Number(style.opacity) >= 0.99;
+        // Final revealed state: clip-path fully open (inset(0 0 0 0), any
+        // unit/whitespace formatting) and the translateY offset resolved to
+        // no transform. This is true whether we got here via the 0.45s
+        // transition completing or because reduced-motion/no-animation
+        // support meant the final values applied with no transition at all.
+        const clipSettled = /^inset\(\s*0(px)?(\s+0(px)?){0,3}\s*\)$/.test(style.clipPath.trim());
+        const transformSettled = style.transform === 'none' || style.transform === 'matrix(1, 0, 0, 1, 0, 0)';
+        return clipSettled && transformSettled;
       },
       '[data-sticky-bar]',
       { timeout: 3000 },
@@ -49,7 +62,8 @@ async function waitForStickyBarSettled(page, routeLabel) {
   } catch (error) {
     throw new Error(
       `${routeLabel}: StickyBar did not reach a shown+settled state within the bounded timeout ` +
-        `(expected [data-shown] at ~1000ms and opacity:1 by ~1450ms). Underlying error: ${error.message}`,
+        `(expected [data-shown] at ~1000ms and clip-path/transform settled by ~1450ms). ` +
+        `Underlying error: ${error.message}`,
     );
   }
 }
