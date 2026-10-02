@@ -94,8 +94,19 @@ const source = (head?.meta as MetaTag[] | undefined) ?? [];
 let viewport = 'width=device-width, initial-scale=1';
 const carriedTags: MetaTag[] = [];
 
+/* Yoast's deprecated Twitter "label/data" pairs (`twitter:label1`,
+   `twitter:data1`, etc.) carried the WP author name ("Written by Harjit
+   Singh") and a reading-time estimate into the head on 1,042 pages. Twitter
+   stopped surfacing these years ago, so they are inert, and reproducing the
+   author/reading-time pair unreviewed on an Astro rebuild advertises
+   WordPress authorship data that no longer matches this site. Flagged by the
+   Oct 2026 SEO audit as a stale WordPress leftover; stripped here rather than
+   per-page since the same four keys recur across the whole page set. */
+const STALE_WP_META = new Set(['twitter:label1', 'twitter:data1', 'twitter:label2', 'twitter:data2']);
+
 for (const [key, isProperty, value] of source) {
   if (!value) continue;
+  if (STALE_WP_META.has(key.toLowerCase())) continue;
   if (key.toLowerCase() === 'viewport') {
     viewport = value;
     continue;

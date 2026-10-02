@@ -95,6 +95,19 @@ function fix(node: unknown): unknown {
   if (out['@id'] === ORG_ID && out['@type'] === 'Organization') {
     out['@type'] = ['Organization', 'LocalBusiness'];
     out.telephone = site.phone;
+    /* The Oct 2026 SEO audit flagged the LocalBusiness node as thin: no
+       opening hours, geo coordinates, price range or review rating, "although
+       the hours are printed in the footer." Geo, price range and a review
+       rating are not published anywhere on the live site or in this repo's
+       data, so adding them here would be inventing facts this ported site
+       cannot back up. Hours *are* a real, printed fact (footer.ts, sourced
+       from the live footer template) -- reused verbatim as
+       openingHoursSpecification. Sunday is omitted rather than claimed
+       "closed": the live footer never states a Sunday status either way. */
+    out.openingHoursSpecification = [
+      { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], opens: '08:30', closes: '17:00' },
+      { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Saturday'], opens: '10:30', closes: '17:00' },
+    ];
   }
   return out;
 }
