@@ -1,0 +1,11 @@
+import { launchChromium } from '../scripts/lib/browser.mjs';
+import { serveDist } from '../scripts/lib/static-site.mjs';
+const { server, origin } = await serveDist(8169);
+const browser = await launchChromium({ headless: true });
+const page = await browser.newPage({ viewport: { width: 1440, height: 1200 } });
+await page.goto(origin + '/', { waitUntil: 'networkidle' });
+await page.locator('footer').screenshot({ path: '_evidence/vinyl-bounded-repair2-20261002/footer-after.png' });
+await page.goto(origin + '/car-wrap-faqs/', { waitUntil: 'networkidle' });
+await page.screenshot({ path: '_evidence/vinyl-bounded-repair2-20261002/faq-after.png', fullPage: false });
+await browser.close();
+server.close();

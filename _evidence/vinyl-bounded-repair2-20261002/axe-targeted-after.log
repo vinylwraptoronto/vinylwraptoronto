@@ -1,0 +1,88 @@
+FAIL desktop / ["color-contrast","region"]
+FAIL desktop /full-car-wrap-toronto/ ["heading-order","region"]
+FAIL desktop /car-wrap-faqs/ ["heading-order","region"]
+FAIL mobile / ["region"]
+FAIL mobile /full-car-wrap-toronto/ ["heading-order","region"]
+FAIL mobile /car-wrap-faqs/ ["heading-order","region"]
+[
+  {
+    "route": "/",
+    "viewport": "desktop",
+    "violations": [
+      {
+        "id": "color-contrast",
+        "nodes": 1
+      },
+      {
+        "id": "region",
+        "nodes": 1
+      }
+    ]
+  },
+  {
+    "route": "/full-car-wrap-toronto/",
+    "viewport": "desktop",
+    "violations": [
+      {
+        "id": "heading-order",
+        "nodes": 1
+      },
+      {
+        "id": "region",
+        "nodes": 1
+      }
+    ]
+  },
+  {
+    "route": "/car-wrap-faqs/",
+    "viewport": "desktop",
+    "violations": [
+      {
+        "id": "heading-order",
+        "nodes": 1
+      },
+      {
+        "id": "region",
+        "nodes": 1
+      }
+    ]
+  },
+  {
+    "route": "/",
+    "viewport": "mobile",
+    "violations": [
+      {
+        "id": "region",
+        "nodes": 1
+      }
+    ]
+  },
+  {
+    "route": "/full-car-wrap-toronto/",
+    "viewport": "mobile",
+    "violations": [
+      {
+        "id": "heading-order",
+        "nodes": 1
+      },
+      {
+        "id": "region",
+        "nodes": 1
+      }
+    ]
+  },
+  {
+    "route": "/car-wrap-faqs/",
+    "viewport": "mobile",
+    "violations": [
+      {
+        "id": "heading-order",
+        "nodes": 1
+      },
+      {
+        "id": "region",
+        "nodes": 1
+      }
+    ]
+  }
+]

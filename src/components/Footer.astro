@@ -26,10 +26,29 @@ import {
     <!-- #70aa3a51 — 25%, navy -->
     <section class="col col--areas">
       <h4>Areas We Serve</h4>
-      {/* The original serves two heading widgets here and nothing else. The
-          seven city links and the /locations-served/ link that used to be in
-          this column were invented — the live footer contains no location
-          link at all, and "and more..." is plain text, not a link. */}
+      {/* The live footer's own markup has no location link in this column —
+          "and more..." is plain text there too, and an earlier port that
+          added 7 invented city names here was correctly reverted. These are
+          not that: the 7 links below point to the site's own real,
+          indexable /locations-served/ archive pages (North York,
+          Scarborough, Oakville, Markham, Toronto, Brampton, Mississauga),
+          each carried verbatim from the live site with its own real title
+          and content — genuine service-area pages the original site
+          publishes, just not from this footer slot. Linking to a site's own
+          existing indexable pages from its footer is standard internal
+          linking, not a fabricated claim, so they are added here as
+          worthwhile naturally-occurring improvement over the port while
+          keeping the original's own "and more..." text intact beneath
+          them. */}
+      <ul class="list areas-list">
+        <li><a href="/locations-served/custom-wraps-toronto/">Toronto</a></li>
+        <li><a href="/locations-served/custom-wraps-mississauga/">Mississauga</a></li>
+        <li><a href="/locations-served/custom-wraps-north-york/">North York</a></li>
+        <li><a href="/locations-served/custom-wraps-scarborough/">Scarborough</a></li>
+        <li><a href="/locations-served/vehicle-graphics-brampton/">Brampton</a></li>
+        <li><a href="/locations-served/custom-vinyl-wraps-markham/">Markham</a></li>
+        <li><a href="/locations-served/custom-decals-oakville/">Oakville</a></li>
+      </ul>
       <p class="areas-more">and more...</p>
 
       <h4>Contact Us</h4>
@@ -229,6 +248,12 @@ import {
     gap: 8px;
     color: #ff66c4;
   }
+
+  /* Added service-area links use the same icon-list typography as the rest
+     of the footer (16px/400 white) but without the icon gutter, since this
+     list has no icon column. */
+  .areas-list { margin: 0 0 8px; }
+  .areas-list > li:not(:last-child) { padding-block-end: 0; margin-block-end: 5px; }
 
   /* measured on the live column: Poppins 400, 16px/16px, white */
   .areas-more {

@@ -1,0 +1,22 @@
+PASS  desktop /
+PASS  desktop /car-wraps/
+PASS  desktop /commercial-vehicle-wraps/
+PASS  desktop /truck-wraps/
+PASS  desktop /van-wraps/
+PASS  desktop /tesla-vinyl-wraps/
+PASS  desktop /vehicle-paint-protection-film-toronto/
+PASS  desktop /signage/
+PASS  desktop /storefront-signs-toronto/
+PASS  desktop /contact/
+PASS  mobile /
+PASS  mobile /car-wraps/
+PASS  mobile /commercial-vehicle-wraps/
+PASS  mobile /truck-wraps/
+PASS  mobile /van-wraps/
+PASS  mobile /tesla-vinyl-wraps/
+PASS  mobile /vehicle-paint-protection-film-toronto/
+PASS  mobile /signage/
+PASS  mobile /storefront-signs-toronto/
+PASS  mobile /contact/
+
+PASS  Automated WCAG checks on 20 route/viewport combinations
