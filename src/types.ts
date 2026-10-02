@@ -261,7 +261,7 @@ export type Block = (
      data-settings, not from CSS. */
   | {
       type: 'carousel';
-      images: { src: string; alt: string }[];
+      images: { src: string; alt: string; width?: number | null; height?: number | null }[];
       perView: number;
       perViewMobile: number;
       gap: number;
