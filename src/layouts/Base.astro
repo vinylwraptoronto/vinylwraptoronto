@@ -55,12 +55,14 @@ export interface Props {
    * Requested only where it is used: the other 1,683 addresses would be paying
    * for a stylesheet and a font file they never reference. */
   montserrat?: boolean;
-  /** The homepage hero's three art-directed images, one per breakpoint —
-      see src/pages/[...slug].astro for how this is derived. Preloaded by
-      the same media query each one is shown under, so the browser fetches
-      only the one that matches the current viewport: never all three, and
-      earlier than Blocks.astro's `loading="lazy"` would otherwise start it. */
-  heroPreload?: { media: string; href: string }[];
+  /** The hero image(s) to preload for this page — see src/pages/[...slug].astro
+      for how this is derived. Either the homepage's three art-directed
+      images, one per breakpoint (each with its own `media` so the browser
+      fetches only the one matching the current viewport), or a single
+      unconditional entry (`media` omitted) for a page whose first section
+      draws its hero from a CSS `background-image` instead, which the
+      preload scanner can never discover on its own. */
+  heroPreload?: { media?: string; href: string }[];
 }
 
 const {
@@ -136,6 +138,14 @@ const ldBlocks = [...carriedLd, ...(crumbs ? [crumbs] : [])]
   .map((block) => JSON.stringify(block).replace(/</g, '\\u003c'));
 
 const iconHref = new URL(img(site.favicon), site.url).href;
+/* iOS ignores a WebP apple-touch-icon outright (Apple only parses PNG/JPG for
+   it), so Safari falls back to a plain screenshot thumbnail on
+   Add to Home Screen. public/icons/apple-touch-icon.png is the same brand
+   mark, format-converted from site.favicon (no new artwork), upscaled from
+   its native 75x70 source to the 180x180 Apple asks for — soft, but a
+   recognizable logo beats no icon. rel="icon" keeps the WebP: every browser
+   and crawler Lighthouse/SEO cares about reads WebP favicons fine. */
+const appleTouchIconHref = new URL('/icons/apple-touch-icon.png', site.url).href;
 ---
 
 <!doctype html>
@@ -157,7 +167,7 @@ const iconHref = new URL(img(site.favicon), site.url).href;
 
     <link rel="icon" href={iconHref} sizes="32x32" />
     <link rel="icon" href={iconHref} sizes="192x192" />
-    <link rel="apple-touch-icon" href={iconHref} />
+    <link rel="apple-touch-icon" href={appleTouchIconHref} />
 
     {carriedTags.map(([key, isProperty, value]) =>
       isProperty

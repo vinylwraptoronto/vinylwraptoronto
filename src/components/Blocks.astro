@@ -40,15 +40,22 @@ const { sections, blocks, toc, primaryHeadingEid: suppliedPrimaryHeadingEid } = 
  *  between a 768-wide file being ample and it being an upscale. */
 /* "Learn More" / "More" say nothing out of context. Where a generic heading
    link shares its address with an earlier heading link on the same card
-   ("Full Car Wraps"), name it after that service. The visible text stays
-   first in the name, as label-in-name requires. */
+   ("Full Car Wraps"), its context is appended as real (not aria-label-only)
+   text, visually hidden with .elementor-screen-only. Lighthouse's SEO
+   link-text audit — unlike the accessible-name computation — reads each
+   link's textContent, not its aria-label, because it is checking what a
+   search-engine crawler sees rather than what a screen reader announces; an
+   aria-label alone leaves the crawler-visible text exactly "Learn More" and
+   still fails that audit. Putting the service name in the DOM (hidden only
+   visually) fixes both the SEO text and the accessible name at once, and the
+   visible "Learn More" wording is unchanged. */
 const GENERIC_LINK = /^(learn more|read more|more|view more|see more|click here|here)$/i;
-const genericLinkLabel = (arr: Block[], i: number, b: any): string | undefined => {
+const genericLinkContext = (arr: Block[], i: number, b: any): string | undefined => {
   if (!GENERIC_LINK.test((b.text ?? '').trim())) return undefined;
   for (let j = i - 1; j >= 0; j--) {
     const p = arr[j] as any;
     if (p.type === 'heading' && p.href === b.href && p.text && !GENERIC_LINK.test(p.text.trim())) {
-      return `${b.text.trim()}: ${p.text.trim()}`;
+      return p.text.trim();
     }
   }
   return undefined;
@@ -484,7 +491,7 @@ const galleryStyle = (b: {
               {b.textHtml
                 ? <Fragment set:html={b.textHtml} />
                 : b.href
-                  ? <a class="hlink" href={img(b.href)} aria-label={genericLinkLabel(blocksArr, i, b)}>{b.text}</a>
+                  ? <a class="hlink" href={img(b.href)}>{b.text}{genericLinkContext(blocksArr, i, b) && <span class="elementor-screen-only"> – {genericLinkContext(blocksArr, i, b)}</span>}</a>
                   : b.text}
             </Tag>
           );
