@@ -25,6 +25,22 @@ https://astro.vinylwraptoronto.com/*
   X-Robots-Tag: noindex, nofollow
 # ---------------------------------------------------------------------------
 #
+# HSTS on the production hostnames only.
+#
+# Cloudflare already terminates TLS for every request this Worker receives --
+# there is no plain-HTTP origin to fall back to -- so telling the browser to
+# skip the HTTP attempt entirely costs nothing here. Scoped to the apex and
+# www, not `/*`, so it never reaches the staging hostname above (whose own
+# cert/host setup is not what this was verified against) and deliberately
+# left without `includeSubDomains` or `preload`: no inventory exists of every
+# subdomain under vinylwraptoronto.com, and either flag would bind a browser
+# to HTTPS for names this change was never checked against.
+https://vinylwraptoronto.com/*
+  Strict-Transport-Security: max-age=31536000
+https://www.vinylwraptoronto.com/*
+  Strict-Transport-Security: max-age=31536000
+# ---------------------------------------------------------------------------
+#
 # The three feeds are emitted as index.html files, because that is what the
 # static asset server maps to the addresses the original uses — /feed/, not
 # /feed.xml. The filename would otherwise decide the content type, and a feed

@@ -874,7 +874,13 @@ const galleryStyle = (b: {
               <div class="carou-track">
                 {b.images.map((i) => (
                   <figure class="carou-slide">
+                    {/* width/height so the browser reserves the slide's aspect
+                        ratio before the image loads -- the UA stylesheet derives
+                        `aspect-ratio` from these attributes even though the CSS
+                        only constrains width, which is what keeps a lazy-loaded
+                        slide from shifting layout in behind it. */}
                     <img src={img(i.src)} alt={i.alt} loading="lazy" decoding="async"
+                         width={i.width ?? undefined} height={i.height ?? undefined}
                          style={b.imgStyle ?? undefined} />
                   </figure>
                 ))}

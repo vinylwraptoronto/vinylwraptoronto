@@ -1,0 +1,12 @@
+
+> vinylwraptoronto@0.1.0 check:routes
+> node scripts/sweep.mjs
+
+pages:        1688
+sitemaps:     13   bad entries: 0
+internal links checked: 229107   dead: 0
+image refs checked:     11240   missing: 0
+  on image host:        3550 distinct keys
+  not rewritten:        0
+direct *.backblazeb2.com refs: 0   (must be 0)
+empty pages:  0
