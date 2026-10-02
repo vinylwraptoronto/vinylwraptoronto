@@ -5,7 +5,7 @@ import { serveDist } from './lib/static-site.mjs';
 const routes = [
   '/', '/car-wraps/', '/commercial-vehicle-wraps/', '/truck-wraps/', '/van-wraps/',
   '/tesla-vinyl-wraps/', '/vehicle-paint-protection-film-toronto/', '/signage/',
-  '/storefront-signs-toronto/', '/contact/',
+  '/storefront-signs-toronto/', '/contact/', '/full-car-wrap-toronto/', '/car-wrap-faqs/',
 ];
 const viewports = [
   { name: 'desktop', width: 1440, height: 900 },
@@ -14,6 +14,45 @@ const viewports = [
 const { server, origin } = await serveDist(8161);
 const browser = await launchChromium({ headless: true });
 const failures = [];
+
+// StickyBar fades in 1000ms after load and its opacity/transform transition
+// takes a further 450ms to settle (src/components/StickyBar.astro). Scanning
+// before that leaves `.sb-wrap` at opacity:0, which structurally hides any
+// contrast or focus-order issue in `.sb-btn--msg` from axe. Wait for the real
+// `data-shown` marker the component sets, then for the CSS transition to
+// finish (or reduced-motion to have skipped it) before running axe, with a
+// bounded timeout and a diagnostic error rather than a silent pass-through.
+async function waitForStickyBarSettled(page, routeLabel) {
+  const bar = page.locator('[data-sticky-bar]');
+  if ((await bar.count()) === 0) {
+    throw new Error(`${routeLabel}: no [data-sticky-bar] element found — StickyBar is expected on every route`);
+  }
+  try {
+    await bar.waitFor({ state: 'attached', timeout: 5000 });
+    await page.waitForFunction(
+      (selector) => document.querySelector(selector)?.hasAttribute('data-shown'),
+      '[data-sticky-bar]',
+      { timeout: 5000 },
+    );
+    await page.waitForFunction(
+      (selector) => {
+        const element = document.querySelector(selector);
+        if (!element) return false;
+        const style = getComputedStyle(element);
+        // Either the transition has finished (opacity settled at 1) or
+        // prefers-reduced-motion removed the transition entirely.
+        return Number(style.opacity) >= 0.99;
+      },
+      '[data-sticky-bar]',
+      { timeout: 3000 },
+    );
+  } catch (error) {
+    throw new Error(
+      `${routeLabel}: StickyBar did not reach a shown+settled state within the bounded timeout ` +
+        `(expected [data-shown] at ~1000ms and opacity:1 by ~1450ms). Underlying error: ${error.message}`,
+    );
+  }
+}
 
 try {
   for (const viewport of viewports) {
@@ -25,6 +64,7 @@ try {
     const page = await context.newPage();
     for (const route of routes) {
       await page.goto(origin + route, { waitUntil: 'domcontentloaded' });
+      await waitForStickyBarSettled(page, `${viewport.name} ${route}`);
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
         .analyze();

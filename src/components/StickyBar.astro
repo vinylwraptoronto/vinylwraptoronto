@@ -68,14 +68,23 @@ import { site } from '../data/site';
     z-index: 99;
     width: 30%;
     margin-inline: auto;
-    /* fadeInUp, 1000ms delay — matches the live animation. */
+    /* fadeInUp, 1000ms delay — matches the live animation. Revealed via
+       clip-path rather than opacity: fading the whole wrap's opacity blends
+       the pill's white text AND navy background together against the page
+       behind it, which measured as low as ~1.03:1 composited contrast on
+       .sb-btn--msg partway through the 450ms transition (below the 4.5:1 AA
+       minimum for normal text) before recovering at full opacity. A clip
+       reveal shows progressively more of the already fully-opaque pill
+       instead of a partially-transparent blend, so every visible pixel is
+       always at final (passing) contrast — same slide-up motion and the
+       same settled look, without the transient dip. */
     transform: translateY(14px);
-    opacity: 0;
+    clip-path: inset(0 0 100% 0);
     pointer-events: none;
-    transition: opacity 0.45s ease, transform 0.45s ease;
+    transition: clip-path 0.45s ease, transform 0.45s ease;
   }
   .sb-wrap[data-shown] {
-    opacity: 1;
+    clip-path: inset(0 0 0 0);
     transform: none;
     pointer-events: auto;
   }
