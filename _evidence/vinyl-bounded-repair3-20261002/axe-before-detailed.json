@@ -1,0 +1,92 @@
+[
+  {
+    "route": "/",
+    "viewport": "desktop",
+    "id": "region",
+    "impact": "moderate",
+    "selector": ".sb-btn--call > .sb-txt",
+    "html": "<span class=\"sb-txt\" data-astro-cid-5qlys77k=\"\"> <span class=\"sb-lead\" data-astro-cid-5qlys77k=\"\">Get an Estimate</span><br data-astro-cid-5qlys77k=\"\">416-746-1381 </span>",
+    "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+  },
+  {
+    "route": "/full-car-wrap-toronto/",
+    "viewport": "desktop",
+    "id": "heading-order",
+    "impact": "moderate",
+    "selector": ".col--areas > h4:nth-child(1)",
+    "html": "<h4 data-astro-cid-sz7xmlte=\"\">Areas We Serve</h4>",
+    "failureSummary": "Fix any of the following:\n  Heading order invalid"
+  },
+  {
+    "route": "/full-car-wrap-toronto/",
+    "viewport": "desktop",
+    "id": "region",
+    "impact": "moderate",
+    "selector": ".sb-btn--call > .sb-txt[data-astro-cid-5qlys77k=\"\"]",
+    "html": "<span class=\"sb-txt\" data-astro-cid-5qlys77k=\"\"> <span class=\"sb-lead\" data-astro-cid-5qlys77k=\"\">Get an Estimate</span><br data-astro-cid-5qlys77k=\"\">416-746-1381 </span>",
+    "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+  },
+  {
+    "route": "/car-wrap-faqs/",
+    "viewport": "desktop",
+    "id": "heading-order",
+    "impact": "moderate",
+    "selector": ".col--areas > h4:nth-child(1)",
+    "html": "<h4 data-astro-cid-sz7xmlte=\"\">Areas We Serve</h4>",
+    "failureSummary": "Fix any of the following:\n  Heading order invalid"
+  },
+  {
+    "route": "/car-wrap-faqs/",
+    "viewport": "desktop",
+    "id": "region",
+    "impact": "moderate",
+    "selector": ".sb-btn--call > .sb-txt",
+    "html": "<span class=\"sb-txt\" data-astro-cid-5qlys77k=\"\"> <span class=\"sb-lead\" data-astro-cid-5qlys77k=\"\">Get an Estimate</span><br data-astro-cid-5qlys77k=\"\">416-746-1381 </span>",
+    "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+  },
+  {
+    "route": "/",
+    "viewport": "mobile",
+    "id": "region",
+    "impact": "moderate",
+    "selector": ".sb-btn--call > .sb-txt",
+    "html": "<span class=\"sb-txt\" data-astro-cid-5qlys77k=\"\"> <span class=\"sb-lead\" data-astro-cid-5qlys77k=\"\">Get an Estimate</span><br data-astro-cid-5qlys77k=\"\">416-746-1381 </span>",
+    "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+  },
+  {
+    "route": "/full-car-wrap-toronto/",
+    "viewport": "mobile",
+    "id": "heading-order",
+    "impact": "moderate",
+    "selector": ".col--areas > h4:nth-child(1)",
+    "html": "<h4 data-astro-cid-sz7xmlte=\"\">Areas We Serve</h4>",
+    "failureSummary": "Fix any of the following:\n  Heading order invalid"
+  },
+  {
+    "route": "/full-car-wrap-toronto/",
+    "viewport": "mobile",
+    "id": "region",
+    "impact": "moderate",
+    "selector": ".sb-btn--call > .sb-txt[data-astro-cid-5qlys77k=\"\"]",
+    "html": "<span class=\"sb-txt\" data-astro-cid-5qlys77k=\"\"> <span class=\"sb-lead\" data-astro-cid-5qlys77k=\"\">Get an Estimate</span><br data-astro-cid-5qlys77k=\"\">416-746-1381 </span>",
+    "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+  },
+  {
+    "route": "/car-wrap-faqs/",
+    "viewport": "mobile",
+    "id": "heading-order",
+    "impact": "moderate",
+    "selector": ".col--areas > h4:nth-child(1)",
+    "html": "<h4 data-astro-cid-sz7xmlte=\"\">Areas We Serve</h4>",
+    "failureSummary": "Fix any of the following:\n  Heading order invalid"
+  },
+  {
+    "route": "/car-wrap-faqs/",
+    "viewport": "mobile",
+    "id": "region",
+    "impact": "moderate",
+    "selector": ".sb-btn--call > .sb-txt",
+    "html": "<span class=\"sb-txt\" data-astro-cid-5qlys77k=\"\"> <span class=\"sb-lead\" data-astro-cid-5qlys77k=\"\">Get an Estimate</span><br data-astro-cid-5qlys77k=\"\">416-746-1381 </span>",
+    "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+  }
+]

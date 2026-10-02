@@ -25,7 +25,7 @@ import {
   <div class="cols">
     <!-- #70aa3a51 — 25%, navy -->
     <section class="col col--areas">
-      <h4>Areas We Serve</h4>
+      <h3>Areas We Serve</h3>
       {/* The live footer's own markup has no location link in this column —
           "and more..." is plain text there too, and an earlier port that
           added 7 invented city names here was correctly reverted. These are
@@ -51,7 +51,7 @@ import {
       </ul>
       <p class="areas-more">and more...</p>
 
-      <h4>Contact Us</h4>
+      <h3>Contact Us</h3>
       <ul class="list list--pink">
         {/* The icon goes INSIDE the link, which is where the original puts it
             -- `<a><span class="icon"><i></i></span><span>text</span></a>` --
@@ -74,15 +74,15 @@ import {
 
     <!-- #6ef5e811 — 41.332%, navy -->
     <section class="col col--process">
-      <h4>Workflow</h4>
+      <h3>Workflow</h3>
       <ul class="list">
         {workflow.map((w) => <li><i class={w.icon} aria-hidden="true"></i>{w.text}</li>)}
       </ul>
-      <h4>Things that make the process Faster</h4>
+      <h3>Things that make the process Faster</h3>
       <ul class="list">
         {fasterProcess.map((w) => <li><i class={w.icon} aria-hidden="true"></i>{w.text}</li>)}
       </ul>
-      <h4>Warranty</h4>
+      <h3>Warranty</h3>
       <ul class="list"><li><i class={warrantyIcon} aria-hidden="true"></i>{warranty}</li></ul>
 
       <!-- #e8fc75d — icon-box, 30px pink ellipsis, both parts linking to /vinyl/.
@@ -106,7 +106,7 @@ import {
     <!-- #53f81f9 — the remainder; a white card, 25px padding, 5px radius -->
     <section class="col col--quote">
       <div class="card">
-        <h4>Get a Quote</h4>
+        <h3>Get a Quote</h3>
         <!-- The live footer template (18407) carries the quote form itself,
              which is why a form appears on every page of the site. -->
         <QuoteForm id="footer-quote" />
@@ -141,11 +141,11 @@ import {
         own — the styling below restates what the two element rules set — but
         the tags are part of the page's outline, so they match the original. */}
     <div class="by">
-      <h5 class="copyright">{credit.copyright}</h5>
-      <h5>
+      <h4 class="copyright">{credit.copyright}</h4>
+      <h4>
         {credit.byPrefix}{' '}
         <a class="byname" href={credit.byHref} target="_blank" rel="noopener">{credit.byName}</a>
-      </h5>
+      </h4>
     </div>
   </div>
   </div>
@@ -183,10 +183,10 @@ import {
   .col > * + * { margin-block-start: 20px; }
   .col--areas > * + * { margin-block-start: 10px; }
   /* #e935660 — CONTACT US adds 20px of its own on top of that. */
-  .col--areas > .areas-more + h4 { margin-block-start: 30px; }
+  .col--areas > .areas-more + h3 { margin-block-start: 30px; }
 
   /* #51a60bc8 / #e935660 / #71701d39 .elementor-heading-title */
-  .col h4 {
+  .col h3 {
     font-size: 20px;
     font-weight: 500;
     text-transform: uppercase;
@@ -195,7 +195,7 @@ import {
     /* measured 20px on the live render, not the 1.3 ratio */
     line-height: 20px;
   }
-  .col h4 + ul + h4 { margin-top: 22px; }
+  .col h3 + ul + h3 { margin-top: 22px; }
 
   /* #441ba18 icon-list: 16px/400 white, 10px/2 spacing between items */
   .list {
@@ -320,7 +320,7 @@ import {
     border-radius: 5px;
     padding: 25px;
   }
-  .card h4 { color: var(--e-global-color-d077a13); }
+  .card h3 { color: var(--e-global-color-d077a13); }
 
   /* #4b3afc2 — the footer form's own submit button: green, white, and the
      full width of the card, because its field group is elementor-col-100.
@@ -347,7 +347,7 @@ import {
   /* #3a97c8c6 — the heading is left-aligned at 20px on desktop, and centred at
      24px once the card goes full width below 1025px. */
   @media (max-width: 1024px) {
-    .card h4 { text-align: center; font-size: 24px; }
+    .card h3 { text-align: center; font-size: 24px; }
   }
 
   /* #491c6798 — 20px navy glyphs on white, 12px apart, centred; hovering
@@ -404,7 +404,7 @@ import {
   }
   .creditbar { background: #ffffff; padding: 10px; }
   .credit p,
-  .credit h5 { margin: 0; }
+  .credit h4 { margin: 0; }
   /* The credit line, re-measured against the original element by element:
      12px on 18px leading, weight 400, in the brand navy. What was here — 15px
      on 25px at weight 300 — was wrong on every one of the 678 addresses.
@@ -413,7 +413,7 @@ import {
      h1..h6 directly, and a direct rule beats an inherited one however specific
      the ancestor, so .by's navy never reached these two h5s and the credit
      rendered black. */
-  .credit h5 {
+  .credit h4 {
     font-size: inherit;
     font-weight: inherit;
     line-height: inherit;
@@ -482,7 +482,7 @@ import {
     .col--process,
     .col--quote { width: 100%; }
     .col--areas { padding: 20px 10px; margin: 35px 0; }
-    .col--areas > .areas-more + h4 { margin-block-start: 40px; }
+    .col--areas > .areas-more + h3 { margin-block-start: 40px; }
     .col--quote { margin: 30px 0; }
     .col--process .list > li:not(:last-child) { padding-block-end: calc(13px / 2); }
     .col--process .list > li:not(:first-child) { margin-block-start: calc(13px / 2); }

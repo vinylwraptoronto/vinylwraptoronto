@@ -1,0 +1,11 @@
+[
+  {
+    "route": "/",
+    "viewport": "desktop",
+    "id": "color-contrast",
+    "impact": "serious",
+    "selector": ".sb-btn--msg > .sb-txt",
+    "html": "<span class=\"sb-txt\" data-astro-cid-5qlys77k=\"\">Send a Message</span>",
+    "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 4.25 (foreground color: #ffffff, background color: #6a7d8d, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+  }
+]
