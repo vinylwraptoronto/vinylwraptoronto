@@ -129,14 +129,17 @@ const header = await page.evaluate(() => {
     borderBottom: cs.borderBottomColor + ' ' + cs.borderBottomWidth,
     bg: cs.backgroundColor,
     ctaBg: cta ? getComputedStyle(cta).backgroundColor : null,
-    navLinks: document.querySelectorAll('.nav > ul > li > a').length,
+    // Top-level items are an <a> when they have a real page, or a
+    // <button class="navtrig"> disclosure control (About, Vehicle Wraps)
+    // when they don't — counting only `a` undercounts by exactly those two.
+    navLinks: document.querySelectorAll('.nav > ul > li > a, .nav > ul > li > button.navtrig').length,
     subLinks: document.querySelectorAll('.nav .sub a').length,
   };
 });
 ok('header border is 2px #99CC33', header.borderBottom === 'rgb(153, 204, 51) 2px', header.borderBottom);
 ok('header background white', header.bg === 'rgb(255, 255, 255)', header.bg);
 ok('"I want to" column is navy #15334C', header.ctaBg === 'rgb(21, 51, 76)', String(header.ctaBg));
-ok('9 top-level nav links', header.navLinks === 9, String(header.navLinks));
+ok('9 top-level nav items (a + button.navtrig)', header.navLinks === 9, String(header.navLinks));
 // 44, not the 51 this once asserted: the earlier flat nav data counted a
 // phantom sub-entry for each of Home, PPF, Projects and Contact, which have no
 // children on the live site, and double-counted a few branch parents. The live
