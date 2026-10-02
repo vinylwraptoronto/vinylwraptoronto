@@ -66,10 +66,19 @@ import {
       <h4>Warranty</h4>
       <ul class="list"><li><i class={warrantyIcon} aria-hidden="true"></i>{warranty}</li></ul>
 
-      <!-- #e8fc75d — icon-box, 30px pink ellipsis, both parts linking to /vinyl/ -->
+      <!-- #e8fc75d — icon-box, 30px pink ellipsis, both parts linking to /vinyl/.
+           The icon half used to carry no text at all (icon glyph only, via
+           CSS content) — a real empty-link gap for both the SEO link-text
+           audit (reads crawler-visible textContent, not aria-label) and
+           screen-reader users (an announced link with nothing to say). The
+           fix adds the same, true destination text the adjacent link already
+           carries, visually hidden with .sr-only so the 30px icon's look is
+           unchanged; aria-hidden/tabindex=-1 are removed since the link is no
+           longer empty and should be reachable like any other. -->
       <p class="brands">
-        <a class="brands-icon" href={vinylBrands.href} tabindex="-1" aria-hidden="true">
-          <i class={vinylBrands.icon}></i>
+        <a class="brands-icon" href={vinylBrands.href}>
+          <i class={vinylBrands.icon} aria-hidden="true"></i>
+          <span class="sr-only">{vinylBrands.text}</span>
         </a>
         <a class="brands-text" href={vinylBrands.href}>{vinylBrands.text}</a>
       </p>
@@ -262,6 +271,21 @@ import {
     text-decoration: none;
   }
   .brands:hover .brands-text { color: var(--e-global-color-f32bb28); }
+  /* Same visually-hidden technique as Blocks.astro's .elementor-screen-only
+     (scoped styles mean that class doesn't reach this component) — text
+     stays in the DOM for crawlers/screen readers, off-screen for sighted
+     users. */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 
   /* #53f81f9 — the quote column is a white card, so the form keeps its own
      colours; the overrides that used to paint its labels white were there

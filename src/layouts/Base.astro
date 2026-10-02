@@ -165,6 +165,13 @@ const appleTouchIconHref = new URL('/icons/apple-touch-icon.png', site.url).href
       <link rel="preload" as="image" media={h.media} href={h.href} fetchpriority="high" />
     ))}
 
+    {/* /favicon.ico — browsers and crawlers request this well-known path
+        directly regardless of the <link rel="icon"> tags below, so its
+        absence 404s even though the WebP icons resolve correctly. Built
+        from the same brand mark as apple-touch-icon.png (no new artwork),
+        multi-size (16/32/48) PNG-in-ICO so it renders crisply at every
+        browser-chosen size. */}
+    <link rel="shortcut icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href={iconHref} sizes="32x32" />
     <link rel="icon" href={iconHref} sizes="192x192" />
     <link rel="apple-touch-icon" href={appleTouchIconHref} />
