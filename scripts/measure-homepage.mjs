@@ -60,7 +60,8 @@ try {
     }
   }
 } finally {
-  await chrome.kill();
+  try { await chrome.kill(); }
+  catch (error) { console.warn(`Chrome cleanup warning: ${error.code || error.message}`); }
 }
 
 function median(arr) {

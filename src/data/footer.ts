@@ -63,10 +63,14 @@ export const hours = {
 };
 
 /* The icon-box that closes the second column: an ellipsis in the site's pink,
-   with the title beside it, both linking to /vinyl/. */
+   with the title beside it. The original links to /vinyl/, which on the live
+   site 301-redirects to "/" (verified via curl -IL on 2026-10-02 — there is
+   no distinct /vinyl/ page, live or ported). Pointing straight at "/" avoids
+   an extra hop and matches the original's actual destination rather than its
+   literal, now-dead-here href. */
 export const vinylBrands = {
   text: 'Vinyl Brands',
-  href: '/vinyl/',
+  href: '/',
   icon: 'fas fa-ellipsis-h',
 };
 
