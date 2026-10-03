@@ -866,7 +866,7 @@ const galleryStyle = (b: {
                     >
                       <img
                         src={img(c.image)}
-                        alt={c.alt ?? c.title}
+                        alt={c.alt || c.title}
                         width={c.natural ? c.w : undefined}
                         height={c.natural ? c.h : undefined}
                         loading="lazy"
@@ -923,7 +923,7 @@ const galleryStyle = (b: {
                     <a class="card-thumb" href={c.href} tabindex="-1">
                       <img
                         src={img(c.image)}
-                        alt={c.alt ?? c.title}
+                        alt={c.alt || c.title}
                         width={thumbBox(c.image, c).w}
                         height={thumbBox(c.image, c).h}
                         loading="lazy"
