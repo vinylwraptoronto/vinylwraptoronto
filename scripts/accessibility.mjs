@@ -12,6 +12,10 @@ const routes = [
   // (/blogs/vwt-tinting/) -- previously only covered indirectly via the
   // 12 routes above, not run through axe directly (QA681a87ec gap).
   '/trailer-wrap-toronto/', '/car-lettering-and-decals-gta/', '/blogs/vwt-tinting/',
+  // Direct coverage for the card-badge contrast fix (/blog/, the cards
+  // widget's badge pill), the our-work anchor/TOC rename pass, and the
+  // boat-wrap-toronto h3 heading-hover fix (badge-contrast-repair-20261003).
+  '/blog/', '/our-work/', '/boat-wrap-toronto/',
 ];
 const viewports = [
   { name: 'desktop', width: 1440, height: 900 },

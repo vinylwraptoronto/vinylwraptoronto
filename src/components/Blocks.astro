@@ -2501,6 +2501,18 @@ const galleryStyle = (b: {
     line-height: 1;
     text-transform: uppercase;
   }
+  /* Accessibility fix: the 578 blog/post-card instances that set
+     background-color: var(--e-global-color-f32bb28) [#FF0099] with inline
+     color:#fff measure 3.67:1 — below WCAG AA's 4.5:1 for this 9px text.
+     The instance's own background-color (inline, highest specificity short
+     of !important) is overridden here for pink-badge instances only, via an
+     attribute match on that same inline declaration, to a darkened pink that
+     holds the brand hue at 5.03:1 with the unchanged white text. Layout,
+     the navy-badge variant (--e-global-color-d077a13, already ~13:1), and
+     every other --e-global-color-f32bb28 usage (nav, accents) are untouched. */
+  .card-badge[style*="f32bb28"] {
+    background-color: #d6007d !important;
+  }
   .cards a.card-more:hover { text-decoration: underline; }
   .card-meta {
     margin-top: auto;
