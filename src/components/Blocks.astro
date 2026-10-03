@@ -36,6 +36,13 @@ export interface Props {
       widget almost always sits inside a column and a recursive call has no
       other way to see where the running heading count had reached. */
   categoriesLevel?: number;
+  /** The non-stacked `cards` loop widget's hardcoded `<h3 class="elementor-
+      post__title">` card titles, clamped the same way and for the same
+      reason as `categoriesLevel` just above -- at most one non-stacked
+      `cards` block exists per page (confirmed across src/data/pages), so
+      one threaded value is enough. Computed once at the top-level call and
+      threaded through columns the same way. */
+  cardsLevel?: number;
 }
 
 /** `renderLevel` is `level` unless a heading — structured `heading`-type
@@ -48,7 +55,7 @@ export interface Props {
  *  Elementor/WordPress export. */
 type TocEntry = { eid?: string; text: string; level: number; renderLevel: number; id: string };
 
-const { sections, blocks, toc, primaryHeadingEid: suppliedPrimaryHeadingEid, categoriesLevel: suppliedCategoriesLevel } = Astro.props;
+const { sections, blocks, toc, primaryHeadingEid: suppliedPrimaryHeadingEid, categoriesLevel: suppliedCategoriesLevel, cardsLevel: suppliedCardsLevel } = Astro.props;
 
 /** True when this call is rendering the inside of a column rather than whole
  *  sections. A before/after pair in a column is drawn at half the content
@@ -365,7 +372,7 @@ function collectHeadings(
   node: unknown,
   into: TocEntry[],
   runningMax: { v: number },
-  extra: { categoriesLevel?: number },
+  extra: { categoriesLevel?: number; cardsLevel?: number },
 ): void {
   if (Array.isArray(node)) {
     for (const v of node) collectHeadings(v, into, runningMax, extra);
@@ -384,6 +391,18 @@ function collectHeadings(
     const renderLevel = Math.min(5, runningMax.v + 1);
     runningMax.v = Math.max(runningMax.v, renderLevel);
     extra.categoriesLevel = renderLevel;
+  }
+  // The `cards` loop widget's own hardcoded <h3> card titles (see the render
+  // branch below) are, like the categories label just above, not TOC-eligible
+  // section headings -- they are repeated per-card and name the linked post,
+  // not a section of this page -- so they are clamped here (same running-
+  // count mechanism) but not pushed into `into`. On archive/tag/brand
+  // listing templates the cards widget is the first thing after the H1, with
+  // no H2 yet reached, which produced an H1->H3 skip on 613 pages.
+  if (b.type === 'cards' && !b.stacked) {
+    const renderLevel = Math.min(3, runningMax.v + 1);
+    runningMax.v = Math.max(runningMax.v, renderLevel);
+    extra.cardsLevel = renderLevel;
   }
   // `tag` means the widget rendered as p or div, so it is not a heading.
   if (b.type === 'heading' && !b.tag && typeof b.level === 'number' &&
@@ -439,7 +458,7 @@ function collectHeadings(
  *  like `toc`/`primaryHeadingEid`, since recursing into collectHeadings
  *  again from a column would only see that column's own subtree and could
  *  not know the running heading count that came before it. */
-const headingExtra: { categoriesLevel?: number } = {};
+const headingExtra: { categoriesLevel?: number; cardsLevel?: number } = {};
 
 const tocEntries: TocEntry[] =
   toc ??
@@ -469,6 +488,12 @@ const tocEntries: TocEntry[] =
  *  page with the widget has exactly one and the prop is threaded through
  *  every recursive call). Never raised above 5, only ever lowered. */
 const categoriesLevel = suppliedCategoriesLevel ?? headingExtra.categoriesLevel ?? 5;
+
+/** The clamped render level for this page's single non-stacked `cards`-block
+ *  `<h3 class="elementor-post__title">` card titles (see `collectHeadings`),
+ *  falling back to the authored 3 if absent. Never raised above 3, only
+ *  ever lowered. */
+const cardsLevel = suppliedCardsLevel ?? headingExtra.cardsLevel ?? 3;
 
 /** eid -> anchor id, so a heading and its TOC entry always agree. */
 const tocIds = new Map<string, string>();
@@ -534,7 +559,7 @@ const galleryStyle = (b: {
           const promoted = b.eid === primaryHeadingEid ? 1 : b.level === 1 ? 2 : b.level;
           // Clamped to never skip a level (see collectHeadings/tocHeadingRenderLevel);
           // only ever lower than `promoted`, never higher.
-          const level = (b.eid && tocHeadingRenderLevel.get(b.eid)) ?? promoted;
+          const level = (b.eid ? tocHeadingRenderLevel.get(b.eid) : undefined) ?? promoted;
           const Tag = (b.tag ?? `h${Math.min(Math.max(level, 1), 6)}`) as 'h1';
           const id = b.eid ? tocIds.get(b.eid) : undefined;
           // When the clamp lowered the tag, apply a parallel class carrying the
@@ -934,8 +959,21 @@ const galleryStyle = (b: {
                   <div class="card-text">
                     {/* The original titles each card with
                         <h3 class="elementor-post__title">; a span instead took
-                        1,223 headings out of the document outline. */}
-                    <h3 style={b.titleStyle ?? undefined}><a href={c.href}>{c.title}</a></h3>
+                        1,223 headings out of the document outline. On
+                        archive/tag/brand listing templates this widget sits
+                        directly under the H1 with no H2 yet, so the tag is
+                        clamped (never raised) the same way every other
+                        heading is -- see `collectHeadings`/`cardsLevel`.
+                        `.card-title` (not the tag) now carries the typography
+                        below so it stays put no matter which tag is chosen. */}
+                    {(() => {
+                      const CardTitleTag = `h${cardsLevel}` as 'h3';
+                      return (
+                        <CardTitleTag class="card-title" style={b.titleStyle ?? undefined}>
+                          <a href={c.href}>{c.title}</a>
+                        </CardTitleTag>
+                      );
+                    })()}
                     {'desc' in c && c.desc && <p class="card-desc" style={b.descStyle ?? undefined}>{c.desc}</p>}
                     {c.more && (
                       <a
@@ -1344,7 +1382,7 @@ const galleryStyle = (b: {
                     class:list={['col', { 'col--tinted': tinted, 'col--card': isCard }]}
                     style={style}
                   >
-                    <Astro.self blocks={c.blocks} toc={tocEntries} primaryHeadingEid={primaryHeadingEid} categoriesLevel={categoriesLevel} />
+                    <Astro.self blocks={c.blocks} toc={tocEntries} primaryHeadingEid={primaryHeadingEid} categoriesLevel={categoriesLevel} cardsLevel={cardsLevel} />
                   </div>
                 );
               })}
@@ -2410,7 +2448,7 @@ const galleryStyle = (b: {
      so card titles wrapped early on every listing on the site. */
   .cards .card-thumb { margin-bottom: 20px; }
   .cards .card-text { padding: 0 10px; }
-  .cards h3 {
+  .cards .card-title {
     /* Same rendering as the span it replaced: the heading is for the document
        outline, not a change of appearance. These are the posts widget's own
        defaults — 16px on a 1.2 ratio, no capitalize — and any instance that
