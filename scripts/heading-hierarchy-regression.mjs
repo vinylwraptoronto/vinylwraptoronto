@@ -64,6 +64,32 @@ const checks = [
     expectNoSkip: true,
     catTitle: { fontSize: '18px', textTransform: 'none', color: 'rgb(68, 68, 68)', textAlign: 'center' },
   },
+  {
+    // QA cb27 (MEDIUM): /our-work/ had 38+ before/after gallery card-title
+    // headings sharing one literal eid ("56a8ead") in our-work.json. The
+    // shared-eid Map lookup in tocHeadingRenderLevel meant EVERY column --
+    // including the first-rendered one -- read back the LAST column's cached
+    // clamp value, producing a 1->3 skip at the very first gallery heading.
+    // Fixed at the data layer only (distinct `56a8ead-0`, `56a8ead-1`, ...
+    // suffixes in our-work.json); Blocks.astro's clamp/render logic is
+    // untouched. This asserts the first gallery heading now renders in
+    // sequence (no skip) and keeps its own distinct, stable eid.
+    route: '/our-work/',
+    expectNoSkip: true,
+    firstGalleryHeading: { eid: '56a8ead-0', text: 'BMW X4' },
+  },
+  {
+    // QA cb27 (HIGH): `.cards > li:hover h3 a` was left stale when the base
+    // rule was renamed `.cards h3` -> `.cards .card-title` to support a
+    // dynamic card-title tag (cardsLevel 1-3). /blog/ renders card-titles as
+    // <h2> (cardsLevel 2), so the old hardcoded-h3 hover selector would not
+    // match here at all. Fixed to `.cards > li:hover .card-title a`. This
+    // asserts the brand-pink hover/focus color actually applies on this
+    // non-h3 cardsLevel page.
+    route: '/blog/',
+    expectNoSkip: true,
+    cardHover: { selector: '.cards > li .card-title a', expectedTag: 'h2', color: 'rgb(255, 0, 153)' },
+  },
 ];
 
 const { server, origin } = await serveDist(8162);
@@ -167,6 +193,39 @@ try {
               );
             }
           }
+        }
+      }
+      if (check.firstGalleryHeading) {
+        const h = check.firstGalleryHeading;
+        const info = await page
+          .locator(`[data-eid="${h.eid}"]`)
+          .first()
+          .evaluate((el) => ({ tag: el.tagName.toLowerCase(), text: (el.textContent || '').trim() }))
+          .catch((error) => ({ error: String(error) }));
+        if (info.error) {
+          failures.push(`${label}: could not read first gallery heading [data-eid="${h.eid}"] -- ${info.error}`);
+        } else {
+          if (!info.text.includes(h.text)) {
+            failures.push(`${label}: first gallery heading [data-eid="${h.eid}"] text "${info.text}" does not include expected "${h.text}"`);
+          }
+        }
+      }
+      if (check.cardHover) {
+        const h = check.cardHover;
+        const link = page.locator(h.selector).first();
+        const tag = await link.evaluate((el) => el.closest('.card-title')?.tagName.toLowerCase());
+        if (tag !== h.expectedTag) {
+          failures.push(`${label}: ${h.selector} card-title tag is <${tag}>, expected <${h.expectedTag}>`);
+        }
+        await link.hover();
+        const hoverColor = await link.evaluate((el) => getComputedStyle(el).color);
+        if (hoverColor !== h.color) {
+          failures.push(`${label}: ${h.selector} hover color is ${hoverColor}, expected ${h.color} (brand-pink hover selector regression)`);
+        }
+        await link.focus();
+        const focusColor = await link.evaluate((el) => getComputedStyle(el).color);
+        if (focusColor !== h.color) {
+          failures.push(`${label}: ${h.selector} focus color is ${focusColor}, expected ${h.color} (brand-pink hover selector regression)`);
         }
       }
       const routeFailures = failures.filter((f) => f.startsWith(`${label}:`)).length;
