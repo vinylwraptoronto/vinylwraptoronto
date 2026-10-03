@@ -16,6 +16,13 @@
  *
  * Never reference `*.backblazeb2.com` directly: that path skips Cloudflare and
  * bills the account for egress.
+ *
+ * `/hero/*` paths (e.g. `/hero/car-wraps-hero-2000x914.webp`) are a deliberate,
+ * sanctioned exception: they don't start with `/wp-content/uploads/`, so they
+ * pass through this function unrewritten and are served same-origin from
+ * `public/`/the build output rather than the CDN host above. This is a
+ * one-off, not a pattern to extend without also deciding on a cache-control
+ * story for same-origin, non-content-hashed filenames.
  */
 
 const UPLOADS = '/wp-content/uploads/';
