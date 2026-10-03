@@ -1,6 +1,31 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { execSync } from 'node:child_process';
 import AxeBuilder from '@axe-core/playwright';
 import { launchChromium } from './lib/browser.mjs';
 import { serveDist } from './lib/static-site.mjs';
+
+// Minimal failure-capture instrumentation (blog-targetsize-capture-20261003):
+// on ANY target-size violation hit inside the actual full suite run below,
+// dump the exact axe node + surrounding scan context to disk so the next
+// diagnosis step works from proven data instead of isolated-replay guesses.
+const EVIDENCE_DIR = 'D:/Codex/vinyl-external-evidence-20261002/blog-targetsize-capture-20261003';
+fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
+let buildIdentity;
+try {
+  buildIdentity = {
+    headSha: execSync('git rev-parse HEAD', { cwd: process.cwd() }).toString().trim(),
+    dirty: execSync('git status --short', { cwd: process.cwd() }).toString().trim().split('\n').filter(Boolean),
+  };
+} catch (error) {
+  buildIdentity = { error: error.message };
+}
+let distMtime;
+try {
+  distMtime = fs.statSync(path.join(process.cwd(), 'dist')).mtime.toISOString();
+} catch {
+  distMtime = null;
+}
 
 const routes = [
   '/', '/car-wraps/', '/commercial-vehicle-wraps/', '/truck-wraps/', '/van-wraps/',
@@ -89,11 +114,89 @@ try {
     for (const route of routes) {
       await page.goto(origin + route, { waitUntil: 'domcontentloaded' });
       await waitForStickyBarSettled(page, `${viewport.name} ${route}`);
+      // target-size (WCAG 2.2 AA, 2.5.8) ships `enabled: false` in axe-core by
+      // default — `.withTags([... 'wcag22aa'])` alone never runs it, so every
+      // prior pass of this gate silently skipped touch-target-size checks
+      // (root cause of the "mobile target-size node not identified" QA gap).
+      // Explicitly re-enabling it here is the fix.
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+        .options({ rules: { 'target-size': { enabled: true } } })
         .analyze();
       for (const violation of results.violations) {
         failures.push(`${viewport.name} ${route}: ${violation.id} (${violation.impact}) — ${violation.nodes.length} node(s)`);
+        if (violation.id === 'target-size') {
+          // Capture full forensic evidence for every target-size node at the
+          // moment of actual failure inside the real full-suite scan (not a
+          // replay): selector/html/check data, viewport, scroll position,
+          // the element's own rect, any overlapping-neighbor rect axe
+          // reports, a screenshot, StickyBar's live settled state, and
+          // source/build identity.
+          const stickyBarState = await page.evaluate(() => {
+            const bar = document.querySelector('[data-sticky-bar]');
+            if (!bar) return null;
+            const style = getComputedStyle(bar);
+            return {
+              hasShownAttr: bar.hasAttribute('data-shown'),
+              clipPath: style.clipPath,
+              transform: style.transform,
+              opacity: style.opacity,
+              rect: bar.getBoundingClientRect().toJSON(),
+            };
+          });
+          const scroll = await page.evaluate(() => ({ x: window.scrollX, y: window.scrollY }));
+          for (const [nodeIndex, node] of violation.nodes.entries()) {
+            let targetRect = null;
+            let elementHandle = null;
+            try {
+              elementHandle = await page.$(node.target[0]);
+              if (elementHandle) {
+                targetRect = await elementHandle.boundingBox();
+              }
+            } catch (error) {
+              targetRect = { error: error.message };
+            }
+            const screenshotPath = path.join(
+              EVIDENCE_DIR,
+              `targetsize-${viewport.name}-${route.replace(/[^a-z0-9]+/gi, '-')}-node${nodeIndex}.png`,
+            );
+            try {
+              if (elementHandle) {
+                await elementHandle.screenshot({ path: screenshotPath }).catch(() =>
+                  page.screenshot({ path: screenshotPath, fullPage: false }),
+                );
+              } else {
+                await page.screenshot({ path: screenshotPath, fullPage: false });
+              }
+            } catch (error) {
+              // non-fatal; still write the JSON evidence below
+            }
+            const record = {
+              capturedAt: new Date().toISOString(),
+              viewport,
+              route,
+              scroll,
+              targetRect,
+              node: {
+                target: node.target,
+                html: node.html,
+                failureSummary: node.failureSummary,
+                impact: node.impact,
+                any: node.any,
+                all: node.all,
+                none: node.none,
+              },
+              stickyBarState,
+              buildIdentity,
+              distMtime,
+              screenshotPath,
+            };
+            fs.appendFileSync(
+              path.join(EVIDENCE_DIR, 'target-size-capture.ndjson'),
+              `${JSON.stringify(record)}\n`,
+            );
+          }
+        }
       }
       const basics = await page.evaluate(() => ({
         lang: document.documentElement.lang,

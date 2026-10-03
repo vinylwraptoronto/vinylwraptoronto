@@ -79,6 +79,25 @@ const checks = [
     firstGalleryHeading: { eid: '56a8ead-0', text: 'BMW X4' },
   },
   {
+    // focused-a11y-repair2-20261003: /tesla-vinyl-wraps/ "See The Results"
+    // gallery had the SAME literal-eid collision as QA cb27's /our-work/ fix
+    // above (12 cards all sharing eid "56a8ead" in tesla-vinyl-wraps.json,
+    // unlike our-work.json's already-unique "56a8ead-0".."56a8ead-N"), which
+    // broke that card's anchor id (card 1's heading rendered with card 12's
+    // slug as its id) and masked the real second defect below it. Fixed by
+    // suffixing tesla-vinyl-wraps.json's eids the same way. That alone did
+    // NOT clear the heading-order violation: collectHeadings' `runningMax`
+    // was a monotonic max() that never decreases, so the earlier $4,500 H3
+    // price box permanently raised the floor, and the later H2 "See The
+    // Results" -> H4 gallery-card skip went unclamped even though the H2 was
+    // the immediately preceding heading. Fixed by tracking the LAST rendered
+    // level instead of the deepest-ever level. Asserts both: the id/eid now
+    // matches the first card's own content, and the sequence has no skip.
+    route: '/tesla-vinyl-wraps/',
+    expectNoSkip: true,
+    firstGalleryHeading: { eid: '56a8ead-0', text: 'Personal- Tesla Model 3 – Partial Wrap' },
+  },
+  {
     // QA cb27 (HIGH): `.cards > li:hover h3 a` was left stale when the base
     // rule was renamed `.cards h3` -> `.cards .card-title` to support a
     // dynamic card-title tag (cardsLevel 1-3). /blog/ renders card-titles as
@@ -88,7 +107,7 @@ const checks = [
     // non-h3 cardsLevel page.
     route: '/blog/',
     expectNoSkip: true,
-    cardHover: { selector: '.cards > li .card-title a', expectedTag: 'h2', color: 'rgb(255, 0, 153)' },
+    cardHover: { selector: '.cards > li .card-title a', expectedTag: 'h2', color: 'rgb(214, 0, 125)' },
   },
 ];
 

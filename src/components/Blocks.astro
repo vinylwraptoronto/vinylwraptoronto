@@ -389,7 +389,15 @@ function collectHeadings(
   // so there is never more than one value to compute or thread.
   if (b.type === 'categories' && typeof b.title === 'string') {
     const renderLevel = Math.min(5, runningMax.v + 1);
-    runningMax.v = Math.max(runningMax.v, renderLevel);
+    // Tracks the level of the MOST RECENT heading (not the deepest one ever
+    // seen) — a plain max() ratchet never decreases, so one early H3 (e.g. a
+    // price box) would permanently suppress the skip-detection clamp for
+    // every later heading on the page, even after the document had returned
+    // to H2 (reproduced on /tesla-vinyl-wraps/: H3 "$4,500" then H2 "See The
+    // Results" then gallery H4 cards rendered unclamped as H4, a real
+    // heading-order violation axe caught). Never letting the tracked level
+    // fall below 1 keeps the very first clamp call (right after the H1) safe.
+    runningMax.v = Math.max(1, renderLevel);
     extra.categoriesLevel = renderLevel;
   }
   // The `cards` loop widget's own hardcoded <h3> card titles (see the render
@@ -401,7 +409,15 @@ function collectHeadings(
   // no H2 yet reached, which produced an H1->H3 skip on 613 pages.
   if (b.type === 'cards' && !b.stacked) {
     const renderLevel = Math.min(3, runningMax.v + 1);
-    runningMax.v = Math.max(runningMax.v, renderLevel);
+    // Tracks the level of the MOST RECENT heading (not the deepest one ever
+    // seen) — a plain max() ratchet never decreases, so one early H3 (e.g. a
+    // price box) would permanently suppress the skip-detection clamp for
+    // every later heading on the page, even after the document had returned
+    // to H2 (reproduced on /tesla-vinyl-wraps/: H3 "$4,500" then H2 "See The
+    // Results" then gallery H4 cards rendered unclamped as H4, a real
+    // heading-order violation axe caught). Never letting the tracked level
+    // fall below 1 keeps the very first clamp call (right after the H1) safe.
+    runningMax.v = Math.max(1, renderLevel);
     extra.cardsLevel = renderLevel;
   }
   // `tag` means the widget rendered as p or div, so it is not a heading.
@@ -421,7 +437,15 @@ function collectHeadings(
     // must not move just because the on-page tag did.
     const promoted = b.eid === primaryHeadingEid ? 1 : b.level === 1 ? 2 : b.level;
     const renderLevel = Math.min(promoted, runningMax.v + 1);
-    runningMax.v = Math.max(runningMax.v, renderLevel);
+    // Tracks the level of the MOST RECENT heading (not the deepest one ever
+    // seen) — a plain max() ratchet never decreases, so one early H3 (e.g. a
+    // price box) would permanently suppress the skip-detection clamp for
+    // every later heading on the page, even after the document had returned
+    // to H2 (reproduced on /tesla-vinyl-wraps/: H3 "$4,500" then H2 "See The
+    // Results" then gallery H4 cards rendered unclamped as H4, a real
+    // heading-order violation axe caught). Never letting the tracked level
+    // fall below 1 keeps the very first clamp call (right after the H1) safe.
+    runningMax.v = Math.max(1, renderLevel);
     into.push({ eid: b.eid as string | undefined, text: b.text, level: b.level, renderLevel, id: '' });
   }
   // Most of a post's headings are inside the rich-text body, not the block
@@ -443,7 +467,15 @@ function collectHeadings(
         // separately via an `rt-lvl*` class keyed on the *authored* level,
         // so this only changes the tag a screen reader/crawler sees.
         const renderLevel = Math.min(level, runningMax.v + 1);
-        runningMax.v = Math.max(runningMax.v, renderLevel);
+        // Tracks the level of the MOST RECENT heading (not the deepest one ever
+    // seen) — a plain max() ratchet never decreases, so one early H3 (e.g. a
+    // price box) would permanently suppress the skip-detection clamp for
+    // every later heading on the page, even after the document had returned
+    // to H2 (reproduced on /tesla-vinyl-wraps/: H3 "$4,500" then H2 "See The
+    // Results" then gallery H4 cards rendered unclamped as H4, a real
+    // heading-order violation axe caught). Never letting the tracked level
+    // fall below 1 keeps the very first clamp call (right after the H1) safe.
+    runningMax.v = Math.max(1, renderLevel);
         into.push({ eid: `${b.eid ?? 'rt'}#${n}`, text, level, renderLevel, id: '' });
       }
       n++;
@@ -975,14 +1007,26 @@ const galleryStyle = (b: {
                       );
                     })()}
                     {'desc' in c && c.desc && <p class="card-desc" style={b.descStyle ?? undefined}>{c.desc}</p>}
+                    {/* `card-more` duplicates the title/thumbnail link's own
+                        `href` purely as decorative "Read More" text -- it was
+                        already pulled out of the tab order (tabindex="-1")
+                        since clicking it reached nothing new. On narrow
+                        viewports a wrapped 2-line title sits close enough
+                        above it (raw node: `li:nth-child(3) > .card-text >
+                        .card-title > a` on mobile /blog/, ~4.6px of gap)
+                        that axe's WCAG 2.5.8 target-size check flags the
+                        pair as two separate, too-closely-spaced interactive
+                        targets. `aria-hidden` alone does not satisfy axe's
+                        check here -- target-size evaluates paintable/
+                        clickable geometry, not the accessibility tree, so a
+                        hidden-but-still-`href`-bearing anchor is still
+                        counted as a second target. Rendering it as a plain
+                        `<span>` (no `href`, not a link) removes it as an
+                        interactive target entirely; the title and
+                        thumbnail links still reach the same destination, so
+                        no destination becomes unreachable. */}
                     {c.more && (
-                      <a
-                        class="card-more"
-                        style={b.moreStyle ?? undefined}
-                        href={c.href}
-                        aria-label={`Read more about ${c.title}`}
-                        tabindex="-1"
-                      >{c.more}</a>
+                      <span class="card-more" style={b.moreStyle ?? undefined}>{c.more}</span>
                     )}
                   </div>
                   {(c.author || c.date) && (
@@ -1594,12 +1638,28 @@ const galleryStyle = (b: {
     text-decoration: none;
   }
   .elementor-pagination a.page-numbers:hover { color: var(--e-global-color-8c22d81); }
-  .elementor-pagination .page-numbers.current { color: var(--e-global-color-f32bb28); }
+  /* f32bb28 (#ff0099) on white measures 3.67:1 for this 20px/400-weight text
+     (fails AA's 4.5:1 normal-text threshold -- caught scanning the middle/last
+     pagination pages, not page 1, where this class also renders). Reuses the
+     already-validated #d6007d pink (badge-contrast-repair-20261003, 5.05:1). */
+  .elementor-pagination .page-numbers.current { color: #d6007d; }
   /* On page 1 "« Previous" and on page 34 "Next »" are spans, not links — the
      same thing the original renders. Dimming them says so without moving
-     anything, which a display:none would. */
-  .elementor-pagination span.prev,
-  .elementor-pagination span.next { opacity: 0.45; }
+     anything, which a display:none would. opacity:0.45 on the navy token
+     measured at 2.57:1 on white (fails AA); this explicit muted shade keeps
+     the same "disabled" look while clearing 4.5:1 (4.83:1 measured).
+     Selector is `span.page-numbers.prev`/`.next` (3 classes + 1 type =
+     higher specificity than the `.page-numbers:not(.dots)` rule above,
+     which is 3 classes) rather than the plain `span.prev`/`span.next` this
+     task started from (2 classes + 1 type) -- the plain form always lost
+     that specificity contest to `:not(.dots)` since the disabled spans
+     carry both classes, so the rule rendered navy, never muted, despite
+     axe reporting 0 violations either way (navy-on-white already clears
+     AA). Scoped to `span` only -- the enabled `<a class="page-numbers
+     prev">` link intentionally keeps its normal `:not(.dots)` navy/hover
+     colors; this must not repaint that active, clickable state. */
+  .elementor-pagination span.page-numbers.prev,
+  .elementor-pagination span.page-numbers.next { color: #607485; }
 
   /* "Page" before each number, for screen readers only. Same rule Elementor
      ships; the numbers alone read as a bare list of digits. */
@@ -2425,7 +2485,20 @@ const galleryStyle = (b: {
     border-color: var(--e-global-color-a8178e9);
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   }
-  .cards > li:hover .card-title a { color: var(--brand-pink); }
+  /* var(--brand-pink) is #ff0099, which measures 3.68:1 for this 16px/500
+     card-title text (fails WCAG AA 4.5:1 for normal text). Using the same
+     already-validated #d6007d pink as the pagination .current fix above
+     (badge-contrast-repair-20261003, 5.05:1+) instead of the brand token. */
+  .cards > li:hover .card-title a { color: #d6007d; }
+  /* Keyboard-only parity: hover above only fires on pointer-over, so Tabbing
+     to a card-title link with no prior mouse hover left no visible change.
+     Matches the hover colour and reuses the site's existing :focus-visible +
+     outline convention (QuoteForm.astro, Interactions.astro). */
+  .card-title a:focus-visible {
+    color: #d6007d;
+    outline: 2px solid var(--e-global-color-a8178e9);
+    outline-offset: 2px;
+  }
   .cards a { text-decoration: none; color: var(--brand-navy); }
   /* Elementor's posts widget is set to `elementor-fit-height` on every grid
      checked -- /trailer-decals-lettering/, /box-truck-wrap/, /blog/,
@@ -2434,11 +2507,28 @@ const galleryStyle = (b: {
      heights on the original: 197 beside 211 beside 211.
 
      The port forced 16/10 with `object-fit: cover`, so every thumbnail on the
-     site was cropped to a shape the original never asks for. */
+     site was cropped to a shape the original never asks for.
+
+     `aspect-ratio: auto` here does that (no forced crop) once the image has
+     loaded, but it also overrides the UA stylesheet's own
+     `aspect-ratio: attr(width) / attr(height)` default -- the mechanism that
+     lets a browser reserve an unloaded `<img width height>`'s box from its
+     attributes alone (the exact fix the module comment above thumbBox()
+     already relies on). With author CSS forcing `auto`, an unloaded lazy
+     thumbnail has no ratio to size from and collapses toward 0 height until
+     it loads, shrinking every card above it. On mobile's single-column
+     /blog/ archive that collapsed the 3rd card by exactly the sticky bar's
+     56px pill height, which is what axe caught as `li:nth-child(3) >
+     .card-title a` losing its unobstructed target-size to `.sb-wrap`'s fixed
+     viewport-floor band (serious, WCAG 2.5.8) -- a real pre-load layout
+     state, not a scan artifact, and also a CLS source independent of axe.
+     Dropping the override lets the attribute-based reservation apply before
+     load and the real image ratio apply after; since thumbBox() derives
+     width/height from the image's own file (filename dimensions or recorded
+     w/h), the two ratios match and no crop is reintroduced. */
   .cards img {
     width: 100%;
     height: auto;
-    aspect-ratio: auto;
     object-fit: fill;
     display: block;
   }
@@ -2478,7 +2568,7 @@ const galleryStyle = (b: {
      read-more link never got its own colour. Everything else about it —
      family, size, leading, weight, case — differs per posts-widget instance
      and now arrives inline from the widget; only the layout is fixed here. */
-  .cards a.card-more {
+  .cards .card-more {
     display: inline-block;
     margin-top: 0;
     /* The posts widget's own defaults; an instance that sets its own family,
@@ -2513,7 +2603,6 @@ const galleryStyle = (b: {
   .card-badge[style*="f32bb28"] {
     background-color: #d6007d !important;
   }
-  .cards a.card-more:hover { text-decoration: underline; }
   .card-meta {
     margin-top: auto;
     /* The original rules this row off with a green hairline and pads it 10px
