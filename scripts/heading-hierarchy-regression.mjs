@@ -13,12 +13,14 @@
  *    viewport-independent for this CSS, but we check both to catch any
  *    future viewport-scoped override).
  *  - /car-lettering-and-decals-gta/: same clamp, single H1->H3 widget skip.
- *  - /blogs/vwt-tinting/: deliberately NOT asserted clean -- its H1->H5 skip
- *    comes from the unrelated `categories`-block's hardcoded `<h5
- *    class="cat-title">` (see heading-skip-scan.mjs evidence), which this
- *    fix does not touch. Asserted here only as a "still present, don't
- *    silently regress further" marker so a future fix of that widget is
- *    expected to flip this assertion, not break it.
+ *  - /blogs/vwt-tinting/: the `categories`-block's hardcoded `<h5
+ *    class="cat-title">` (see heading-skip-scan.mjs evidence) is now
+ *    clamped by the same mechanism (collectHeadings/categoriesLevel),
+ *    rendering as the next heading in sequence (<h2> on this page, right
+ *    after its own H1) instead of a fixed H5 -- asserted clean, and the
+ *    `.cat-title` class (a class selector, unlike the structured/rich-text
+ *    fixes' `hlvl*`/`rt-lvl*` mirror classes) is checked directly, since it
+ *    alone -- not the tag -- carries this widget's typography.
  *
  * Usage: node scripts/heading-hierarchy-regression.mjs
  */
@@ -54,10 +56,13 @@ const checks = [
     clampedHeadings: [{ eid: '44115b32', authoredLevel: 3 }],
   },
   {
-    // Not fixed by this change (different widget entirely) -- asserted as a
-    // "known, still open" marker, not a pass/fail on the clamp itself.
+    // The categories-widget clamp: this page's sidebar `<h5 class="cat-title">`
+    // now renders as the next heading in document order (no skip) with the
+    // same `.cat-title` class, so its 18px/none/#444/center typography is
+    // unchanged regardless of tag.
     route: '/blogs/vwt-tinting/',
-    expectNoSkip: false,
+    expectNoSkip: true,
+    catTitle: { fontSize: '18px', textTransform: 'none', color: 'rgb(68, 68, 68)', textAlign: 'center' },
   },
 ];
 
@@ -136,6 +141,32 @@ try {
             `${label}: [data-eid="${h.eid}"] (<${style.tag}>, authored H${h.authoredLevel}) ` +
               `text-transform is ${style.textTransform}, expected ${expected.textTransform}`,
           );
+        }
+      }
+      if (check.catTitle) {
+        const style = await page
+          .locator('.cat-title')
+          .evaluate((el, expected) => ({
+            tag: el.tagName.toLowerCase(),
+            fontSize: getComputedStyle(el).fontSize,
+            textTransform: getComputedStyle(el).textTransform,
+            color: getComputedStyle(el).color,
+            textAlign: getComputedStyle(el).textAlign,
+          }), check.catTitle)
+          .catch((error) => ({ error: String(error) }));
+        if (style.error) {
+          failures.push(`${label}: could not read .cat-title -- ${style.error}`);
+        } else {
+          if (style.tag === 'h5') {
+            failures.push(`${label}: .cat-title is still <h5> -- categories-block clamp did not apply`);
+          }
+          for (const prop of ['fontSize', 'textTransform', 'color', 'textAlign']) {
+            if (style[prop] !== check.catTitle[prop]) {
+              failures.push(
+                `${label}: .cat-title (<${style.tag}>) ${prop} is ${style[prop]}, expected ${check.catTitle[prop]} (unchanged widget appearance)`,
+              );
+            }
+          }
         }
       }
       const routeFailures = failures.filter((f) => f.startsWith(`${label}:`)).length;

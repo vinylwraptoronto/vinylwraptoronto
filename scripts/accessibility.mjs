@@ -6,6 +6,12 @@ const routes = [
   '/', '/car-wraps/', '/commercial-vehicle-wraps/', '/truck-wraps/', '/van-wraps/',
   '/tesla-vinyl-wraps/', '/vehicle-paint-protection-film-toronto/', '/signage/',
   '/storefront-signs-toronto/', '/contact/', '/full-car-wrap-toronto/', '/car-wrap-faqs/',
+  // Direct coverage for the two routes fixed by the structured/rich-text
+  // heading-level-skip clamp (Blocks.astro collectHeadings), plus one
+  // representative route affected by the categories-widget `<h5>` clamp
+  // (/blogs/vwt-tinting/) -- previously only covered indirectly via the
+  // 12 routes above, not run through axe directly (QA681a87ec gap).
+  '/trailer-wrap-toronto/', '/car-lettering-and-decals-gta/', '/blogs/vwt-tinting/',
 ];
 const viewports = [
   { name: 'desktop', width: 1440, height: 900 },

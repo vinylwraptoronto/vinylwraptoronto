@@ -28,6 +28,14 @@ export interface Props {
   toc?: TocEntry[];
   /** The one heading promoted to the document H1, threaded through columns. */
   primaryHeadingEid?: string;
+  /** The categories widget's hardcoded `<h5 class="cat-title">` label,
+      clamped like every other heading (see `collectHeadings`) so it never
+      skips past the document's heading sequence so far -- computed once at
+      the top-level call (where `toc` is undefined) and threaded through
+      columns the same way `toc`/`primaryHeadingEid` already are, since the
+      widget almost always sits inside a column and a recursive call has no
+      other way to see where the running heading count had reached. */
+  categoriesLevel?: number;
 }
 
 /** `renderLevel` is `level` unless a heading — structured `heading`-type
@@ -40,7 +48,7 @@ export interface Props {
  *  Elementor/WordPress export. */
 type TocEntry = { eid?: string; text: string; level: number; renderLevel: number; id: string };
 
-const { sections, blocks, toc, primaryHeadingEid: suppliedPrimaryHeadingEid } = Astro.props;
+const { sections, blocks, toc, primaryHeadingEid: suppliedPrimaryHeadingEid, categoriesLevel: suppliedCategoriesLevel } = Astro.props;
 
 /** True when this call is rendering the inside of a column rather than whole
  *  sections. A before/after pair in a column is drawn at half the content
@@ -353,13 +361,30 @@ function pagerSteps(current: number, total: number): (number | string)[] {
    It has to walk the whole section tree: headings live inside columns, and a
    flat pass over the top-level blocks found none of them, so the panel came
    out empty on all 402 posts that carry the widget. */
-function collectHeadings(node: unknown, into: TocEntry[], runningMax: { v: number }): void {
+function collectHeadings(
+  node: unknown,
+  into: TocEntry[],
+  runningMax: { v: number },
+  extra: { categoriesLevel?: number },
+): void {
   if (Array.isArray(node)) {
-    for (const v of node) collectHeadings(v, into, runningMax);
+    for (const v of node) collectHeadings(v, into, runningMax, extra);
     return;
   }
   if (!node || typeof node !== 'object') return;
   const b = node as Record<string, unknown>;
+  // The categories widget's own hardcoded <h5> label (see the render branch
+  // below) is not a TOC-eligible heading -- it names the dropdown next to
+  // it, not a document section -- so it is clamped here (same running-count
+  // mechanism as every other heading) but deliberately NOT pushed into
+  // `into`: the sidebar TOC must keep listing exactly the same entries it
+  // always has. Confirmed sitewide: at most one `categories` block per page,
+  // so there is never more than one value to compute or thread.
+  if (b.type === 'categories' && typeof b.title === 'string') {
+    const renderLevel = Math.min(5, runningMax.v + 1);
+    runningMax.v = Math.max(runningMax.v, renderLevel);
+    extra.categoriesLevel = renderLevel;
+  }
   // `tag` means the widget rendered as p or div, so it is not a heading.
   if (b.type === 'heading' && !b.tag && typeof b.level === 'number' &&
       b.level >= 2 && b.level <= 6 && typeof b.text === 'string') {
@@ -405,8 +430,16 @@ function collectHeadings(node: unknown, into: TocEntry[], runningMax: { v: numbe
       n++;
     }
   }
-  for (const v of Object.values(b)) collectHeadings(v, into, runningMax);
+  for (const v of Object.values(b)) collectHeadings(v, into, runningMax, extra);
 }
+
+/** Populated only by the top-level collectHeadings walk below (where `toc`
+ *  is undefined); a nested `<Astro.self>` call for a column receives the
+ *  already-computed value as the `categoriesLevel` prop instead, exactly
+ *  like `toc`/`primaryHeadingEid`, since recursing into collectHeadings
+ *  again from a column would only see that column's own subtree and could
+ *  not know the running heading count that came before it. */
+const headingExtra: { categoriesLevel?: number } = {};
 
 const tocEntries: TocEntry[] =
   toc ??
@@ -414,7 +447,7 @@ const tocEntries: TocEntry[] =
     const found: TocEntry[] = [];
     // Seeded at 1: every page has exactly one H1 (verified sitewide), always
     // ahead of everything collectHeadings walks (which only sees level 2-6).
-    collectHeadings(sections ?? [], found, { v: 1 });
+    collectHeadings(sections ?? [], found, { v: 1 }, headingExtra);
     // Headings repeat — several posts carry the same price twice — so ids are
     // suffixed on collision, and the heading uses the same id by eid lookup.
     const used = new Map<string, number>();
@@ -428,6 +461,14 @@ const tocEntries: TocEntry[] =
       })
       .filter((e) => e.id);
   })();
+
+/** The clamped render level for this page's single `categories`-block
+ *  `<h5 class="cat-title">` (see `collectHeadings`), falling back to the
+ *  authored 5 if somehow absent (no categories block on this page, or this
+ *  call is nested without the prop threaded -- never observed, since every
+ *  page with the widget has exactly one and the prop is threaded through
+ *  every recursive call). Never raised above 5, only ever lowered. */
+const categoriesLevel = suppliedCategoriesLevel ?? headingExtra.categoriesLevel ?? 5;
 
 /** eid -> anchor id, so a heading and its TOC entry always agree. */
 const tocIds = new Map<string, string>();
@@ -577,9 +618,18 @@ const galleryStyle = (b: {
         }
 
         if (b.type === 'categories') {
+          // The widget's own label, not a category name (those are the
+          // <option> entries below, correctly non-headings already) -- a
+          // genuine section heading for the dropdown next to it, so it is
+          // clamped the same way every other heading-skip fix in this file
+          // clamps, never turned into a link/non-heading. `.cat-title`'s
+          // declarations are a class selector (see global styles below),
+          // which beats a bare element rule regardless of which tag this
+          // renders as, so appearance is identical at every clamped level.
+          const CatTag = `h${Math.min(Math.max(categoriesLevel, 1), 6)}` as 'h5';
           return (
             <div class="catlist">
-              <h5 class="cat-title">{b.title}</h5>
+              <CatTag class="cat-title">{b.title}</CatTag>
               <form class="catform">
                 <label class="elementor-screen-only" for="cat">{b.title}</label>
                 <select name="cat" id="cat" class="postform" data-catnav>
@@ -1294,7 +1344,7 @@ const galleryStyle = (b: {
                     class:list={['col', { 'col--tinted': tinted, 'col--card': isCard }]}
                     style={style}
                   >
-                    <Astro.self blocks={c.blocks} toc={tocEntries} primaryHeadingEid={primaryHeadingEid} />
+                    <Astro.self blocks={c.blocks} toc={tocEntries} primaryHeadingEid={primaryHeadingEid} categoriesLevel={categoriesLevel} />
                   </div>
                 );
               })}
