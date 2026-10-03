@@ -30,12 +30,14 @@ export interface Props {
   primaryHeadingEid?: string;
 }
 
-/** `renderLevel` is `level` unless a heading embedded in a rich-text body
- *  (`<h3>`/`<h4>`...) would otherwise skip a level — e.g. an FAQ question
- *  hand-authored as `<h4>` directly under its `<h2>` section heading, with no
- *  `<h3>` in between. Structured `heading`-type blocks are left at their
- *  authored level (that hierarchy was already audited); only text-embedded
- *  tags, which the WordPress export carries verbatim, get clamped. */
+/** `renderLevel` is `level` unless a heading — structured `heading`-type
+ *  block or one embedded in a rich-text body (`<h3>`/`<h4>`...) — would
+ *  otherwise skip a level, e.g. a standalone `<h4>` card-title widget placed
+ *  directly under an `<h2>` section heading with no `<h3>` in between, or an
+ *  FAQ question hand-authored as `<h4>` the same way inside the rich text.
+ *  Both kinds of block get the same clamp (see `collectHeadings` below);
+ *  neither is pre-audited, since both are carried verbatim from the
+ *  Elementor/WordPress export. */
 type TocEntry = { eid?: string; text: string; level: number; renderLevel: number; id: string };
 
 const { sections, blocks, toc, primaryHeadingEid: suppliedPrimaryHeadingEid } = Astro.props;
@@ -361,11 +363,22 @@ function collectHeadings(node: unknown, into: TocEntry[], runningMax: { v: numbe
   // `tag` means the widget rendered as p or div, so it is not a heading.
   if (b.type === 'heading' && !b.tag && typeof b.level === 'number' &&
       b.level >= 2 && b.level <= 6 && typeof b.text === 'string') {
-    // Structured heading blocks were already audited for order (the H1/H2
-    // promotion above); trust the authored level and only use it to track
-    // how deep the document has gone so far.
-    into.push({ eid: b.eid as string | undefined, text: b.text, level: b.level, renderLevel: b.level, id: '' });
-    runningMax.v = Math.max(runningMax.v, b.level);
+    // Not pre-audited: on some pages a standalone heading WIDGET (not rich
+    // text) skips a level the same way an embedded <h4> can -- e.g.
+    // car-lettering-and-decals-gta's H1 followed directly by an H3 card
+    // subheading, or trailer-wrap-toronto's chosen H1 followed by three H4
+    // card titles with no H2/H3 between. `eid === primaryHeadingEid` mirrors
+    // the promotion the render branch below applies (the page's chosen H1,
+    // whatever its authored level, always renders as <h1>); every other
+    // heading-type block is clamped exactly like a rich-text one: never
+    // raised, only lowered enough to not skip past `runningMax + 1`. The
+    // entry's own `level` stays the AUTHORED one (unclamped) because the
+    // table-of-contents sidebar nesting below reads it, and TOC indentation
+    // must not move just because the on-page tag did.
+    const promoted = b.eid === primaryHeadingEid ? 1 : b.level === 1 ? 2 : b.level;
+    const renderLevel = Math.min(promoted, runningMax.v + 1);
+    runningMax.v = Math.max(runningMax.v, renderLevel);
+    into.push({ eid: b.eid as string | undefined, text: b.text, level: b.level, renderLevel, id: '' });
   }
   // Most of a post's headings are inside the rich-text body, not the block
   // model, so a walk over blocks alone listed only the few standalone heading
@@ -427,6 +440,19 @@ for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
 const tocRenderLevel = new Map<string, number>();
 for (const e of tocEntries) if (e.eid && e.renderLevel !== e.level) tocRenderLevel.set(e.eid, e.renderLevel);
 
+/** eid -> corrected heading level, for structured `heading`-type blocks (the
+ *  same skip-prevention clamp `collectHeadings` already computed, re-exposed
+ *  here keyed by eid so the render branch below can apply it). Compared
+ *  against the SAME primary-heading promotion the render branch itself
+ *  applies, so this only has an entry when the clamp actually lowered the
+ *  level the render branch would otherwise have used. */
+const tocHeadingRenderLevel = new Map<string, number>();
+for (const e of tocEntries) {
+  if (!e.eid || e.eid.includes('#')) continue;
+  const promoted = e.eid === primaryHeadingEid ? 1 : e.level === 1 ? 2 : e.level;
+  if (e.renderLevel !== promoted) tocHeadingRenderLevel.set(e.eid, e.renderLevel);
+}
+
 /* A gallery's grid comes from the widget, not from one site-wide rule: the
    column count per breakpoint, the tile crop and the gutter are all declared
    per instance. Each becomes a custom property on the grid element, and the
@@ -464,9 +490,17 @@ const galleryStyle = (b: {
   const blocksArr = group.blocks;
   const inner = blocksArr.map((b, i) => {
         if (b.type === 'heading') {
-          const level = b.eid === primaryHeadingEid ? 1 : b.level === 1 ? 2 : b.level;
+          const promoted = b.eid === primaryHeadingEid ? 1 : b.level === 1 ? 2 : b.level;
+          // Clamped to never skip a level (see collectHeadings/tocHeadingRenderLevel);
+          // only ever lower than `promoted`, never higher.
+          const level = (b.eid && tocHeadingRenderLevel.get(b.eid)) ?? promoted;
           const Tag = (b.tag ?? `h${Math.min(Math.max(level, 1), 6)}`) as 'h1';
           const id = b.eid ? tocIds.get(b.eid) : undefined;
+          // When the clamp lowered the tag, apply a parallel class carrying the
+          // ORIGINAL (authored) level's typography, mirroring `.rt-lvl*` for
+          // rich-text headings -- the visual size/weight/transform must not
+          // move just because the tag did.
+          const hlvlClass = !b.tag && level !== promoted ? `hlvl${b.level}` : undefined;
 
           /* The offer price, on 403 pages, and the one place where flattening a
              widget into plain text changed what a customer is told.
@@ -490,7 +524,7 @@ const galleryStyle = (b: {
           if (/^\$[\d,]+\s+\$[\d,]+$/.test(b.text.trim())) {
             const [was, now] = b.text.trim().split(/\s+/);
             return (
-              <Tag class:list={["price", { hd: !!b.tag }]} id={id} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
+              <Tag class:list={["price", { hd: !!b.tag }, hlvlClass]} id={id} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
                 <span class="ah-was">{was}</span><br /><span class="ah-now">{now}</span>
               </Tag>
             );
@@ -501,7 +535,7 @@ const galleryStyle = (b: {
              the paragraph's 1.5 instead of the heading's 1, so it set 18px text
              on 27px leading against the original's 18. */
           return (
-            <Tag class:list={[{ hd: !!b.tag }]} id={id} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
+            <Tag class:list={[{ hd: !!b.tag }, hlvlClass]} id={id} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
               {/* `textHtml` where the heading's content is markup rather than a
                   line of text. Elementor writes a heading as HTML, and the port
                   took its textContent -- so "Colour change wraps start at
@@ -1696,6 +1730,22 @@ const galleryStyle = (b: {
     color: var(--ink);
     text-transform: none;
   }
+
+  /* Structured `heading`-type widgets (not rich text, so not under `.rt`) get
+     the same skip-prevention clamp as embedded rich-text headings (see
+     `collectHeadings`/`tocHeadingRenderLevel` above): the rendered tag is
+     only ever lowered, never raised, to avoid a level skip. `global.css`'s
+     bare h1-h6 rules already give the right margin/line-height/weight/color
+     for whichever tag actually renders -- only font-size and text-transform
+     are keyed to the tag number there, and those must keep tracking the
+     ORIGINAL authored level, not the lowered one. A class selector always
+     beats the bare element selector it's paired with, regardless of source
+     order, so this needs no `!important` and no reordering of global.css. */
+  :global(.hlvl2) { font-size: 28px; text-transform: capitalize; }
+  :global(.hlvl3) { font-size: 22px; text-transform: capitalize; }
+  :global(.hlvl4),
+  :global(.hlvl5),
+  :global(.hlvl6) { font-size: 18px; text-transform: none; }
 
   .rt :global(p) { margin: 0 0 16px; }
   .rt :global(p:last-child) { margin-bottom: 0; }
