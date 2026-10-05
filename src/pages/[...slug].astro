@@ -280,6 +280,11 @@ const heroPreload = heroCoversAllBreakpoints
     line-height: 1.5;
     color: #444444;
   }
+  /* `.container` carries no gutter (see global.css): the inset comes from the
+     column inside it. The post info sits in an Elementor column with 10px of
+     widget-wrap padding -- 10px from the window edge at 390 and 600 -- and
+     without it the date ran flush against the edge on phones. */
+  .postmeta .container { padding-inline: 10px; }
   .postmeta .by { margin-left: 12px; }
   .postmeta a { color: inherit; text-decoration: none; }
   .postmeta a:hover { text-decoration: underline; }

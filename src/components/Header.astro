@@ -196,11 +196,14 @@ const hasOwnPage = (href: string) => href !== '#';
   .bar { width: 100%; display: flex; align-items: center; gap: 0; padding: 10px 0; }
 
   /* The column is 12% — 173px at 1440, which is what the original's logo
-     column measures — but the logo inside it renders at 153px there, not the
-     full width of its column. Ours filled the column and came out 169x37
-     against the original's 153x33. */
-  .brand { width: 12%; display: block; text-align: start; }
-  .brand img { width: 100%; max-width: 153px; height: auto; display: block; }
+     column measures — and the logo fills it less the 10px a side of
+     `.elementor-column-gap-default > .elementor-column > .elementor-element-populated`
+     (Elementor frontend.min.css): 153px at 1440, 136px at 1300, and 10px in
+     from the window edge at every width. The port had capped the image at
+     153px with no padding instead, which matched at 1440 only and put the
+     logo flush against the left edge of the window. */
+  .brand { width: 12%; display: block; text-align: start; padding: 0 10px; }
+  .brand img { width: 100%; height: auto; display: block; }
 
   .nav { width: 78%; margin: 0 35px 0 0; }
 
@@ -635,9 +638,12 @@ const hasOwnPage = (href: string) => href !== '#';
   }
 
   /* The live template drops that margin to 0 at the mobile breakpoint, where
-     the space is needed for the logo. */
+     the space is needed for the logo. The burger still sits 10px in from the
+     window edge there -- measured at 390 and 600 -- because its column keeps
+     Elementor's 10px widget-wrap padding. With the margin at 0 and no padding
+     the port drew it flush against the edge. */
   @media (max-width: 767px) {
-    .toggle { margin-right: 0; width: 45px; height: 45px; border-radius: 5px; }
+    .toggle { margin-right: 10px; width: 45px; height: 45px; border-radius: 5px; }
     /* The panel tightens with it: the original's rows go from 40px to 30px
        here, on 5px of padding and 15px text. */
     .prow > a { padding: 5px 16px; font-size: 15px; }
