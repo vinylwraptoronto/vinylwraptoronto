@@ -158,6 +158,28 @@ const headingBySlug = new Map(posts.map((p) => [p.slug, postHeading(p.sections, 
  * one is written the file is empty and every page builds exactly as before.
  */
 const authored = posts.filter((p) => p.origin === 'authored');
+const newestFirst = (list) =>
+  list
+    .slice()
+    .sort((a, b) => String(b.published ?? '').localeCompare(String(a.published ?? '')))
+    .map((p) => p.slug);
+
+/* The two author archives are the only archives that list from `members`, and
+   they were ported with the members they had on the day. A post written here
+   belongs on its author's archive too, under the same address the byline
+   links to -- src/data/author-archives.json is that map, shared with the
+   page route so the two cannot disagree. Every archive gets a key, empty or
+   not, so the shape of this file does not change with the first post. */
+const authorArchives = JSON.parse(
+  fs.readFileSync(path.join(ROOT, 'src/data/author-archives.json'), 'utf8'),
+);
+const byAuthor = Object.fromEntries(
+  Object.entries(authorArchives).map(([name, slug]) => [
+    slug,
+    newestFirst(authored.filter((p) => p.author === name)),
+  ]),
+);
+
 const additions = {
   summaries: Object.fromEntries(
     authored.map((p) => [
@@ -175,10 +197,8 @@ const additions = {
   ),
   // Newest first, which is the order every listing on this site uses.
   members: {
-    blog: authored
-      .slice()
-      .sort((a, b) => String(b.published ?? '').localeCompare(String(a.published ?? '')))
-      .map((p) => p.slug),
+    blog: newestFirst(authored),
+    ...byAuthor,
   },
 };
 fs.writeFileSync(path.join(ROOT, 'src/data/post-additions.json'), JSON.stringify(additions));

@@ -19,6 +19,9 @@ import { withGalleries } from '../lib/gallery';
 import { blogPageMeta, blogSections, pageCount, PER_PAGE, type BlogEntry } from '../lib/bloglist';
 import { membersOf } from '../lib/archive';
 import { img } from '../lib/img';
+/* Author name -> archive slug, shared with scripts/pull-posts.mjs so a post
+   written in /admin is filed under the same archive its byline links to. */
+import authorArchives from '../data/author-archives.json';
 
 export const prerender = true;
 
@@ -119,11 +122,8 @@ const page = isBlogIndex
 /* Every post byline on the original links to that author's archive. Only these
    two archives exist and are linked there; a third author value, "Paolo Leone",
    appears on three pages but /author/paolo* redirects, so it stays plain text. */
-const AUTHOR_ARCHIVES: Record<string, string> = {
-  'Harjit Singh': '/author/harjitbrandingcentres-com/',
-  masoud: '/author/masoud/',
-};
-const authorHref = page.author ? AUTHOR_ARCHIVES[page.author] : undefined;
+const archiveSlug = page.author ? (authorArchives as Record<string, string>)[page.author] : undefined;
+const authorHref = archiveSlug ? `/${archiveSlug}/` : undefined;
 
 /* An archive lists the members extracted from the original site, plus any post
    written in /admin that belongs there. Nearly every archive on this site
