@@ -1243,8 +1243,12 @@ const galleryStyle = (b: {
         { 'sec--tall': !!section?.minHeight },
       ]}
       data-eid={section?.id ?? undefined}
-      style={[secStyle, section?.minHeight ? `min-height:${section.minHeight}` : '']
-        .filter(Boolean).join(';') || undefined}
+      style={[
+        secStyle,
+        section?.minHeight ? `--mh:${section.minHeight}` : '',
+        section?.minHeight && section.minHeightTablet ? `--mh-t:${section.minHeightTablet}` : '',
+        section?.minHeight && section.minHeightMobile ? `--mh-m:${section.minHeightMobile}` : '',
+      ].filter(Boolean).join(';') || undefined}
     >
       {section?.slideshow && section.slideshow.images.length > 0 && (
         /* One layer per photograph, all stacked, cross-fading on a timer. The
@@ -1332,8 +1336,16 @@ const galleryStyle = (b: {
      port used to draw that read as a layout choice; the moment the background
      slideshow went in, the heading landed on the bright sign in the first
      photograph. The original's own padding here is `0 10px`, not 34px. */
-  .sec--tall { padding-block: 0; display: flex; }
+  .sec--tall { padding-block: 0; display: flex; min-height: var(--mh); }
   .sec--tall > .container { align-self: center; width: 100%; }
+  /* Elementor's breakpoints, and its inheritance: a breakpoint with no value
+     of its own takes the next one up. */
+  @media (max-width: 1024px) {
+    .sec--tall { min-height: var(--mh-t, var(--mh)); }
+  }
+  @media (max-width: 767px) {
+    .sec--tall { min-height: var(--mh-m, var(--mh-t, var(--mh))); }
+  }
   /* elementor-section-full_width: edge to edge, and no gutter on the inner
      wrapper — the section's own padding is the only inset. */
   .container--full { max-width: none; padding-inline: 0; }

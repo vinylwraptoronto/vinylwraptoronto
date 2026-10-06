@@ -28,8 +28,12 @@
     z-index: 1100;
     background: rgba(0, 0, 0, 0.92);
     display: grid;
-    grid-template-columns: 60px 1fr 60px;
-    grid-template-rows: 1fr auto;
+    /* minmax(0, …), not a bare 1fr: a 1fr track never shrinks below its
+       content's min-content width, so a landscape photo widened the middle
+       column past the viewport and pushed the next arrow and the end of the
+       caption off screen on phones. */
+    grid-template-columns: 60px minmax(0, 1fr) 60px;
+    grid-template-rows: minmax(0, 1fr) auto;
     align-items: center;
     justify-items: center;
   }
@@ -38,8 +42,12 @@
   .lb-img {
     grid-column: 2;
     grid-row: 1;
-    max-width: min(1400px, 94vw);
+    /* The cell's width, not the viewport's: 94vw is wider than the column
+       left between the two arrows. */
+    max-width: min(1400px, 100%);
     max-height: 84vh;
+    /* iOS Safari's vh is the toolbar-hidden height, taller than what shows. */
+    max-height: 84dvh;
     object-fit: contain;
   }
   .lb-cap {
@@ -73,7 +81,7 @@
   }
 
   @media (max-width: 767px) {
-    .lb { grid-template-columns: 40px 1fr 40px; }
+    .lb { grid-template-columns: 40px minmax(0, 1fr) 40px; }
     .lb button { font-size: 32px; }
   }
 

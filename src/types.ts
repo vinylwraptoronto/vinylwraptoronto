@@ -435,6 +435,13 @@ export type Section = {
       generic 34px above and below, so a 630px hero rendered 698px tall with
       its content pinned to the top edge. */
   minHeight?: string | null;
+  /** The same height at Elementor's tablet (<=1024) and mobile (<=767)
+      breakpoints, where the original declares one. Unset inherits upwards,
+      as Elementor does: mobile from tablet, tablet from desktop. Without them
+      a 650px photo banner stayed 650px on a phone and `cover` cropped the
+      picture to a sliver. Harvested by scripts/pull-section-heights.py. */
+  minHeightTablet?: string | null;
+  minHeightMobile?: string | null;
   /** The inner container's own padding, where it is not the port's generic
       20px gutter — `10px 0` on the hero rows. */
   innerPad?: string | null;
