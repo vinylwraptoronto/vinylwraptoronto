@@ -20,7 +20,14 @@ editor's save route does, in one command:
 4. `--apply` runs it against D1 with wrangler, reads the row back over the API,
    and runs `scripts/pull-posts.mjs` so the committed snapshot matches.
 
-Nothing is deployed by this. The Deploy workflow ships `main`.
+The script itself deploys nothing. The Deploy workflow
+(`.github/workflows/deploy.yml`) does: on every run it rebuilds `main` **from
+D1**, gates on the link and image sweep, uploads the Worker version, promotes
+it and re-requests the site. So a post that is in D1 goes live the next time
+that workflow runs, with no code change needed. The workflow has a manual
+trigger (`workflow_dispatch`), which is exactly what the admin panel's Deploy
+button calls, and it is what the routine calls too. Code changes still reach
+`main` through a pull request that a person reviews; posts do not wait for it.
 
 The three source files and the regenerated snapshot are what get committed, so
 a post is reviewable as a diff: the body as HTML, the metadata as JSON, and the
@@ -43,7 +50,8 @@ exact row that went into the database.
 
 Paste this as the scheduled task's prompt. It replaces the earlier version,
 whose last step forbade committing and pushing and whose runs therefore
-produced nothing durable.
+produced nothing durable. This version publishes end to end: database, branch
+and pull request, deploy, live check.
 
 ---
 
@@ -94,10 +102,24 @@ Publish:
 7. Review `git diff --stat`: only the three `db/posts/` files and the
    regenerated `src/data/{posts,blog-index,post-additions,categories}.json`
    may change. Commit with a descriptive message and push to the designated
-   branch. Do not merge to `main` and do not deploy; a person reviews and
-   merges, which is what ships it.
+   branch. Open a pull request to `main` with the GitHub tools (title: the
+   post title; body: topic, intent, files, checks run, claims to review) so the
+   record is reviewable. Do not merge it; a person does that.
+
+Deploy and confirm it is on the site:
+8. Trigger the `Deploy` workflow on `main` with the GitHub Actions dispatch
+   tool (workflow `deploy.yml`, ref `main`). Its build pulls the post from D1,
+   so the post ships without waiting for the pull request.
+9. Watch that run to completion. If it fails, read the failed job's log and
+   fix the cause (in D1 or on the branch), then dispatch again; a red deploy is
+   never left as is, and a job is never re-run just to see if it passes.
+10. When the run is green, fetch `https://astro.vinylwraptoronto.com/<slug>/`
+    and confirm it answers 200 with the post's title in the HTML, and that
+    `https://astro.vinylwraptoronto.com/blog/` carries its card. Only then is
+    the post published. If the hostname still serves the old build after a
+    green run, say so; do not report it as live.
 
 Report back: the topic and search intent, the files changed, internal links,
-the SEO score, the verification results, any claim that needs a human check,
-and the exact merge step that remains. Send the notification whether the run
+the SEO score, the verification results, the pull request and Deploy run
+links, the live URL as fetched, and any claim that needs a human check. Send the notification whether the run
 succeeded or was blocked; silence only when nothing was done.
