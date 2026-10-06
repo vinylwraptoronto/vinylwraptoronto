@@ -156,9 +156,10 @@ ok('7 top-level nav items (a + button.navtrig)', header.navLinks === 7, String(h
 // unreachable from the panel.
 //
 // 47 since Projects moved from the top level into the Our Work dropdown, and
-// 48 since Tesla Wraps moved under Vehicle Wraps: its four children were
-// already counted, and its own row is now a dropdown link too.
-ok('48 sub links: the original\'s 44 + 2 self-links + Projects + Tesla Wraps', header.subLinks === 48, String(header.subLinks));
+// still 47 since Tesla Wraps moved under Vehicle Wraps: its own row became a
+// dropdown link, and its "Tesla Wraps" self-link, which repeats that row, is
+// left out of the desktop dropdown (the mobile panel keeps it).
+ok('47 sub links: the original\'s 44 + 2 self-links + Projects', header.subLinks === 47, String(header.subLinks));
 
 // --- no reference to the old server ---------------------------------------
 let oldRefs = 0;
