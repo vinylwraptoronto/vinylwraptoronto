@@ -187,22 +187,35 @@ const hasOwnPage = (href: string) => href !== '#';
     .site-header { transition: none; }
   }
 
-  /* Stretched full width on the live site, not clamped to the content column.
+  /* Boxed to the same 1400px column as the page content and the footer, so the
+     logo lines up with the left edge of the content below it and the "I want
+     to" column with its right edge. The live site stretched the bar edge to
+     edge, which put the logo hard against the viewport; there is always a
+     20px gutter a side now, at every width, so it never touches the edge.
 
      10px top and bottom: the original's header is 68px tall with a 66px
      container around 46px nav links, and this had no vertical padding at all,
      so the bar came out 48px. 20px short on every one of the 678 addresses,
      and the most-multiplied single difference on the site. */
-  .bar { width: 100%; display: flex; align-items: center; gap: 0; padding: 10px 0; }
+  .bar {
+    width: min(1400px, 100% - 40px);
+    margin-inline: auto;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 10px 0;
+  }
 
   /* The column is 12% — 173px at 1440, which is what the original's logo
      column measures — but the logo inside it renders at 153px there, not the
      full width of its column. Ours filled the column and came out 169x37
      against the original's 153x33. */
-  .brand { width: 12%; display: block; text-align: start; }
+  .brand { width: 12%; flex-shrink: 0; display: block; text-align: start; }
   .brand img { width: 100%; max-width: 153px; height: auto; display: block; }
 
-  .nav { width: 78%; margin: 0 35px 0 0; }
+  /* min-width 0 so a nav that is too wide gives way rather than pushing the
+     logo; the steps further down keep it from ever being too wide. */
+  .nav { width: 78%; flex: 1 1 auto; min-width: 0; margin: 0 35px 0 0; }
 
   /* Child combinators throughout: `.nav ul` would also match ul.sub inside it,
      out-specify the rule that hides the submenu, and the dropdown would never
@@ -294,6 +307,14 @@ const hasOwnPage = (href: string) => href !== '#';
   .sub > li.has-sub2:has(a:focus-visible) > .sub2 { display: block; }
 
   .sub--wide { column-count: 3; column-gap: 0; min-width: 720px; }
+  /* Anchored to the right edge of the menu, not to its own trigger. Hung off
+     the trigger it ran 165px past the right edge of a 1025px window once the
+     menu got shorter and Vehicle Wraps sat further right; the menu itself is
+     never narrower than this dropdown, so lined up with its edge it always
+     fits. */
+  .nav > ul { position: relative; }
+  .nav > ul > li:has(> .sub--wide) { position: static; }
+  .sub.sub--wide { left: auto; right: 0; }
   .sub--wide > li { break-inside: avoid; }
   /* A flyout cannot be laid out inside a CSS column, so those rows open inline. */
   .sub--wide > li.has-sub2 > .sub2 {
@@ -590,6 +611,21 @@ const hasOwnPage = (href: string) => href !== '#';
     overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
   }
 
+  /* The seven top-level items need 705px at full size. When there were nine
+     (before Projects moved under Our Work and Tesla Wraps under Vehicle
+     Wraps) they needed 952px, and between the burger breakpoint and ~1300px
+     the bar had less than that to give them: they ran left over the logo --
+     off the screen entirely at 1025. Tighter padding holds the seven to 633px
+     down to 1241, and 14px type to 540px from there to 1025, each leaving
+     whitespace either side of the menu. */
+  @media (min-width: 1025px) and (max-width: 1366px) {
+    .nav > ul > li > .toplink { padding-inline: 6px; gap: 6px; }
+  }
+  @media (min-width: 1025px) and (max-width: 1240px) {
+    .nav { margin-right: 20px; }
+    .nav > ul > li > .toplink { font-size: 14px; padding-inline: 4px; }
+  }
+
   /* Elementor's tablet breakpoint: the widget is dropdown-tablet, so the panel
      takes over from 1024px down. */
   /* Column widths at the tablet breakpoint come from the live template:
@@ -612,8 +648,11 @@ const hasOwnPage = (href: string) => href !== '#';
        the one width somebody checked. */
     /* No vertical padding: the space above and below the logo is the header
        row's, not the logo column's. The 6px a side here was making every
-       collapsed header 12px taller than the original's. */
-    .brand { width: auto; max-width: none; padding: 0 0 0 14px; }
+       collapsed header 12px taller than the original's.
+
+       No left padding either: the bar's own 20px gutter is the space beside
+       the logo now. */
+    .brand { width: auto; max-width: none; padding: 0; }
     .brand img { width: 28vw; max-width: none; }
     .wantto-col { width: 20%; }
     /* Over the page, not part of it. The original's panel is absolutely
@@ -647,7 +686,6 @@ const hasOwnPage = (href: string) => href !== '#';
     .wantto-col { display: none; }
     /* With the "I want to" column gone the logo takes the room, as it does on
        the original: 245px at 390 and 306 at 480, which is 63vw. */
-    .brand { padding-left: 10px; }
     .brand img { width: 63vw; }
   }
 

@@ -56,6 +56,32 @@
     ]
    },
    {
+    "text": "Tesla Wraps",
+    "href": "/tesla-vinyl-wraps/",
+    "children": [
+     {
+      "text": "Tesla Wraps",
+      "href": "/tesla-vinyl-wraps/",
+      "children": []
+     },
+     {
+      "text": "Tesla Model 3 Wraps",
+      "href": "/tesla-model-3-wraps/",
+      "children": []
+     },
+     {
+      "text": "Tesla Model S Wraps",
+      "href": "/tesla-model-s-wraps/",
+      "children": []
+     },
+     {
+      "text": "Cybertruck Wraps",
+      "href": "/cybertruck-wraps/",
+      "children": []
+     }
+    ]
+   },
+   {
     "text": "Van Wraps",
     "href": "/van-wraps/",
     "children": [
@@ -228,32 +254,6 @@
   ]
  },
  {
-  "text": "Tesla Wraps",
-  "href": "/tesla-vinyl-wraps/",
-  "children": [
-   {
-    "text": "Tesla Wraps",
-    "href": "/tesla-vinyl-wraps/",
-    "children": []
-   },
-   {
-    "text": "Tesla Model 3 Wraps",
-    "href": "/tesla-model-3-wraps/",
-    "children": []
-   },
-   {
-    "text": "Tesla Model S Wraps",
-    "href": "/tesla-model-s-wraps/",
-    "children": []
-   },
-   {
-    "text": "Cybertruck Wraps",
-    "href": "/cybertruck-wraps/",
-    "children": []
-   }
-  ]
- },
- {
   "text": "PPF",
   "href": "/vehicle-paint-protection-film-toronto/",
   "children": []
@@ -271,13 +271,13 @@
     "text": "Wrap Gallery",
     "href": "/vinyl-car-wrap-our-portfolio/",
     "children": []
+   },
+   {
+    "text": "Projects",
+    "href": "/blogs/wrap-projects/",
+    "children": []
    }
   ]
- },
- {
-  "text": "Projects",
-  "href": "/blogs/wrap-projects/",
-  "children": []
  },
  {
   "text": "Contact",
