@@ -37,6 +37,12 @@ const branchCurrent = (item: NavItem): boolean =>
  * dead stop for assistive tech); a disclosure button is what it actually
  * is, matching the `.pexp` control already used one level down. */
 const hasOwnPage = (href: string) => href !== '#';
+/** A third-level entry that only links back to its own parent (Tesla Wraps >
+ * Tesla Wraps). The mobile panel needs it -- tapping a parent row there
+ * expands it rather than navigating, so the self-link is the only way to the
+ * parent's page -- but the desktop dropdown already links the parent row
+ * itself, and the duplicate read as a stray line under its heading. */
+const ownChildren = (c: NavItem) => c.children.filter((g) => g.href !== c.href);
 ---
 
 <header class="site-header">
@@ -72,16 +78,16 @@ const hasOwnPage = (href: string) => href !== '#';
               </button>
             )}
             {item.children.length > 0 && (
-              <ul class={`sub${item.children.length > 12 ? ' sub--wide' : ''}`}>
+              <ul class="sub">
                 {item.children.map((c) => (
-                  <li class={c.children.length > 0 ? 'has-sub2' : ''}>
+                  <li class={ownChildren(c).length > 0 ? 'has-sub2' : ''}>
                     <a href={c.href} aria-current={isCurrent(c.href) ? 'page' : undefined}>
                       {c.text}
-                      {c.children.length > 0 && <i class="caret caret--right fas fa-caret-down" aria-hidden="true"></i>}
+                      {ownChildren(c).length > 0 && <i class="caret caret--right fas fa-caret-right" aria-hidden="true"></i>}
                     </a>
-                    {c.children.length > 0 && (
+                    {ownChildren(c).length > 0 && (
                       <ul class="sub2">
-                        {c.children.map((g) => (
+                        {ownChildren(c).map((g) => (
                           <li>
                             <a href={g.href} aria-current={isCurrent(g.href) ? 'page' : undefined}>
                               {g.text}
@@ -272,8 +278,10 @@ const hasOwnPage = (href: string) => href !== '#';
      was chosen rather than measured, and it survived the switch to the real
      glyph -- so every caret on the site rendered a quarter under size. */
   .caret { line-height: 1; }
+  /* Points at its flyout and sits just after the label ("Car Wraps ▸"), as on
+     the original, rather than a down caret pushed to the far edge. */
   .caret--right {
-    margin-left: auto;
+    margin-left: 10px;
   }
 
   /* The submenu sits 14px below its trigger; ::before bridges that gap so the
@@ -306,30 +314,21 @@ const hasOwnPage = (href: string) => href !== '#';
   .sub > li.has-sub2:hover > .sub2,
   .sub > li.has-sub2:has(a:focus-visible) > .sub2 { display: block; }
 
-  .sub--wide { column-count: 3; column-gap: 0; min-width: 720px; }
-  /* Anchored to the right edge of the menu, not to its own trigger. Hung off
-     the trigger it ran 165px past the right edge of a 1025px window once the
-     menu got shorter and Vehicle Wraps sat further right; the menu itself is
-     never narrower than this dropdown, so lined up with its edge it always
-     fits. */
-  .nav > ul { position: relative; }
-  .nav > ul > li:has(> .sub--wide) { position: static; }
-  .sub.sub--wide { left: auto; right: 0; }
-  .sub--wide > li { break-inside: avoid; }
-  /* A flyout cannot be laid out inside a CSS column, so those rows open inline. */
-  .sub--wide > li.has-sub2 > .sub2 {
-    position: static;
-    display: block;
-    box-shadow: none;
-    border: 0;
-    border-radius: 0;
-    min-width: 0;
-    padding-inline-start: 14px;
-  }
-  .sub--wide > li.has-sub2 > .sub2 > li > a { font-size: 14px; color: var(--ink); }
-  .sub--wide .caret--right { display: none; }
+  /* One column at any length, as on the original: Vehicle Wraps lists its
+     eighteen rows straight down and its branches (Car, Tesla, Van, Truck...)
+     fly out to the right on hover. This used to switch to a 720px three-column
+     grid past twelve rows, with every branch's pages printed inline under it.
 
-  .nav > ul > li > .sub > li:not(:last-child) { border-bottom: 1px solid #f2f2f2; }
+     The flyout opens level with the row it belongs to, so that row has to be
+     its containing block -- without this it would hang off the top of the
+     whole dropdown whichever row was hovered. */
+  .sub > li { position: relative; }
+  /* The branch being browsed stays lit while the pointer is out in its
+     flyout, as the original's does. */
+  .sub > li.has-sub2:hover > a { color: #fff; background-color: var(--e-global-color-f32bb28); }
+
+  .nav > ul > li > .sub > li:not(:last-child),
+  .sub2 > li:not(:last-child) { border-bottom: 1px solid #f2f2f2; }
 
   .sub li > a {
     display: flex;
@@ -351,8 +350,10 @@ const hasOwnPage = (href: string) => href !== '#';
   .sub li > a:hover { color: #fff; background-color: var(--e-global-color-f32bb28); }
   .sub li > a[aria-current='page'] { color: #fff; background-color: var(--e-global-color-8c22d81); }
 
-  .sub > li:first-child > a { border-top-left-radius: 10px; border-top-right-radius: 10px; }
-  .sub > li:last-child > a { border-bottom-right-radius: 10px; border-bottom-left-radius: 10px; }
+  .sub > li:first-child > a,
+  .sub2 > li:first-child > a { border-top-left-radius: 10px; border-top-right-radius: 10px; }
+  .sub > li:last-child > a,
+  .sub2 > li:last-child > a { border-bottom-right-radius: 10px; border-bottom-left-radius: 10px; }
 
   /* #6ebf65a — navy column, green on hover, padding 0 */
   .wantto-col {
