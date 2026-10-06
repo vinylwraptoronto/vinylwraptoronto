@@ -19,6 +19,7 @@
  * contents and quote form in the sidebar.
  */
 import type { Block, HeadData, Section } from '../types';
+import { verificationFor } from '../../seo.config.mjs';
 
 /** Read off a live post: --e-global-color-d077a13 is the navy, in tokens.css. */
 const NAVY = 'var( --e-global-color-d077a13 )';
@@ -348,6 +349,13 @@ export function buildHead(post: PostDoc): HeadData {
     ['og:url', true, url],
     ['og:site_name', true, 'Vinyl Wrap Toronto'],
   ];
+
+  /* The site-ownership tokens. The original serves three of them (Pinterest,
+     Ahrefs, Statvoo) on every page, and imported posts carry them inside the
+     head they were ported with -- so a post written here was the one kind of
+     page on the site without them. seo.config.mjs is the record of which tags
+     go where; the two homepage-only ones are excluded by the path. */
+  for (const v of verificationFor(new URL(url).pathname)) meta.push([v.name, false, v.content]);
 
   if (post.publishedAt) meta.push(['article:published_time', true, isoOf(post.publishedAt)]);
   if (post.modifiedAt) meta.push(['article:modified_time', true, isoOf(post.modifiedAt)]);
