@@ -216,12 +216,20 @@ const ownChildren = (c: NavItem) => c.children.filter((g) => g.href !== c.href);
      column measures — but the logo inside it renders at 153px there, not the
      full width of its column. Ours filled the column and came out 169x37
      against the original's 153x33. */
-  .brand { width: 12%; flex-shrink: 0; display: block; text-align: start; }
-  .brand img { width: 100%; max-width: 153px; height: auto; display: block; }
+  /* Sized as before -- 12% of the bar, capped at 153px -- but on the image
+     rather than on a column around it. The 12% column was 168px at full width
+     around a 153px logo, an invisible 15px that made the space after the logo
+     wider than the space before the "I want to" button. */
+  .brand { flex: 0 0 auto; display: block; text-align: start; }
+  .brand img { width: min(153px, 0.12 * min(1400px, 100vw - 40px)); height: auto; display: block; }
 
-  /* min-width 0 so a nav that is too wide gives way rather than pushing the
+  /* The menu spreads across the room between the logo and the "I want to"
+     column, with the same 35px at either end, rather than packing against
+     the button and leaving a hole after the logo.
+
+     min-width 0 so a nav that is too wide gives way rather than pushing the
      logo; the steps further down keep it from ever being too wide. */
-  .nav { width: 78%; flex: 1 1 auto; min-width: 0; margin: 0 35px 0 0; }
+  .nav { width: 78%; flex: 1 1 auto; min-width: 0; margin: 0 35px; }
 
   /* Child combinators throughout: `.nav ul` would also match ul.sub inside it,
      out-specify the rule that hides the submenu, and the dropdown would never
@@ -229,7 +237,7 @@ const ownChildren = (c: NavItem) => c.children.filter((g) => g.href !== c.href);
   .nav > ul {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     flex-wrap: nowrap;
     list-style: none;
     margin: 0;
@@ -623,7 +631,7 @@ const ownChildren = (c: NavItem) => c.children.filter((g) => g.href !== c.href);
     .nav > ul > li > .toplink { padding-inline: 6px; gap: 6px; }
   }
   @media (min-width: 1025px) and (max-width: 1240px) {
-    .nav { margin-right: 20px; }
+    .nav { margin-inline: 20px; }
     .nav > ul > li > .toplink { font-size: 14px; padding-inline: 4px; }
   }
 
