@@ -1,5 +1,7 @@
 -- Blog post: "Gloss vs Satin vs Matte Car Wrap Finish: How to Choose"
 --
+-- Applied to D1 on 2026-10-06 (posts.id 479); kept as the record of the row.
+--
 -- Written 2026-10-06 by the scheduled blog-post routine. The routine could not
 -- write to D1 directly (the production write was blocked), so the row is
 -- recorded here in the same shape src/pages/api/admin/posts/save.ts writes:
