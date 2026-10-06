@@ -73,7 +73,15 @@ for (const href of FONT_HREFS) {
     process.exit(1);
   }
 
-  const css = fs.readFileSync(cssFile, 'utf8');
+  let css = fs.readFileSync(cssFile, 'utf8');
+  /* Homepage-only trim: no Roboto text on / is italic (and none uses Roboto
+     as its first family) -- verified in a real browser at 412px and 1280px --
+     so Roboto italic @font-face rules are dead weight in the inlined HTML
+     (~26 KB of a ~250 KB document). Every other route still fetches the
+     complete external roboto.css. */
+  if (href === '/fonts/roboto.css') {
+    css = css.replace(/@font-face\{[^}]*font-style:\s*italic[^}]*\}/g, '');
+  }
   if (css.includes('</style')) {
     console.error(`inline-critical-fonts: ${href} contains a literal "</style" sequence -- refusing to inline it unescaped.`);
     process.exit(1);
