@@ -271,13 +271,13 @@
     "text": "Wrap Gallery",
     "href": "/vinyl-car-wrap-our-portfolio/",
     "children": []
+   },
+   {
+    "text": "Projects",
+    "href": "/blogs/wrap-projects/",
+    "children": []
    }
   ]
- },
- {
-  "text": "Projects",
-  "href": "/blogs/wrap-projects/",
-  "children": []
  },
  {
   "text": "Contact",

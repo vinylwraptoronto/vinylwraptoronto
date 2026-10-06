@@ -603,12 +603,13 @@ const hasOwnPage = (href: string) => href !== '#';
     overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
   }
 
-  /* The nine top-level items need 952px at full size. Between the burger
-     breakpoint and ~1300px the bar has less than that to give them, and they
-     ran left over the logo -- off the screen entirely at 1025. Measured with
-     the bar boxed to the content column: tighter padding holds them to 860px
-     down to 1241, and 14px type to 734px from there to 1025, each leaving
-     whitespace either side of the menu. */
+  /* The top-level items need 851px at full size (952px when Projects was a
+     ninth item rather than sitting under Our Work). With nine, between the
+     burger breakpoint and ~1300px the bar had less than that to give them,
+     and they ran left over the logo -- off the screen entirely at 1025.
+     Measured with the bar boxed to the content column: tighter padding holds
+     the eight to 767px down to 1241, and 14px type to 655px from there to
+     1025, each leaving whitespace either side of the menu. */
   @media (min-width: 1025px) and (max-width: 1366px) {
     .nav > ul > li > .toplink { padding-inline: 6px; gap: 6px; }
   }
