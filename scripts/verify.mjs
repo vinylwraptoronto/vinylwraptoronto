@@ -139,8 +139,9 @@ const header = await page.evaluate(() => {
 ok('header border is 2px #99CC33', header.borderBottom === 'rgb(153, 204, 51) 2px', header.borderBottom);
 ok('header background white', header.bg === 'rgb(255, 255, 255)', header.bg);
 ok('"I want to" column is navy #15334C', header.ctaBg === 'rgb(21, 51, 76)', String(header.ctaBg));
-// 8, not the live site's 9: Projects moved under Our Work.
-ok('8 top-level nav items (a + button.navtrig)', header.navLinks === 8, String(header.navLinks));
+// 7, not the live site's 9: Projects moved under Our Work, and Tesla Wraps
+// under Vehicle Wraps.
+ok('7 top-level nav items (a + button.navtrig)', header.navLinks === 7, String(header.navLinks));
 // 44, not the 51 this once asserted: the earlier flat nav data counted a
 // phantom sub-entry for each of Home, PPF, Projects and Contact, which have no
 // children on the live site, and double-counted a few branch parents. The live
@@ -154,8 +155,10 @@ ok('8 top-level nav items (a + button.navtrig)', header.navLinks === 8, String(h
 // "Our Work" already did on the live site. Without them those two pages are
 // unreachable from the panel.
 //
-// 47 since Projects moved from the top level into the Our Work dropdown.
-ok('47 sub links: the original\'s 44 + 2 self-links + Projects', header.subLinks === 47, String(header.subLinks));
+// 47 since Projects moved from the top level into the Our Work dropdown, and
+// 48 since Tesla Wraps moved under Vehicle Wraps: its four children were
+// already counted, and its own row is now a dropdown link too.
+ok('48 sub links: the original\'s 44 + 2 self-links + Projects + Tesla Wraps', header.subLinks === 48, String(header.subLinks));
 
 // --- no reference to the old server ---------------------------------------
 let oldRefs = 0;

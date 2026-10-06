@@ -186,7 +186,11 @@ const over = await p.evaluate(()=>{
   const panel=document.querySelector('#panel-nav'), bar=document.querySelector('.sb-wrap');
   const q=bar.getBoundingClientRect(), r=panel.getBoundingClientRect();
   if(!(q.top<r.bottom&&q.bottom>r.top)) return 'no-overlap';
-  const hit=document.elementFromPoint(Math.round(q.left+q.width/2),Math.round(q.top+q.height/2));
+  // The middle of the band where the two overlap, not the middle of the bar:
+  // with a short menu the panel can end above the bar's centre, and that
+  // point is then the bar's whatever the stacking order.
+  const y=(Math.max(q.top,r.top)+Math.min(q.bottom,r.bottom))/2;
+  const hit=document.elementFromPoint(Math.round(q.left+q.width/2),Math.round(y));
   return bar.contains(hit) ? 'bar' : panel.contains(hit) ? 'menu' : 'neither';
 });
 ok('  opens over the CTA bar, not under it', over==='menu', over);

@@ -307,6 +307,14 @@ const hasOwnPage = (href: string) => href !== '#';
   .sub > li.has-sub2:has(a:focus-visible) > .sub2 { display: block; }
 
   .sub--wide { column-count: 3; column-gap: 0; min-width: 720px; }
+  /* Anchored to the right edge of the menu, not to its own trigger. Hung off
+     the trigger it ran 165px past the right edge of a 1025px window once the
+     menu got shorter and Vehicle Wraps sat further right; the menu itself is
+     never narrower than this dropdown, so lined up with its edge it always
+     fits. */
+  .nav > ul { position: relative; }
+  .nav > ul > li:has(> .sub--wide) { position: static; }
+  .sub.sub--wide { left: auto; right: 0; }
   .sub--wide > li { break-inside: avoid; }
   /* A flyout cannot be laid out inside a CSS column, so those rows open inline. */
   .sub--wide > li.has-sub2 > .sub2 {
@@ -603,13 +611,13 @@ const hasOwnPage = (href: string) => href !== '#';
     overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
   }
 
-  /* The top-level items need 851px at full size (952px when Projects was a
-     ninth item rather than sitting under Our Work). With nine, between the
-     burger breakpoint and ~1300px the bar had less than that to give them,
-     and they ran left over the logo -- off the screen entirely at 1025.
-     Measured with the bar boxed to the content column: tighter padding holds
-     the eight to 767px down to 1241, and 14px type to 655px from there to
-     1025, each leaving whitespace either side of the menu. */
+  /* The seven top-level items need 705px at full size. When there were nine
+     (before Projects moved under Our Work and Tesla Wraps under Vehicle
+     Wraps) they needed 952px, and between the burger breakpoint and ~1300px
+     the bar had less than that to give them: they ran left over the logo --
+     off the screen entirely at 1025. Tighter padding holds the seven to 633px
+     down to 1241, and 14px type to 540px from there to 1025, each leaving
+     whitespace either side of the menu. */
   @media (min-width: 1025px) and (max-width: 1366px) {
     .nav > ul > li > .toplink { padding-inline: 6px; gap: 6px; }
   }

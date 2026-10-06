@@ -56,6 +56,32 @@
     ]
    },
    {
+    "text": "Tesla Wraps",
+    "href": "/tesla-vinyl-wraps/",
+    "children": [
+     {
+      "text": "Tesla Wraps",
+      "href": "/tesla-vinyl-wraps/",
+      "children": []
+     },
+     {
+      "text": "Tesla Model 3 Wraps",
+      "href": "/tesla-model-3-wraps/",
+      "children": []
+     },
+     {
+      "text": "Tesla Model S Wraps",
+      "href": "/tesla-model-s-wraps/",
+      "children": []
+     },
+     {
+      "text": "Cybertruck Wraps",
+      "href": "/cybertruck-wraps/",
+      "children": []
+     }
+    ]
+   },
+   {
     "text": "Van Wraps",
     "href": "/van-wraps/",
     "children": [
@@ -223,32 +249,6 @@
    {
     "text": "Wall Graphics",
     "href": "/wall-graphics-toronto/",
-    "children": []
-   }
-  ]
- },
- {
-  "text": "Tesla Wraps",
-  "href": "/tesla-vinyl-wraps/",
-  "children": [
-   {
-    "text": "Tesla Wraps",
-    "href": "/tesla-vinyl-wraps/",
-    "children": []
-   },
-   {
-    "text": "Tesla Model 3 Wraps",
-    "href": "/tesla-model-3-wraps/",
-    "children": []
-   },
-   {
-    "text": "Tesla Model S Wraps",
-    "href": "/tesla-model-s-wraps/",
-    "children": []
-   },
-   {
-    "text": "Cybertruck Wraps",
-    "href": "/cybertruck-wraps/",
     "children": []
    }
   ]
