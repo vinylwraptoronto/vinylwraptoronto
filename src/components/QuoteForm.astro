@@ -47,6 +47,9 @@ export interface Props {
       its own width on the two landing pages. The port left-aligned it
       everywhere, which matched neither. */
   submitAlign?: 'stretch' | 'center' | 'start';
+  /** The submit label's text-transform. Site-wide it is capitals; the blog
+      sidebar's form writes "Request Estimate" as is. */
+  submitCase?: string;
   /** Fields that take half the form's width, side by side, from 768px up --
       Elementor's `elementor-col-50` field groups. The landing pages' form puts
       name and phone on one line; on a phone every field is full width again,
@@ -55,13 +58,14 @@ export interface Props {
 }
 const { variant = 'inline', id = 'quote', products, fields, placeholders, submit,
         photoNote = true, radius, submitSize, rows,
-        submitAlign = 'stretch', half = [] } = Astro.props;
+        submitAlign = 'stretch', half = [], submitCase } = Astro.props;
 /* Custom properties rather than direct declarations: an inline
    `border-radius` would outrank the stylesheet's own focus and error rules. */
 const formVars = [
   radius ? `--q-radius:${radius}` : '',
   submitSize ? `--q-submit-size:${submitSize}` : '',
   `--q-submit-align:${submitAlign}`,
+  submitCase ? `--q-submit-case:${submitCase}` : '',
 ].filter(Boolean).join(';') || undefined;
 const vehicleTypes = ['Van', 'Truck', 'Car', 'SUV', 'Trailer', 'Boat',
   'Motorcycle', 'Jet Ski', 'Windows', 'Walls', 'Object', 'Other'];
@@ -275,7 +279,7 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
     /* .elementor-button{line-height:1}, uppercase */
     font-size: var(--q-submit-size, 18px);
     line-height: 1;
-    text-transform: uppercase;
+    text-transform: var(--q-submit-case, uppercase);
     /* The original's submit is 40px tall with no vertical padding at all --
        the height comes from the button box, not from the text. Reproduced as
        a flex box with a min-height so it stays 40px whatever size the label

@@ -37,6 +37,8 @@ export function applyPostTemplate(sections: Section[], meta: PostMeta = {}): Sec
      section, and adding its 40px again put every such post 40px long. */
   const spacerKept = sections.some((s) => s?.id === '525602a');
   return sections.map((s) => {
+    /* #related_blogs, which the TOC widget excludes. */
+    if (s?.id === '1e5fc85') return { ...s, tocSkip: true };
     if (s?.id !== 'b45e69d') return s;
     const blocks = (s.blocks ?? []).map((b: any) => {
       if (b?.type !== 'columns' || (b.cols ?? []).length !== 2) return b;
@@ -45,7 +47,15 @@ export function applyPostTemplate(sections: Section[], meta: PostMeta = {}): Sec
         meta.author ? { text: meta.author, href: meta.authorHref ?? null, icon: 'far fa-user-circle' } : null,
         meta.date ? { text: meta.date, icon: 'fas fa-calendar' } : null,
       ].filter(Boolean);
-      const sideBlocks = [...(side.blocks ?? [])];
+      let sideBlocks = [...(side.blocks ?? [])];
+      /* The sidebar's form (8d506b0) is not the site-wide one: name, email,
+         phone, photos and a three-line message, under a "Request Estimate"
+         button set in 18px capitalised text. The port rendered the site-wide
+         field set, with the wrap-type checkboxes and the vehicle select. */
+      sideBlocks = sideBlocks.map((x: any) => x?.type === 'form' && x?.eid === '8d506b0' && !x.fields
+        ? { ...x, fields: ['name', 'email', 'phone', 'photos', 'message'], rows: 3,
+            submit: 'Request Estimate', submitCase: 'capitalize', submitSize: '18px', radius: '3px' }
+        : x);
       /* The share buttons (4075310) under "Share This Post", which the
          extractor dropped -- a 52px panel at desktop, 65 on a phone. */
       const shareAt = sideBlocks.findIndex((x: any) => x?.eid === 'fb4c9cb');
@@ -61,12 +71,40 @@ export function applyPostTemplate(sections: Section[], meta: PostMeta = {}): Sec
           itemStyle: 'font-family:"Poppins", Sans-serif;font-weight:400',
         } as any);
       }
+      /* The Limited Time Offer is an inner section of its own (48d21ce): a
+         navy panel with 5px corners, 15px of padding around a column padded
+         10px, 10px between its widgets and 25px below it. The extractor kept
+         the widgets and dropped the panel, so the offer's white heading and
+         price sat invisible on the sidebar's grey. Done last, so the byline
+         above still finds the Claim Now button it goes under. */
+      const offerFrom = sideBlocks.findIndex((x: any) => x?.eid === '6026500');
+      const offerTo = sideBlocks.findIndex((x: any) => x?.eid === 'e4d3235');
+      if (offerFrom >= 0 && offerTo >= offerFrom) {
+        sideBlocks = [
+          ...sideBlocks.slice(0, offerFrom),
+          {
+            type: 'columns', gap: 0,
+            /* 25px below, of which the sidebar's own 20px widget gap is most. */
+            margin: '0px 0px 5px 0px',
+            cols: [{
+              width: 100, background: 'var( --e-global-color-d077a13 )',
+              padding: '25px 10px 25px 10px', radius: '5px', widgetGap: 10,
+              /* The price keeps the theme's h3 margins, 8px above and 16px
+                 below, inside its widget; a column zeroes a heading's own. */
+              blocks: sideBlocks.slice(offerFrom, offerTo + 1).map((x: any) =>
+                x?.eid === 'a36b238' && !x.box ? { ...x, box: 'margin:8px 0px 16px 0px' } : x),
+            }],
+          } as any,
+          ...sideBlocks.slice(offerTo + 1),
+        ];
+      }
       return {
         ...b,
         gap: 0,
         cols: [
           { ...copy, tabletWidth: 70, padding: '20px', padT: '15px', padM: '10px' },
-          { ...side, tabletWidth: 30, blocks: sideBlocks },
+          /* #blog_sidebar, which the TOC widget excludes. */
+          { ...side, tabletWidth: 30, blocks: sideBlocks, tocSkip: true },
         ],
       };
     });
