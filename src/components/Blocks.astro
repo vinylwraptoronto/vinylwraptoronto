@@ -1403,6 +1403,9 @@ const secMargins = (() => {
                   c.border ? c.border : '',
                   c.shadow ? `box-shadow:${c.shadow}` : '',
                   c.radius ? `border-radius:${c.radius}` : '',
+                  c.minHeight ? `--col-mh:${c.minHeight}` : '',
+                  c.minHeightT ? `--col-mh-t:${c.minHeightT}` : '',
+                  c.minHeightM ? `--col-mh-m:${c.minHeightM}` : '',
                 ].filter(Boolean).join(';');
                 /* A loop-grid card: its own 1px border, padding and radius,
                    with the title and the View Pictures button centred inside
@@ -1425,10 +1428,30 @@ const secMargins = (() => {
                   (c.blocks ?? []).some((x) => x.type === 'compare');
                 return (
                   <div
-                    class:list={['col', { 'col--tinted': tinted, 'col--card': isCard }]}
+                    class:list={['col', { 'col--tinted': tinted, 'col--card': isCard, 'col--show': !!c.slideshow?.images?.length, 'col--mh': !!(c.minHeight || c.minHeightT || c.minHeightM) }]}
                     style={style}
                     data-hide={c.hide?.length ? c.hide.join(' ') : undefined}
                   >
+                    {c.slideshow && c.slideshow.images.length > 0 && (
+                      /* A flex child's own background slideshow -- the Tesla
+                         pages' photograph half -- drawn with the same layers
+                         and timer as a section's. */
+                      <div
+                        class:list={['sec-slides', { 'sec-slides--kb': c.slideshow.kenBurns }]}
+                        aria-hidden="true"
+                        data-slideshow
+                        data-duration={c.slideshow.duration}
+                        data-loop={c.slideshow.loop ? 'yes' : 'no'}
+                        style={`--slide-fade:${c.slideshow.transitionMs}ms;` +
+                          `--slide-hold:${c.slideshow.duration}ms;` +
+                          `--slide-zoom-from:${c.slideshow.zoom === 'out' ? 1.15 : 1};` +
+                          `--slide-zoom-to:${c.slideshow.zoom === 'out' ? 1 : 1.15}`}
+                      >
+                        {c.slideshow.images.map((src, i) => (
+                          <div class="sec-slide" data-i={i} data-on={i === 0 ? '' : undefined} style={`background-image:url(${img(src)})`} />
+                        ))}
+                      </div>
+                    )}
                     <Astro.self blocks={c.blocks} toc={tocEntries} />
                   </div>
                 );
@@ -1474,7 +1497,7 @@ const secMargins = (() => {
         'sec',
         { 'sec--pad': !!(section?.paddingT || section?.paddingM) },
         section?.contentAlign ? `sec--${section.contentAlign}` : null,
-        { 'sec--overlaid': section?.overlay || section?.slideshow },
+        { 'sec--overlaid': section?.overlay || section?.slideshow || section?.shapeBottom },
         { 'sec--tall': !!section?.minHeight },
         { 'sec--mhc': !!(section?.minHeight && section?.minHeightInner) },
         section?.minHeight && section?.itemsAlign && section.itemsAlign !== 'middle'
@@ -1516,6 +1539,22 @@ const secMargins = (() => {
             />
           ))}
         </div>
+      )}
+      {section?.shapeBottom && (
+        /* Elementor's shape divider, as the original draws it: its own SVG
+           pinned to the section's foot, centred and stretched to the width its
+           rule gives (100% + 1.3px, or 200% for a wider curve), with the height
+           the viewBox gives at that width unless the rule sets one. */
+        <div
+          class="sec-shape"
+          aria-hidden="true"
+          style={[
+            section.shapeBottom.fill ? `--shape-fill:${section.shapeBottom.fill}` : '',
+            section.shapeBottom.width ? `--shape-w:${section.shapeBottom.width}` : '',
+            section.shapeBottom.height ? `--shape-h:${section.shapeBottom.height}` : '',
+          ].filter(Boolean).join(';') || undefined}
+          set:html={section.shapeBottom.svg}
+        />
       )}
       {section?.overlay && (
         <div
@@ -1572,6 +1611,14 @@ const secMargins = (() => {
      inset the content twice. */
   .container.stack:has(> .cols) { padding: 0; }
   .cols > .col { padding: var(--col-pad, 10px); }
+  .cols > .col--show { position: relative; overflow: hidden; }
+  .cols > .col--mh { min-height: var(--col-mh, 0); }
+  @media (max-width: 1024px) {
+    .cols > .col--mh { min-height: var(--col-mh-t, var(--col-mh, 0)); }
+  }
+  @media (max-width: 767px) {
+    .cols > .col--mh { min-height: var(--col-mh-m, var(--col-mh-t, var(--col-mh, 0))); }
+  }
   @media (max-width: 1024px) {
     .cols > .col { padding: var(--col-pad-t, var(--col-pad, 10px)); }
   }
@@ -1622,6 +1669,26 @@ const secMargins = (() => {
      and its content, so the content has to be lifted above it. */
   .sec--overlaid { position: relative; }
   .sec-ovl { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+  .sec-shape {
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 100%;
+    overflow: hidden;
+    line-height: 0;
+    direction: ltr;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .sec-shape :global(svg) {
+    display: block;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+    width: var(--shape-w, calc(100% + 1.3px));
+    height: var(--shape-h, auto);
+  }
+  .sec-shape :global(.elementor-shape-fill) { fill: var(--shape-fill, #ffffff); }
 
   /* The background slideshow. Behind the overlay and the content, both of which
      already sit above z-index 0, so a section can fade photographs under the
@@ -1757,6 +1824,9 @@ const secMargins = (() => {
     --col-pad: initial;
     --col-pad-t: initial;
     --col-pad-m: initial;
+    --col-mh: initial;
+    --col-mh-t: initial;
+    --col-mh-m: initial;
   }
   /* A column is Elementor's `.elementor-widget-wrap`, which frontend.min.css
      makes display:flex, with each widget carrying margin-block-end:20px. The

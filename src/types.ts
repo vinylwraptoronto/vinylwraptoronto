@@ -450,6 +450,12 @@ export type ColumnsBlock = {
         hid the list inside it and kept the empty, padded column, which wrapped
         the row onto three lines. */
     hide?: string[];
+    /** A flex child's own min-height per breakpoint, and its background
+        slideshow (the same shape as a section's). */
+    minHeight?: string | null;
+    minHeightT?: string | null;
+    minHeightM?: string | null;
+    slideshow?: Section['slideshow'];
   }[];
   /** Set where the row is an Elementor flex *container* (e-con) rather than a
       legacy section row: the children keep their share of the line at mobile
@@ -531,6 +537,9 @@ export type Section = {
       padding. True for the former. */
   minHeightInner?: boolean;
   innerPad?: string | null;
+  /** An Elementor shape divider along the section's foot: the original's own
+      SVG, with the fill, width and height its rules give it. */
+  shapeBottom?: { svg: string; fill?: string; width?: string; height?: string } | null;
   /** The same at tablet and on a phone, where they differ from desktop: the
       archive template's outer column is padded 10px at desktop and 0 below. */
   innerPadT?: string | null;
