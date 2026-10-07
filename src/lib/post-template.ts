@@ -39,6 +39,18 @@ export function applyPostTemplate(sections: Section[], meta: PostMeta = {}): Sec
   return sections.map((s) => {
     /* #related_blogs, which the TOC widget excludes. */
     if (s?.id === '1e5fc85') return { ...s, tocSkip: true };
+    /* The hero's title column (6a05303) is padded 10px on a phone, inside
+       which the title widget keeps its own 20px either side: the title wraps
+       at 325px there, where the port's ran it to 350 and a long title came
+       out a line short. */
+    if (s?.id === 'aad5b5a') {
+      return {
+        ...s,
+        blocks: (s.blocks ?? []).map((b: any) => b?.type === 'columns' && b.cols?.[0]?.blocks?.[0]?.eid === 'cc1fcc1' && !b.cols[0].padM
+          ? { ...b, cols: [{ ...b.cols[0], padM: '10px' }, ...b.cols.slice(1)] }
+          : b),
+      };
+    }
     if (s?.id !== 'b45e69d') return s;
     const blocks = (s.blocks ?? []).map((b: any) => {
       if (b?.type !== 'columns' || (b.cols ?? []).length !== 2) return b;
