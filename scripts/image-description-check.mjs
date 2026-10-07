@@ -4,7 +4,7 @@
  * snapshot, a no-match fallback, nested columns, and the non-gallery helper
  * (descriptionFor/describeHtml) on responsive variants and look-alike siblings.
  * Negative controls run the same gallery assertions against the pre-fix
- * gallery.ts (git ref CONTROL_REF, default HEAD, i.e. the commit before this
+ * gallery.ts (git ref CONTROL_REF, default HEAD; use HEAD~1 once committed, i.e. the commit before this
  * change) and must FAIL; a control that passes is itself a failure.
  */
 import fs from 'node:fs';
