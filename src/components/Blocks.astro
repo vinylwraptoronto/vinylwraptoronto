@@ -15,6 +15,8 @@ import widgetCss from '../data/widget-css.json';
 import sectionCss from '../data/section-css.json';
 import spacers from '../data/spacers.json';
 import rowCss from '../data/row-css.json';
+import listSpace from '../data/list-space.json';
+import colCss from '../data/col-css.json';
 import QuoteForm from './QuoteForm.astro';
 import { img, imgHtml } from '../lib/img';
 
@@ -78,6 +80,25 @@ const rowMarginVars = (b: any): string | undefined => {
     if (x) v.push(`--row-mt${suf}:${x[0]}`, `--row-mb${suf}:${x[1]}`);
   }
   return v.join(';');
+};
+
+/** An icon list's Space Between, per breakpoint (src/data/list-space.json). */
+type ListSpace = Partial<Record<'d' | 't' | 'm', number>>;
+const listSpaceOf = (eid?: string): ListSpace | undefined =>
+  eid ? (listSpace as unknown as Record<string, ListSpace>)[eid] : undefined;
+
+/** A column's own vertical margin, per breakpoint (src/data/col-css.json,
+ *  from scripts/pull-col-margins.py), keyed by the column's first widget. */
+const colMarginVars = (c: any): string[] => {
+  const eid = firstEid(c?.blocks);
+  const m = eid ? (colCss as unknown as RowMargins)[eid] : undefined;
+  if (!m) return [];
+  const v: string[] = [];
+  for (const [bp, suf] of [['d', ''], ['t', '-t'], ['m', '-m']] as const) {
+    const x = m[bp];
+    if (x) v.push(`--cm-t${suf}:${x[0]}`, `--cm-b${suf}:${x[1]}`);
+  }
+  return v;
 };
 
 /** The image widget's Width control as custom properties, read by `.fig--iw img`. */
@@ -839,8 +860,11 @@ const secMargins = (() => {
         }
 
         if (b.type === 'list') {
+          /* The list's own Space Between, per breakpoint (list-space.json). */
+          const sp = listSpaceOf(b.eid);
+          const spVars = sp ? [sp.d != null ? `--lsp:${sp.d}px` : '', sp.t != null ? `--lsp-t:${sp.t}px` : '', sp.m != null ? `--lsp-m:${sp.m}px` : ''] : [];
           return (
-            <ul class="ilist" data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
+            <ul class="ilist" data-eid={b.eid} data-hide={b.hide?.join(" ")} data-sp={sp ? '' : undefined} style={[b.box, b.style, ...spVars].filter(Boolean).join(";") || undefined}>
               {b.items.map((i) => (
                 <li class:list={{ 'has-ic': !!i.icon }} style={b.itemStyle ?? undefined}>
                   {i.icon && <i class:list={['li-ic', i.icon]} aria-hidden="true"></i>}
@@ -1306,7 +1330,9 @@ const secMargins = (() => {
 
         if (b.type === 'compare') {
           return (
-            <div class="compare">
+            /* Its own box: the project pages put the slider 35px under the
+               title, which the port dropped to the 20px widget gap. */
+            <div class="compare" style={b.box ?? undefined}>
               {/* Dimensions so each picture reserves its box before it arrives.
                   Without them these were the last images on the site with
                   nothing holding their shape, and it shows worst here: the
@@ -1357,7 +1383,9 @@ const secMargins = (() => {
 
         if (b.type === 'filtergallery') {
           return (
-            <div class="fgal" data-filtergallery>
+            /* The widget's own box: the service pages put their gallery 75px
+               below the button above it, the project pages 35px. */
+            <div class="fgal" data-filtergallery style={b.box ?? undefined}>
               {b.filters.length > 0 && (
                 <div class="fgal-tabs" role="tablist" aria-label="Gallery filter">
                   {b.filters.map((f, i) => (
@@ -1540,6 +1568,7 @@ const secMargins = (() => {
                   c.minHeightT ? `--col-mh-t:${c.minHeightT}` : '',
                   c.minHeightM ? `--col-mh-m:${c.minHeightM}` : '',
                   c.widgetGap != null ? `--widget-gap:${c.widgetGap}px` : '',
+                  ...colMarginVars(c),
                 ].filter(Boolean).join(';');
                 /* A loop-grid card: its own 1px border, padding and radius,
                    with the title and the View Pictures button centred inside
@@ -1562,6 +1591,7 @@ const secMargins = (() => {
                   (c.blocks ?? []).some((x) => x.type === 'compare');
                 return (
                   <div
+                    data-cm={colMarginVars(c).length ? '' : undefined}
                     class:list={['col', { 'col--tinted': tinted, 'col--card': isCard, 'col--show': !!c.slideshow?.images?.length, 'col--mh': !!(c.minHeight || c.minHeightT || c.minHeightM) }]}
                     style={style}
                     data-hide={c.hide?.length ? c.hide.join(' ') : undefined}
@@ -1702,7 +1732,7 @@ const secMargins = (() => {
         />
       )}
       <div
-        class:list={['container', 'stack', { 'container--full': section?.fullWidth, 'container--cw': !!(section?.maxWidthT || section?.maxWidthM), 'container--ip': !!(section?.innerPadT || section?.innerPadM) }]}
+        class:list={['container', 'stack', { 'container--full': section?.fullWidth, 'container--cw': !!(section?.maxWidthT || section?.maxWidthM), 'container--ip': !!(section?.innerPadT || section?.innerPadM), 'container--theme': !!section?.theme }]}
         style={[
           section?.maxWidth && !section.maxWidthT && !section.maxWidthM ? `max-width:${section.maxWidth}` : '',
           section?.maxWidth && (section.maxWidthT || section.maxWidthM) ? `--cw:${section.maxWidth}` : '',
@@ -1771,6 +1801,18 @@ const secMargins = (() => {
     --row-mt: initial; --row-mt-t: initial; --row-mt-m: initial;
     --row-mb: initial; --row-mb-t: initial; --row-mb-m: initial;
     --rmt: initial; --rmb: initial;
+    --cm-t: initial; --cm-t-t: initial; --cm-t-m: initial;
+    --cm-b: initial; --cm-b-t: initial; --cm-b-m: initial;
+  }
+  /* A column's own vertical margin (Elementor's, on the populated box). */
+  .cols > .col[data-cm] { margin-block: var(--cm-t, 0px) var(--cm-b, 0px); }
+  @media (max-width: 1024px) {
+    .cols > .col[data-cm] { margin-block: var(--cm-t-t, var(--cm-t, 0px)) var(--cm-b-t, var(--cm-b, 0px)); }
+  }
+  @media (max-width: 767px) {
+    .cols > .col[data-cm] {
+      margin-block: var(--cm-t-m, var(--cm-t-t, var(--cm-t, 0px))) var(--cm-b-m, var(--cm-b-t, var(--cm-b, 0px)));
+    }
   }
   .cols[data-valign="middle"] > .col { justify-content: center; }
   .cols[data-valign="bottom"] > .col { justify-content: flex-end; }
@@ -2510,7 +2552,9 @@ const secMargins = (() => {
     flex-wrap: wrap;
     gap: 14px;
     justify-content: inherit;
-    margin: 30px 0 0;
+    /* No margin of its own: an Elementor button widget has none, and one that
+       sits apart from the widget above says so in its own box. */
+    margin: 0;
   }
   .btnrow[style*='center'] { justify-content: center; }
   .btnrow[style*='right'] { justify-content: flex-end; }
@@ -2582,11 +2626,22 @@ const secMargins = (() => {
   }
 
   .ilist { list-style: none; margin: 0; padding: 0; }
+  /* An icon list's items are spaced only where the widget sets Space Between,
+     as half of it below each item but the last and half above each item but
+     the first (scripts/pull-list-space.py); Elementor's default is none. The
+     port spaced every list 5px apart, which was no list's value: the blog
+     byline's two lines are 24px apart on the original, and /contact/'s
+     workflow lists 13px on a phone. */
   .ilist > li {
     position: relative;
     padding-inline-start: 22px;
-    padding-block-end: 5px;
+    padding-block-end: 0;
   }
+  .ilist[data-sp] { --lsp-at: var(--lsp, 0px); }
+  @media (max-width: 1024px) { .ilist[data-sp] { --lsp-at: var(--lsp-t, var(--lsp, 0px)); } }
+  @media (max-width: 767px) { .ilist[data-sp] { --lsp-at: var(--lsp-m, var(--lsp-t, var(--lsp, 0px))); } }
+  .ilist[data-sp] > li:not(:last-child) { padding-block-end: calc(var(--lsp-at) / 2); }
+  .ilist[data-sp] > li:not(:first-child) { margin-block-start: calc(var(--lsp-at) / 2); }
   /* A hand-made dot stood in for the icon the original actually draws. Now
      that the real one is rendered, the dot is only for items without one. */
   .ilist > li.has-ic::before { content: none; }
@@ -3662,6 +3717,17 @@ const secMargins = (() => {
   @media (max-width: 767px) {
     section.sec > div.container.container--cw { max-width: var(--cw-m, var(--cw-t, var(--cw, var(--container-max-width)))); }
   }
+  /* The four archives the original renders through the Hello theme rather
+     than Elementor (body without an elementor-page- class) sit in its
+     .site-main, whose width steps at the theme's own breakpoints: 500px from
+     576, 600 from 768, 800 from 992, 1140 from 1200, and the full width with
+     10px either side below 576. At 900 the port ran these edge to edge, and
+     /locations-served/ came out 13% taller. */
+  section.sec > div.container.container--theme { max-width: none; padding-inline: 10px; }
+  @media (min-width: 576px) { section.sec > div.container.container--theme { max-width: 500px; padding-inline: 0; } }
+  @media (min-width: 768px) { section.sec > div.container.container--theme { max-width: 600px; } }
+  @media (min-width: 992px) { section.sec > div.container.container--theme { max-width: 800px; } }
+  @media (min-width: 1200px) { section.sec > div.container.container--theme { max-width: 1140px; } }
   section.sec.sec--pad { padding: var(--sp, 34px 0); }
   @media (max-width: 1024px) {
     section.sec.sec--pad { padding: var(--sp-t, var(--sp, 34px 0)); }
