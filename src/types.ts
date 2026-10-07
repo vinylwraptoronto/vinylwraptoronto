@@ -130,6 +130,10 @@ export type Block = (
           per breakpoint and its distance from the copy. Absent on boxes
           harvested before it, which keep the old stacked drawing. */
       imagePos?: 'top' | 'left' | 'right';
+      /** An icon box drawn `elementor-position-inline-start`: the icon beside
+          the title and text from 768px up, above them (centred) on a phone,
+          where the original switches to its mobile block-start layout. */
+      iconPos?: 'left';
       vAlign?: 'top' | 'middle' | 'bottom';
       imgW?: string;
       imgWT?: string;
@@ -419,6 +423,9 @@ export type GalleryGrid = {
     single stream of blocks, so every row rendered as a vertical stack. */
 export type ColumnsBlock = {
   type: 'columns';
+  /** The inner section's HTML id on the original, for in-page links:
+      `#partial_wraps`, `#racing_stripes` and the like. */
+  anchor?: string | null;
   /** Elementor's `elementor-reverse-tablet` / `-mobile`: at those breakpoints
       the stacked columns run last-to-first. */
   reverse?: ('tablet' | 'mobile')[];
@@ -504,6 +511,13 @@ export type ColumnsBlock = {
     homepage, for instance, is 35px/75px inside a 1400px container. */
 export type Section = {
   id?: string | null;
+  /** The element's own HTML id on the original (Elementor's "CSS ID"), which
+      in-page links such as `#colour_change` point at. */
+  anchor?: string | null;
+  /** The section's own border, as the declarations Elementor writes on it
+      (`border-style:solid;border-width:1px 0px 1px 0px;border-color:…`) --
+      the same form a column's `border` takes. */
+  border?: string | null;
   blocks: Block[];
   /** Left out of the table of contents: the blog template's related posts. */
   tocSkip?: boolean;

@@ -1,7 +1,7 @@
 ---
 /**
  * Floating bottom CTA bar — the `sticky: "bottom"` element in footer template
- * 18407. It fades up 1000ms after load on the live site and carries two
+ * 18407. It fades up (fadeInUp) 1000ms after load on the live site and carries two
  * actions: call for an estimate, and open the Request a Quote popup.
  *
  * Every value below is read off the template's own CSS rather than eyeballed.
@@ -68,16 +68,27 @@ import { site } from '../data/site';
     z-index: 99;
     width: 30%;
     margin-inline: auto;
-    /* fadeInUp, 1000ms delay — matches the live animation. */
-    transform: translateY(14px);
+    /* Hidden until the script marks it shown, 1000ms after load -- the
+       original's `animation_delay: 1000`. */
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.45s ease, transform 0.45s ease;
   }
+  /* Then Elementor's own entrance: `fadeInUp` from animate.css, which rises
+     the bar by its full height while fading it in, over the 1.25s Elementor
+     gives every `.animated` element. A keyframe animation rather than a
+     transition, so it plays once when the attribute lands and nothing that
+     happens afterwards -- scrolling, the bar settling above the footer --
+     can set it off again. Transform and opacity only, so nothing around the
+     bar moves while it plays. Before this it was a 14px, 0.45s transition,
+     too slight to read as the original's entrance at all. */
   .sb-wrap[data-shown] {
     opacity: 1;
-    transform: none;
     pointer-events: auto;
+    animation: sb-fade-in-up 1.25s both;
+  }
+  @keyframes sb-fade-in-up {
+    from { opacity: 0; transform: translate3d(0, 100%, 0); }
+    to { opacity: 1; transform: none; }
   }
 
   /* #1bf9457 */
@@ -156,8 +167,10 @@ import { site } from '../data/site';
     .sb-btn--msg { padding: 10px; }
   }
 
+  /* Elementor's own frontend drops `.animated` to `animation: none` for this
+     preference too; the bar simply appears. */
   @media (prefers-reduced-motion: reduce) {
-    .sb-wrap { transition: none; }
+    .sb-wrap[data-shown] { animation: none; }
   }
 </style>
 

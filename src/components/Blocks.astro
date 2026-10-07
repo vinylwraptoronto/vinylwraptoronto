@@ -18,6 +18,7 @@ import rowCss from '../data/row-css.json';
 import listSpace from '../data/list-space.json';
 import colCss from '../data/col-css.json';
 import iconSize from '../data/icon-size.json';
+import iconBox from '../data/icon-box.json';
 import QuoteForm from './QuoteForm.astro';
 import { img, imgHtml } from '../lib/img';
 
@@ -88,11 +89,20 @@ type ListSpace = Partial<Record<'d' | 't' | 'm', number>>;
 const listSpaceOf = (eid?: string): ListSpace | undefined =>
   eid ? (listSpace as unknown as Record<string, ListSpace>)[eid] : undefined;
 
+/** An icon box's own colour and title spacing, where they differ from the
+ *  defaults (src/data/icon-box.json). */
+const iconBoxOf = (eid: string) =>
+  (iconBox as Record<string, { color?: string; titleGap?: string }>)[eid];
+
 /** An icon box's own icon size, per breakpoint (src/data/icon-size.json). */
 const iconSizeVars = (eid?: string): string | undefined => {
   const m = eid ? (iconSize as unknown as Record<string, Partial<Record<'d' | 't' | 'm', string>>>)[eid] : undefined;
-  if (!m) return undefined;
-  return [m.d && `--ic:${m.d}`, m.t && `--ic-t:${m.t}`, m.m && `--ic-m:${m.m}`].filter(Boolean).join(';') || undefined;
+  /* And its own colour (src/data/icon-box.json, scripts/pull-icon-box.mjs):
+     most of the original's icon boxes are pink, navy or lime, not green. */
+  const c = eid ? iconBoxOf(eid)?.color : undefined;
+  if (!m && !c) return undefined;
+  return [m?.d && `--ic:${m.d}`, m?.t && `--ic-t:${m.t}`, m?.m && `--ic-m:${m.m}`, c && `--ic-c:${c}`]
+    .filter(Boolean).join(';') || undefined;
 };
 
 /** A column's own vertical margin, per breakpoint (src/data/col-css.json,
@@ -158,7 +168,14 @@ const tileOf = (src: string, masonry?: boolean): { src: string; w?: number; h?: 
   const hit = (galleryThumbs as unknown as Record<string, [string, number, number]>)[`${box}:${src}`];
   if (hit) return { src: hit[0], w: hit[1], h: hit[2] };
   const d = dimsOf(src);
-  return { src, w: d?.[0], h: d?.[1] };
+  if (d) return { src, w: d[0], h: d[1] };
+  /* Last, the size WordPress writes into a resized file's own name, as
+     thumbBox reads it for cards. /personal-branding/'s top gallery serves
+     `...-768x461.webp` files with no entry in either manifest, so its tiles
+     had no width or height at all; the masonry then assumed 4:3 and left a
+     60px empty band under each of the three pictures. */
+  const m = /-(\d{2,4})x(\d{2,4})\.[a-z0-9]{2,5}(?:\.[a-z0-9]{2,5})?$/i.exec(src);
+  return { src, w: m ? Number(m[1]) : undefined, h: m ? Number(m[2]) : undefined };
 };
 
 /** The previous/next link's title, without the words that are not meant to be
@@ -929,9 +946,10 @@ const secMargins = (() => {
               </div>
             );
           }
+          const icLeft = b.iconPos === 'left' && !!b.icon && !b.image;
           return (
             <div
-              class="feature"
+              class:list={['feature', { 'feature--ic-left': icLeft }]}
               data-eid={b.eid}
               data-hide={b.hide?.join(" ")}
               style={[
@@ -944,6 +962,8 @@ const secMargins = (() => {
                    over anything these do not set. */
                 b.align ? `--feat-align:${b.align}` : '',
                 b.iconGap ? `--feat-gap:${b.iconGap}` : '',
+                /* Elementor's Title Bottom Space, where the widget sets one. */
+                b.eid && iconBoxOf(b.eid)?.titleGap ? `--feat-tgap:${iconBoxOf(b.eid)!.titleGap}` : '',
               ].filter(Boolean).join(";") || undefined}
             >
               {b.icon && (
@@ -955,13 +975,9 @@ const secMargins = (() => {
               {/* `titleHtml` where the title carries emphasis. The warranty
                   box is "3 Year Warranty<sup>*</sup>" and the port took its
                   textContent, so the footnote marker dropped to the baseline
-                  with a space in front of it and read as part of the name. */}
-              {b.title && (
-                <T style={b.titleStyle ?? undefined}>
-                  {b.titleHtml ? <Fragment set:html={b.titleHtml} /> : b.title}
-                </T>
-              )}
-              {b.text && <p style={b.textStyle ?? undefined}>{b.text}</p>}
+                  with a space in front of it and read as part of the name.
+                  `title` and `text` are the same nodes built above. */}
+              {icLeft ? <div class="feature-body">{title}{text}</div> : <>{title}{text}</>}
             </div>
           );
         }
@@ -1507,6 +1523,7 @@ const secMargins = (() => {
           return (
             <div
               class="cols"
+              id={b.anchor ?? undefined}
               style={[
                 b.margin ? `margin:${b.margin}` : '',
                 rowMarginVars(b) ?? '',
@@ -1662,6 +1679,7 @@ const secMargins = (() => {
     section?.bgImage ? `background-size:${section.bgSize ?? 'cover'}` : '',
     section?.bgImage ? `background-position:${section.bgPosition ?? 'center center'}` : '',
     section?.bgImage ? `background-repeat:${section.bgRepeat ?? 'no-repeat'}` : '',
+    section?.border ?? '',
   ].filter(Boolean).join(';');
 
   return group.bare ? inner : (
@@ -1676,6 +1694,7 @@ const secMargins = (() => {
         section?.minHeight && section?.itemsAlign && section.itemsAlign !== 'middle'
           ? `sec--items-${section.itemsAlign}` : null,
       ]}
+      id={section?.anchor ?? undefined}
       data-eid={section?.id ?? undefined}
       style={[
         secStyle,
@@ -2164,6 +2183,14 @@ const secMargins = (() => {
   }
   @media (max-width: 767px) {
     .cols[data-reverse~='tablet']:not([data-reverse~='mobile']) { flex-direction: column; }
+    /* The mobile-only case had no rule at all, so `reverse: ['mobile']` --
+       Elementor's elementor-reverse-mobile, on 1,055 rows -- did nothing:
+       the service rows on /commercial-vehicle-wraps/ and
+       /personal-vehicle-wraps/ put the gallery above its "Lettering & Decals"
+       label where the original puts the label first, and the archive pages
+       put the cards above the Categories sidebar the original leads with. */
+    .cols[data-reverse~='mobile'] { flex-direction: column-reverse; flex-wrap: nowrap; }
+    .cols[data-reverse~='mobile'] > .col { flex: 0 0 auto; width: 100%; max-width: 100%; }
   }
   /* A row whose columns fit on one line only wraps because they stack, and a
      classic Elementor section stacks them flush -- its columns are padded, not
@@ -2551,7 +2578,14 @@ const secMargins = (() => {
   .fig--full img { border-radius: 0; width: 100%; }
   /* A guard, so a viewport-wide breakout can never escape a column even if the
      flag is ever wrong again. */
-  .col .fig--full {
+  .col .fig--full,
+  /* Nor a full-width section, which is edge to edge already -- the homepage
+     banner's. There the breakout only added `100vw`, and 100vw counts a
+     classic scrollbar the page itself does not have: with one (desktop
+     Windows, Firefox, any browser set to always show them) the banner was
+     390px inside a 375px page at a 390px window, and the document scrolled
+     sideways by 8px. 100% of this container is the full width without it. */
+  .container--full > .fig--full {
     width: auto;
     max-width: 100%;
     margin-left: 0;
@@ -2684,7 +2718,7 @@ const secMargins = (() => {
        size (icon-size.json); the port drew every one 28px on a 42px line. */
     font-size: var(--ic, 50px);
     line-height: 1;
-    color: var(--brand-green);
+    color: var(--ic-c, var(--brand-green));
     text-decoration: none;
   }
   @media (max-width: 1024px) { .feature-ic { font-size: var(--ic-t, var(--ic, 50px)); } }
@@ -2735,6 +2769,36 @@ const secMargins = (() => {
      defaults here are what the measurement found; the page data carries only
      the boxes that differ. */
   .feature-ic { display: block; margin-bottom: var(--feat-gap, 15px); }
+  /* Elementor's icon-box wrapper is a flex column, so the icon's 15px and the
+     title's own 8px top margin add up rather than collapsing into each other
+     as they did in block flow -- every icon box on the site came out 8px
+     short. And the glyph sits on the top of its line box rather than its
+     baseline, which left 2px of strut under every icon: a 50px icon drew a
+     52px box. Together that is the 6px each box measured short against the
+     original (191 to its 197 on /commercial-vehicle-wraps/). Image boxes lay
+     themselves out below and are left alone. */
+  .feature:not(.feature--fi) { display: flex; flex-direction: column; }
+  .feature-ic :global(i) { vertical-align: top; }
+  /* elementor-position-inline-start: the icon in its own column, the title
+     and text beside it, the icon's top on the title's line box -- the
+     wrapper's `align-items: start`. Elementor turns it back into the stacked,
+     centred layout at its mobile breakpoint (elementor-mobile-position-
+     block-start), so this only applies from 768px. */
+  @media (min-width: 768px) {
+    .feature.feature--ic-left {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: var(--feat-gap, 15px);
+      text-align: start;
+    }
+    /* The icon's own 1em square, as Elementor's .elementor-icon is; a wide
+       glyph (the cogs) overhangs it rather than pushing the copy over. */
+    .feature--ic-left > .feature-ic { flex: none; margin-bottom: 0; width: 1em; height: 1em; }
+    .feature--ic-left > .feature-body { flex: 1 1 auto; min-width: 0; }
+  }
+  @media (max-width: 767px) {
+    .feature.feature--ic-left { text-align: center; }
+  }
   /* .elementor-icon-box-title / -description. The leading is 1.2 of whatever
      size the widget declares — frozen at 20.4px it was right only for the
      17px default and 6px too tall on the 12px variants. */
@@ -2748,7 +2812,7 @@ const secMargins = (() => {
   .feature h3,
   .feature h4 {
     margin-top: 8px;
-    margin-bottom: 16px;
+    margin-bottom: var(--feat-tgap, 16px);
     line-height: 1.2;
     font-weight: 600;
   }
@@ -2903,6 +2967,20 @@ const secMargins = (() => {
   @media (min-width: 768px) {
     .col h3[style*="margin:200px 0px 150px 0px"] { transform: rotate(-90deg); }
   }
+  /* And they follow the reader down their row: each widget is Elementor
+     `sticky: top` at a 100px offset, held inside its own column
+     (`sticky_parent`). Elementor pins the widget, whose 200px top margin
+     (80px on a tablet, none on a phone) sits inside it; here the margin is on
+     the heading itself, so the offset is the two added together. Sticky
+     already stops at the column's end, as sticky_parent does. These scrolled
+     away with the page, leaving the long galleries unlabelled. */
+  .col h3[style*="margin:200px 0px 150px 0px"] { position: sticky; top: 300px; }
+  @media (max-width: 1024px) {
+    .col h3[style*="margin:200px 0px 150px 0px"] { top: 180px; }
+  }
+  @media (max-width: 767px) {
+    .col h3[style*="margin:200px 0px 150px 0px"] { top: 100px; }
+  }
 
   /* related / looped post grids */
   /* The count comes from the widget; auto-fill gave three or more columns
@@ -2960,10 +3038,16 @@ const secMargins = (() => {
 
      The port forced 16/10 with `object-fit: cover`, so every thumbnail on the
      site was cropped to a shape the original never asks for. */
+  /* No `aspect-ratio` here. The browser's own default for an <img> with
+     width/height attributes is `auto <w> / <h>`: the picture's own ratio once
+     it has loaded, the attributes' ratio until then. An explicit
+     `aspect-ratio: auto` kept the first half and threw away the second, so
+     every lazy thumbnail below the fold was 0px tall until it arrived -- the
+     /car-wraps/ blog grid measured 616px against the original's 1406 and
+     grew under the reader as it loaded. */
   .cards img {
     width: 100%;
     height: auto;
-    aspect-ratio: auto;
     object-fit: fill;
     display: block;
   }
@@ -3577,7 +3661,9 @@ const secMargins = (() => {
     aspect-ratio: var(--fg-aspect, 4 / 3);
     object-fit: cover;
     display: block;
-    border-radius: 4px;
+    /* Square-cornered: Elementor's gallery widget draws its tiles with no
+       radius, and none of the original's galleries sets one. The 4px here
+       was invented. */
     cursor: zoom-in;
     /* A picture that fails to arrive keeps its box -- that is what the width,
        height and aspect-ratio are for -- but the browser then draws the alt
@@ -3720,6 +3806,12 @@ const secMargins = (() => {
        columns_mobile. Restating the auto-fill fallback here would win on
        source order and undo it. */
     .sec { padding: 24px 0; }
+    /* ...but not a min-height section, which carries none of its own -- the
+       same exception .sec--tall makes above. Coming later, the 24px here beat
+       it on source order, so every unpadded hero was 48px taller on a phone
+       than the original: /car-wraps/ drew 203px where Elementor draws 155.
+       A section that declares padding still gets it, inline or via .sec--pad. */
+    .sec.sec--tall { padding-block: 0; }
     .gallery { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
     .compare-pair:not([data-juxtapose]) { grid-template-columns: 1fr; }
   }
