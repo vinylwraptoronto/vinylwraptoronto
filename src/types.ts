@@ -266,6 +266,9 @@ export type Block = (
       fields?: string[];
       placeholders?: Record<string, string>;
       submit?: string;
+      /** The submit label's text-transform, where the form sets its own: the
+          blog sidebar's reads "Request Estimate", not the site-wide capitals. */
+      submitCase?: string;
     }
   | { type: 'map'; src: string }
   /* Elementor's filterable gallery. It ships no <img>; the picture URLs are the
@@ -461,6 +464,12 @@ export type ColumnsBlock = {
     minHeightT?: string | null;
     minHeightM?: string | null;
     slideshow?: Section['slideshow'];
+    /** The gap between this column's widgets, where its section sets its
+        own (Elementor's Widgets Space): 10px in the blog sidebar's offer box. */
+    widgetGap?: number | null;
+    /** Left out of the table of contents (the TOC widget's
+        exclude_headings_by_selector): the blog template's sidebar. */
+    tocSkip?: boolean;
   }[];
   /** Set where the row is an Elementor flex *container* (e-con) rather than a
       legacy section row: the children keep their share of the line at mobile
@@ -480,6 +489,15 @@ export type ColumnsBlock = {
   /** Elementor's own gap between the columns of this row. The port used a flat
       20px; a hero row is flush, and the 20px came out of the column widths. */
   gap?: number | null;
+  /** The inner section's own height, per breakpoint, and where its columns'
+      widgets sit inside it (elementor-section-content-middle / -bottom). The
+      service-page heroes hold each pair of linked images in a 400px row (300
+      from 1024 down) with the images centred in it; flattened into a plain
+      row, they sat 95px higher at 1440 and the page ran 5% short. */
+  minHeight?: string | null;
+  minHeightT?: string | null;
+  minHeightM?: string | null;
+  valign?: 'middle' | 'bottom' | null;
 };
 
 /** Sections carry the live template's own padding and container width; the
@@ -487,6 +505,8 @@ export type ColumnsBlock = {
 export type Section = {
   id?: string | null;
   blocks: Block[];
+  /** Left out of the table of contents: the blog template's related posts. */
+  tocSkip?: boolean;
   /** Where a column's widgets sit in a column taller than they are. Elementor
       writes this on the section as elementor-section-content-top / -middle /
       -bottom; the site is in bc-flex-widget mode, where those set align-items

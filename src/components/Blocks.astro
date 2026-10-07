@@ -13,6 +13,8 @@ import imgDims from '../data/img-dims.json';
 import galleryThumbs from '../data/gallery-thumbs.json';
 import widgetCss from '../data/widget-css.json';
 import sectionCss from '../data/section-css.json';
+import spacers from '../data/spacers.json';
+import rowCss from '../data/row-css.json';
 import QuoteForm from './QuoteForm.astro';
 import { img, imgHtml } from '../lib/img';
 
@@ -52,6 +54,30 @@ const genericLinkLabel = (arr: Block[], i: number, b: any): string | undefined =
     }
   }
   return undefined;
+};
+
+/** An inner section's own margin, per breakpoint (src/data/row-css.json, from
+ *  scripts/pull-row-margins.py), keyed by the first widget in the row. */
+type RowMargins = Record<string, Partial<Record<'d' | 't' | 'm', [string, string]>>>;
+const firstEid = (bs?: Block[]): string | undefined => {
+  for (const x of bs ?? []) {
+    const y = x as any;
+    if (y?.eid) return y.eid;
+    for (const c of Array.isArray(y?.cols) ? y.cols : []) { const e = firstEid(c?.blocks); if (e) return e; }
+    const e = firstEid(y?.blocks); if (e) return e;
+  }
+  return undefined;
+};
+const rowMarginVars = (b: any): string | undefined => {
+  const eid = firstEid((b.cols ?? []).flatMap((c: any) => c?.blocks ?? []));
+  const m = eid ? (rowCss as unknown as RowMargins)[eid] : undefined;
+  if (!m) return undefined;
+  const v: string[] = [];
+  for (const [bp, suf] of [['d', ''], ['t', '-t'], ['m', '-m']] as const) {
+    const x = m[bp];
+    if (x) v.push(`--row-mt${suf}:${x[0]}`, `--row-mb${suf}:${x[1]}`);
+  }
+  return v.join(';');
 };
 
 /** The image widget's Width control as custom properties, read by `.fig--iw img`. */
@@ -247,6 +273,59 @@ const SHARE: Record<string, { icon: string; href: (u: string) => string }> = {
   whatsapp: { icon: 'fab fa-whatsapp', href: (u) => `https://api.whatsapp.com/send?text=${u}` },
 };
 
+/** The original's Gutenberg spacers, put back in front of the element each
+ *  one preceded (src/data/spacers.json, from scripts/pull-spacers.py). Matched
+ *  on the element's tag and the start of its text, so an element that has
+ *  since been edited simply gets none. */
+const decode = (t: string) =>
+  t.replace(/&amp;/g, '&').replace(/&#8217;|&rsquo;/g, '\u2019').replace(/&#8211;|&ndash;/g, '\u2013')
+   .replace(/&nbsp;|&#160;/g, ' ').replace(/&quot;/g, '"').replace(/&#039;|&#39;/g, "'");
+const withSpacers = (html: string, path: string): string => {
+  const rows = (spacers as unknown as Record<string, [string, string, number][]>)[path];
+  if (!rows?.length) return html;
+  let out = html;
+  for (const [tag, text, h] of rows) {
+    if (!h) continue;
+    const open = new RegExp(`<${tag}(\\s[^>]*)?>`, 'gi');
+    let m: RegExpExecArray | null;
+    while ((m = open.exec(out))) {
+      const after = decode(out.slice(m.index + m[0].length, m.index + m[0].length + 400).replace(/<[^>]+>/g, ''))
+        .replace(/\s+/g, ' ').trim();
+      const before = out.slice(Math.max(0, m.index - 80), m.index);
+      if (after.startsWith(text) && !/wp-block-spacer[^>]*>\s*<\/div>\s*$/.test(before)) {
+        const div = `<div class="wp-block-spacer" style="height:${h}px" aria-hidden="true"></div>`;
+        out = out.slice(0, m.index) + div + out.slice(m.index);
+        break;
+      }
+    }
+  }
+  return out;
+};
+
+/** Instagram's own embed, as the original serves it.
+ *
+ *  Two posts embed an Instagram post. The original's markup is Instagram's
+ *  blockquote.instagram-media, which Instagram's embed.js swaps for the post
+ *  itself (a 540px-wide iframe, ~1,077px tall). The extractor stripped the
+ *  class and data attributes, leaving only the fallback text "View this post
+ *  on Instagram / A post shared by ...". This puts back the class, the
+ *  permalink and Instagram's own box style on any such fallback blockquote,
+ *  so embed.js -- loaded only on a page that has one -- can do the swap. The
+ *  fallback text stays inside, which is what shows if the script is blocked. */
+const IG_STYLE = 'background:#FFF;border:0;border-radius:3px;box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15);margin:1px;max-width:540px;min-width:326px;padding:0;width:calc(100% - 2px)';
+const instagramEmbeds = (html: string): { html: string; found: boolean } => {
+  let found = false;
+  const out = html.replace(
+    /<blockquote(\s[^>]*)?>((?:(?!<\/blockquote>)[\s\S])*?href="(https:\/\/www\.instagram\.com\/(?:p|reel|tv)\/[^"]+)"[\s\S]*?)<\/blockquote>/g,
+    (whole, attrs = '', inner: string, href: string) => {
+      if (/instagram-media/.test(attrs) || !/on Instagram|shared by/i.test(inner)) return whole;
+      found = true;
+      return `<blockquote class="instagram-media" data-instgrm-captioned data-instgrm-permalink="${href}" data-instgrm-version="14" style="${IG_STYLE}">${inner}</blockquote>`;
+    },
+  );
+  return { html: out, found: found || /class="instagram-media"/.test(html) };
+};
+
 const LIVE_LOOPS = new Set(['100f1ef', 'd09f711', '31cc265a']);
 
 /** A posts widget's own per-element rules, at every breakpoint, as CSS on the
@@ -392,6 +471,11 @@ function collectHeadings(node: unknown, into: TocEntry[]): void {
   }
   if (!node || typeof node !== 'object') return;
   const b = node as Record<string, unknown>;
+  /* What the TOC widget's own exclude_headings_by_selector leaves out: on the
+     blog template, the sidebar column and the related-posts section. Their
+     headings -- the offer's price, "Get an Estimate", "Read More Blogs" --
+     were listed under every post's own and made each TOC four lines longer. */
+  if (b.tocSkip) return;
   // `tag` means the widget rendered as p or div, so it is not a heading.
   if (b.type === 'heading' && !b.tag && typeof b.level === 'number' &&
       b.level >= 2 && b.level <= 6 && typeof b.text === 'string') {
@@ -591,7 +675,10 @@ const secMargins = (() => {
              sidebar where the original has one line. Collapsed by CSS until
              the script runs, so there is no flash of the open list. */
           const tocId = `toc-${b.eid ?? 'list'}`;
-          return tocEntries.length > 0 ? (
+          /* With nothing to list, the widget still draws its box and says so:
+             a post whose copy has no headings of its own carries a 112px
+             panel in the original's sidebar, not nothing. */
+          return (
             <nav class="toc" aria-label={b.title} data-toc>
               <div class="toc-head">
                 <h4 class="toc-title">{b.title}</h4>
@@ -599,13 +686,17 @@ const secMargins = (() => {
                   <i class="fas fa-chevron-up" aria-hidden="true"></i>
                 </button>
               </div>
-              <ol id={tocId}>
-                {tocEntries.map((e) => (
-                  <li class={e.level === 3 ? 'lvl3' : 'lvl2'}>
-                    <a href={`#${e.id}`}>{e.text}</a>
-                  </li>
-                ))}
-              </ol>
+              {tocEntries.length > 0 ? (
+                <ol id={tocId}>
+                  {tocEntries.map((e) => (
+                    <li class={e.level === 3 ? 'lvl3' : 'lvl2'}>
+                      <a href={`#${e.id}`}>{e.text}</a>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <div id={tocId} class="toc-none">No headings were found on this page.</div>
+              )}
               <script is:inline set:html={`
                 (function () {
                   var nav = document.currentScript.closest('[data-toc]');
@@ -626,7 +717,7 @@ const secMargins = (() => {
                 })();
               `} />
             </nav>
-          ) : null;
+          );
         }
 
         if (b.type === 'categories') {
@@ -669,7 +760,13 @@ const secMargins = (() => {
               return id && !/\bid=/.test(attrs) ? `<h${lvl}${attrs} id="${id}">` : whole;
             },
           );
-          return <div class="rt" data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined} set:html={withIds} />;
+          const ig = instagramEmbeds(withSpacers(withIds, Astro.url.pathname));
+          return (
+            <>
+              <div class="rt" data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined} set:html={ig.html} />
+              {ig.found && <script is:inline async src="https://www.instagram.com/embed.js"></script>}
+            </>
+          );
         }
 
         if (b.type === 'image') {
@@ -705,7 +802,7 @@ const secMargins = (() => {
             />
           );
           return (
-            <figure class={`${b.full ? 'fig fig--full' : 'fig'}${b.imgWidth ? ' fig--iw' : ''}`} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={imgWidthVars(b.imgWidth)}>
+            <figure class={`${b.full ? 'fig fig--full' : 'fig'}${b.imgWidth ? ' fig--iw' : ''}`} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[imgWidthVars(b.imgWidth), b.href && b.imgWidth && num(b.width) ? `--iw-cap:${num(b.width)}px` : ''].filter(Boolean).join(';') || undefined}>
               {b.href ? <a href={img(b.href)} aria-label={b.alt || 'View image details'}>{pic}</a> : pic}
             </figure>
           );
@@ -1329,6 +1426,7 @@ const secMargins = (() => {
               rows={b.rows}
               submitAlign={b.submitAlign}
               half={b.half}
+              submitCase={b.submitCase}
             />
           );
           /* The form widget's own box (a panel colour, padding) and its
@@ -1374,6 +1472,10 @@ const secMargins = (() => {
               class="cols"
               style={[
                 b.margin ? `margin:${b.margin}` : '',
+                rowMarginVars(b) ?? '',
+                b.minHeight ? `--row-mh:${b.minHeight}` : '',
+                b.minHeightT ? `--row-mh-t:${b.minHeightT}` : '',
+                b.minHeightM ? `--row-mh-m:${b.minHeightM}` : '',
                 /* Elementor's own row gap. The port used a flat 20px; the hero
                    rows are flush, and the 20px was coming out of the columns'
                    widths. */
@@ -1385,6 +1487,10 @@ const secMargins = (() => {
                 b.equalRows ? `--eq-n-m:${Math.max(1, Math.round(100 / (b.cols?.[0]?.mobileWidth || 100)))}` : '',
               ].filter(Boolean).join(';') || undefined}
               data-eqrows={b.equalRows ? '' : undefined}
+              data-rowmh={b.minHeight || b.minHeightT || b.minHeightM ? '' : undefined}
+              data-rowm={rowMarginVars(b) ? '' : undefined}
+              data-stack={!b.flex && !b.equalRows && (b.cols ?? []).reduce((t, c) => t + (c.width ?? 100), 0) <= 101 && !(b.cols ?? []).some((c) => c.mobileWidth != null) ? '' : undefined}
+              data-valign={b.valign ?? undefined}
               data-flexrow={b.flex ? '' : undefined}
               data-reverse={b.reverse?.length ? b.reverse.join(' ') : undefined}
             >
@@ -1433,6 +1539,7 @@ const secMargins = (() => {
                   c.minHeight ? `--col-mh:${c.minHeight}` : '',
                   c.minHeightT ? `--col-mh-t:${c.minHeightT}` : '',
                   c.minHeightM ? `--col-mh-m:${c.minHeightM}` : '',
+                  c.widgetGap != null ? `--widget-gap:${c.widgetGap}px` : '',
                 ].filter(Boolean).join(';');
                 /* A loop-grid card: its own 1px border, padding and radius,
                    with the title and the View Pictures button centred inside
@@ -1639,6 +1746,34 @@ const secMargins = (() => {
   .container.stack:has(> .cols) { padding: 0; }
   .cols > .col { padding: var(--col-pad, 10px); }
   .cols > .col--show { position: relative; overflow: hidden; }
+  /* An inner section's own height: the row is the flex line, so its columns
+     stretch to it and centre their widgets where the row says so. */
+  .cols[data-rowmh] { min-height: var(--row-mh, 0); }
+  @media (max-width: 1024px) { .cols[data-rowmh] { min-height: var(--row-mh-t, var(--row-mh, 0)); } }
+  @media (max-width: 767px) { .cols[data-rowmh] { min-height: var(--row-mh-m, var(--row-mh-t, var(--row-mh, 0))); } }
+  /* An inner section's own margin. Two inner sections in a row are flush --
+     the 20px widget gap is a widget's, and a section has none -- so a row that
+     follows another takes the gap back off its margin. The values are reset
+     on every column so a nested row never inherits its parent row's. */
+  .cols[data-rowm] { --rmt: var(--row-mt, 0px); --rmb: var(--row-mb, 0px); }
+  @media (max-width: 1024px) {
+    .cols[data-rowm] { --rmt: var(--row-mt-t, var(--row-mt, 0px)); --rmb: var(--row-mb-t, var(--row-mb, 0px)); }
+  }
+  @media (max-width: 767px) {
+    .cols[data-rowm] {
+      --rmt: var(--row-mt-m, var(--row-mt-t, var(--row-mt, 0px)));
+      --rmb: var(--row-mb-m, var(--row-mb-t, var(--row-mb, 0px)));
+    }
+  }
+  .cols[data-rowm] { margin-top: var(--rmt); margin-bottom: var(--rmb); }
+  .cols + .cols { margin-top: calc(var(--rmt, 0px) - var(--widget-gap, 20px)); }
+  .cols > .col {
+    --row-mt: initial; --row-mt-t: initial; --row-mt-m: initial;
+    --row-mb: initial; --row-mb-t: initial; --row-mb-m: initial;
+    --rmt: initial; --rmb: initial;
+  }
+  .cols[data-valign="middle"] > .col { justify-content: center; }
+  .cols[data-valign="bottom"] > .col { justify-content: flex-end; }
   .cols > .col--mh { min-height: var(--col-mh, 0); }
   @media (max-width: 1024px) {
     .cols > .col--mh { min-height: var(--col-mh-t, var(--col-mh, 0)); }
@@ -1979,6 +2114,11 @@ const secMargins = (() => {
   @media (max-width: 767px) {
     .cols[data-reverse~='tablet']:not([data-reverse~='mobile']) { flex-direction: column; }
   }
+  /* A row whose columns fit on one line only wraps because they stack, and a
+     classic Elementor section stacks them flush -- its columns are padded, not
+     spaced. The 20px row gap put 40px between stacked copy where the original
+     has 20: every two-column row on a phone came out 20px taller. */
+  .cols[data-stack] { row-gap: 0; }
   /* A tablet width, where the column sets one; otherwise the desktop share
      holds, as it does in Elementor. */
   @media (max-width: 1024px) {
@@ -2321,6 +2461,16 @@ const secMargins = (() => {
   @media (max-width: 767px) {
     .ilist[data-eid='7e4e00b'] > li { justify-content: center; }
   }
+  /* The byline and the sidebar's phone line (3751bb8) are icon lists with no
+     item spacing: 24px a line, and the theme's 24px under the list, which
+     Elementor keeps inside the widget. Ours spaced each item 5px apart and
+     dropped the 24. Drawn as a block after the list, since the phone line's
+     widget box writes margin:0 on the list itself. */
+  .ilist:is([data-eid='7e4e00b'], [data-eid='3751bb8'])::after { content: ''; display: block; height: 24px; }
+  .ilist:is([data-eid='7e4e00b'], [data-eid='3751bb8']) > li { padding-block-end: 0; }
+  /* A heading widget's title has no margin whatever tag it uses: "Share This
+     Post" is a <p>, and took the paragraph's 16px below it. */
+  .cols > .col > p.hd { margin-bottom: 0; }
 
   .fig { margin: 0; }
   .fig img { display: block; border-radius: 4px; }
@@ -2328,6 +2478,12 @@ const secMargins = (() => {
      next larger one, as Elementor's cascade does; a widget with no desktop value keeps
      natural size. */
   .fig--iw img { width: var(--iw, auto); max-width: 100%; height: auto; margin-inline: auto; /* Elementor image widgets centre their image */ }
+  /* A linked image's <a> is inline-block in Elementor, so it shrinks to the
+     image's own width and the Width percentage is of that: the 300px logos on
+     /car-wrap-colours-avery-dennison-3m/ stay 300 in a 370px column. The cap
+     restates that without the inline-block, whose percentage-of-itself width
+     is 0x0 until a lazy image loads. */
+  .fig--iw > a { display: block; max-width: var(--iw-cap, none); margin-inline: auto; }
   @media (max-width: 1024px) { .fig--iw img { width: var(--iw-t, var(--iw, auto)); } }
   @media (max-width: 767px) { .fig--iw img { width: var(--iw-m, var(--iw-t, var(--iw, auto))); } }
 
@@ -3212,9 +3368,10 @@ const secMargins = (() => {
      wrapped where the original's do not, and on a short post the sidebar --
      not the copy -- sets the row's height. */
   .toc > ol { padding: 0 10px 10px; margin: 0 0 24px; list-style: none; }
-  .toc[data-state='closed'] > ol { display: none; }
+  .toc > .toc-none { padding: 10px; font-size: 16px; line-height: 24px; }
+  .toc[data-state='closed'] > :is(ol, .toc-none) { display: none; }
   @media (max-width: 1024px) {
-    .toc:not([data-state]) > ol { display: none; }
+    .toc:not([data-state]) > :is(ol, .toc-none) { display: none; }
   }
   /* 22px leading in the kit green, measured against the original on all 402
      pages that carry a table of contents — one combination, no exceptions.
