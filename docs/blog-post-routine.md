@@ -1,6 +1,6 @@
 # The blog-post routine
 
-A scheduled Claude Code task writes one SEO post per run. This page is the
+A scheduled Claude Code task writes five SEO posts per run, one run a day. This page is the
 procedure it follows and the prompt that drives it, kept here so the two cannot
 drift and so a person can run the same steps by hand.
 
@@ -76,10 +76,14 @@ first run met.
 
 You are maintaining the Vinyl Wrap Toronto website repository
 (vinylwraptoronto/vinylwraptoronto, Astro on Cloudflare Workers, blog in D1).
-Your task is to research, write and publish one new SEO-focused blog post per
-run about vehicle wraps (car, truck, van, fleet, wrap care, materials, design
-preparation, installation, removal), and to leave it live on the site before
-you finish. Nobody is watching; the notification you send at the end is the
+Your task is to research, write and publish five new SEO-focused blog posts
+per run about vehicle wraps (car, truck, van, fleet, wrap care, materials,
+design preparation, installation, removal), and to leave them live on the site
+before you finish. Work the five as a batch: pick all five topics first so
+they do not overlap each other or existing posts, then write, apply and
+verify each one in turn, and run the Deploy workflow once at the end rather
+than five times. If a run cannot finish all five, publish the ones that are
+complete and say in the report how many shipped. Nobody is watching; the notification you send at the end is the
 only thing anyone reads.
 
 Setup
@@ -97,9 +101,11 @@ Setup
 Topic
 5. Read the top 40 entries of `src/data/blog-index.json` and scan the titles
    and H2 headings in `src/data/posts.json` so the topic fills a real gap.
-   Rotate between car and truck topics, with vans, fleets, care, materials,
-   design, installation and removal in between. Never rewrite a topic an
-   existing post already covers; if your first idea is covered, pick another.
+   Across the five posts in a run, cover at least one car topic and one truck
+   topic, and spread the rest over vans, fleets, care, materials, design,
+   installation and removal; no two posts in the same run share a focus
+   keyword. Never rewrite a topic an existing post already covers; if an idea
+   is covered, pick another.
 6. Research with the tools available (web search, fetching manufacturer PDFs
    from 3M, Avery Dennison or KPMF, the repository's own posts). If a research
    tool errors (out of credits, 402, 503), use another; do not stop the run.
@@ -112,7 +118,8 @@ Writing
    lifespans, guarantees or specifications, and never state assumptions as
    company policy. Mention Toronto or the GTA only where natural. Focus keyword
    in the title, slug, meta description (70 to 160 characters), first
-   paragraph and one H2. Author is `masoud` unless told otherwise.
+   paragraph and one H2. Author is `Ethan Hakaj` unless told otherwise (an
+   `authors.name` in D1, added by migration 0015).
 8. Every internal link must resolve to a page under `src/data/pages/` or a
    slug in `posts.json`. Every image must already exist: a path in the D1
    `media` table or in `src/data/img-dims.json`, and it must answer 200 at
@@ -124,7 +131,9 @@ Publish to the database
 9. Write `db/posts/<YYYY-MM-DD>-<slug>.json` and `.html` in the format
    `scripts/new-post.mjs` documents. `publishedAt` is an ISO datetime with
    the Toronto offset (`-04:00` in summer, `-05:00` in winter). Category names
-   must already exist in D1; tags may be new.
+   must already exist in D1; tags may be new. Tags are matched by exact
+   name, so reuse the stored spelling (`truck wrap`, not `Truck Wrap`) or the
+   tag is silently left off.
 10. Run `node scripts/new-post.mjs db/posts/<file>.json --apply`. Require an
     SEO score of 90 or more; improve the post and re-run if lower. The script
     applies the row with wrangler, reads it back and runs the snapshot pull.

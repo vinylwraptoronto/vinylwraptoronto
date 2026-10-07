@@ -18,7 +18,7 @@
  *     "focusKeyword": "…", "extraKeywords": ["…"],
  *     "featured": "/wp-content/uploads/…",    an image that EXISTS on the image host
  *     "featuredAlt": "…",                     defaults to title
- *     "author": "masoud",                     an authors.name; see src/data/author-archives.json
+ *     "author": "Ethan Hakaj",                an authors.name; see src/data/author-archives.json
  *     "publishedAt": "2026-10-06T09:00:00-04:00",
  *     "categories": ["Car Wrap"],             existing category names (not created here)
  *     "tags": ["Matte"],                      created when missing, as the editor does
