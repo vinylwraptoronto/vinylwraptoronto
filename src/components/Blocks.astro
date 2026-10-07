@@ -2287,6 +2287,13 @@ const secMargins = (() => {
      pages get theirs back as data (scripts/pull-text-shadows.py), but posts
      render from D1, so the post template's lives here. */
   h1[data-eid="cc1fcc1"] { text-shadow: 0px 0px 6px #000000; }
+  /* The post-info byline (7e4e00b): pink 14px icons, text in the body ink,
+     centred on a phone. */
+  .ilist[data-eid='7e4e00b'] .li-ic { color: var(--e-global-color-f32bb28); font-size: 14px; width: 14px; }
+  .ilist[data-eid='7e4e00b'] a { color: var(--e-global-color-text); }
+  @media (max-width: 767px) {
+    .ilist[data-eid='7e4e00b'] > li { justify-content: center; }
+  }
 
   .fig { margin: 0; }
   .fig img { display: block; border-radius: 4px; }
@@ -3133,7 +3140,12 @@ const secMargins = (() => {
     font-size: 16px;
     cursor: pointer;
   }
-  .toc > ol { padding: 0 10px 10px 30px; }
+  /* The widget's list, measured on the original: no markers and no indent,
+     10px in from the box and 24px under it; each entry 14px on 21px with 7px
+     below, the links in the kit pink. The port's 16/24 entries, indented 30px,
+     wrapped where the original's do not, and on a short post the sidebar --
+     not the copy -- sets the row's height. */
+  .toc > ol { padding: 0 10px 10px; margin: 0 0 24px; list-style: none; }
   .toc[data-state='closed'] > ol { display: none; }
   @media (max-width: 1024px) {
     .toc:not([data-state]) > ol { display: none; }
@@ -3156,9 +3168,9 @@ const secMargins = (() => {
     flex: 1;
   }
   .toc ol { margin: 0; }
-  .toc li { margin-bottom: 5px; }
-  .toc li.lvl3 { margin-inline-start: 16px; list-style: circle; }
-  .toc a { color: var(--brand-green); text-decoration: none; }
+  .toc li { margin-bottom: 7px; font-size: 14px; line-height: 21px; }
+  .toc li.lvl3 { margin-inline-start: 16px; }
+  .toc a { color: var(--brand-pink); text-decoration: none; }
   .toc a:hover { color: var(--brand-pink); text-decoration: underline; }
 
   .catlist { border-top: 1px solid var(--rule); padding-top: 14px; }

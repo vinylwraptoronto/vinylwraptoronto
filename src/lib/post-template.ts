@@ -24,22 +24,45 @@
  */
 import type { Section } from '../types';
 
-export function applyPostTemplate(sections: Section[]): Section[] {
+/** The byline as the template draws it: Elementor's post-info widget
+    (7e4e00b), in the sidebar under the offer's Claim Now button -- the author
+    linking to their archive, then the date, each behind a pink 14px icon. The
+    port had lifted it out into a bar above the hero, which the original does
+    not have, and which made every post 53px taller. */
+export type PostMeta = { author?: string | null; authorHref?: string; date?: string | null };
+
+export function applyPostTemplate(sections: Section[], meta: PostMeta = {}): Section[] {
+  /* Only where the spacer section itself did not survive: on posts where
+     525602a carries content (a gallery above the body) it renders as its own
+     section, and adding its 40px again put every such post 40px long. */
+  const spacerKept = sections.some((s) => s?.id === '525602a');
   return sections.map((s) => {
     if (s?.id !== 'b45e69d') return s;
     const blocks = (s.blocks ?? []).map((b: any) => {
       if (b?.type !== 'columns' || (b.cols ?? []).length !== 2) return b;
       const [copy, side] = b.cols;
+      const info = [
+        meta.author ? { text: meta.author, href: meta.authorHref ?? null, icon: 'far fa-user-circle' } : null,
+        meta.date ? { text: meta.date, icon: 'fas fa-calendar' } : null,
+      ].filter(Boolean);
+      const sideBlocks = [...(side.blocks ?? [])];
+      if (info.length && !sideBlocks.some((x: any) => x?.eid === '7e4e00b')) {
+        const at = sideBlocks.findIndex((x: any) => x?.eid === 'e4d3235');
+        sideBlocks.splice(at >= 0 ? at + 1 : sideBlocks.length, 0, {
+          type: 'list', eid: '7e4e00b', items: info,
+          itemStyle: 'font-family:"Poppins", Sans-serif;font-weight:400',
+        } as any);
+      }
       return {
         ...b,
         gap: 0,
         cols: [
           { ...copy, tabletWidth: 70, padding: '20px', padT: '15px', padM: '10px' },
-          { ...side, tabletWidth: 30 },
+          { ...side, tabletWidth: 30, blocks: sideBlocks },
         ],
       };
     });
-    return { ...s, padding: '40px 0px 40px 0px', blocks };
+    return { ...s, padding: spacerKept ? s.padding : '40px 0px 40px 0px', blocks };
   });
 }
 

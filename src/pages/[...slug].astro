@@ -247,23 +247,11 @@ const heroPreload = heroCoversAllBreakpoints
   progress={needsProgress}
   montserrat={needsMontserrat}
 >
-  {page.kind === 'post' && dateLabel && (
-    <div class="postmeta">
-      <div class="container">
-        <time datetime={page.published!}>{dateLabel}</time>
-        {page.author && (
-          <span class="by">
-            by {authorHref ? <a href={authorHref}>{page.author}</a> : page.author}
-          </span>
-        )}
-      </div>
-    </div>
-  )}
 
   {/* A post's body copy is #444, a page's is #333. Both are ported through the
       same rich-text renderer, so the distinction has to come from the page. */}
   {page.kind === 'post' ? (
-    <div class="postbody"><Blocks sections={applyPostTemplate(applyPostLayout(page.slug, page.sections))} /></div>
+    <div class="postbody"><Blocks sections={applyPostTemplate(applyPostLayout(page.slug, page.sections), { author: page.author, authorHref, date: dateLabel })} /></div>
   ) : (
     <Blocks sections={page.sections} />
   )}
@@ -296,20 +284,6 @@ const heroPreload = heroCoversAllBreakpoints
 </Base>
 
 <style>
-  /* Measured on the live post against .elementor-post-info: 16px/24px in #444,
-     and the byline link is the same ink, unlined — not the site's green link
-     colour. The 13px/#767676 here was invented. */
-  .postmeta {
-    border-bottom: 1px solid #ececec;
-    padding: 14px 0;
-    font-family: 'Poppins', sans-serif;
-    font-size: 16px;
-    line-height: 1.5;
-    color: #444444;
-  }
-  .postmeta .by { margin-left: 12px; }
-  .postmeta a { color: inherit; text-decoration: none; }
-  .postmeta a:hover { text-decoration: underline; }
 
   /* theme-post-content sets its own ink, a shade darker than the body's. */
   .postbody :global(.rt) { color: #444444; }
