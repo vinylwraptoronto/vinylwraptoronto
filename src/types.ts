@@ -507,6 +507,9 @@ export type Section = {
   blocks: Block[];
   /** Left out of the table of contents: the blog template's related posts. */
   tocSkip?: boolean;
+  /** Rendered by the Hello theme on the original, not by Elementor: the
+      content sits in the theme's .site-main, at its own widths. */
+  theme?: boolean;
   /** Where a column's widgets sit in a column taller than they are. Elementor
       writes this on the section as elementor-section-content-top / -middle /
       -bottom; the site is in bc-flex-widget mode, where those set align-items
