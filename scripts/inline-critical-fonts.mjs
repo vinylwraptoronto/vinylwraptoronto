@@ -1,7 +1,17 @@
 /**
  * Postbuild step: inline the three shared, render-blocking font stylesheets
- * (poppins.css, roboto.css, fontawesome.css) on the homepage only, instead of
- * loading them as blocking <link rel="stylesheet"> requests.
+ * (poppins.css, roboto.css, fontawesome.css) on an explicit allowlist of
+ * routes (/, /car-wraps/, /contact/) instead of loading them as blocking
+ * <link rel="stylesheet"> requests.
+ *
+ * UPDATE: the allowlist was extended from the homepage to /car-wraps/ and
+ * /contact/ after a fresh current-build critical-chain review showed the same
+ * three font <link>s render-block those routes. Those two routes inline the
+ * COMPLETE, unmodified dist/fonts/*.css (no Roboto italic trim -- italic use
+ * there is not verified). Their /_astro/_slug_.*.css links are left untouched.
+ * Performance benefit is UNPROVEN until an exclusive matched measurement.
+ * Every other page still fetches the three files externally, as described
+ * below.
  *
  * Why these three files, and why homepage-only:
  *
@@ -46,54 +56,55 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const distRoot = path.resolve('dist');
-const homepage = path.join(distRoot, 'index.html');
 const FONT_HREFS = ['/fonts/poppins.css', '/fonts/roboto.css', '/fonts/fontawesome.css'];
+/* route -> html file, and whether the homepage-only Roboto italic trim applies */
+const ROUTES = [
+  { route: '/', file: 'index.html', trimItalic: true },
+  { route: '/car-wraps/', file: 'car-wraps/index.html', trimItalic: false },
+  { route: '/contact/', file: 'contact/index.html', trimItalic: false },
+];
 
-if (!fs.existsSync(homepage)) {
-  console.error(`inline-critical-fonts: expected build output missing: ${homepage}`);
-  process.exit(1);
+for (const { route, file, trimItalic } of ROUTES) {
+  const page = path.join(distRoot, file);
+  if (!fs.existsSync(page)) {
+    console.error(`inline-critical-fonts: expected build output missing: ${page}`);
+    process.exit(1);
+  }
+  let html = fs.readFileSync(page, 'utf8');
+  let inlined = 0;
+  let bytesBefore = 0;
+  let bytesAfter = 0;
+
+  for (const href of FONT_HREFS) {
+    const tag = `<link rel="stylesheet" href="${href}">`;
+    if (html.split(tag).length !== 2) {
+      console.error(`inline-critical-fonts: ${route} must contain exactly one ${tag} -- `
+        + 'refusing to proceed silently (the Base.astro head markup may have changed).');
+      process.exit(1);
+    }
+    const cssFile = path.join(distRoot, href.replace(/^\//, ''));
+    if (!fs.existsSync(cssFile)) {
+      console.error(`inline-critical-fonts: ${route} references ${href} but ${cssFile} does not exist.`);
+      process.exit(1);
+    }
+    let css = fs.readFileSync(cssFile, 'utf8');
+    /* Homepage-only trim: no Roboto text on / is italic (verified in a real
+       browser at 412px and 1280px), so Roboto italic @font-face rules are dead
+       weight in the inlined HTML. Other routes inline the complete file. */
+    if (trimItalic && href === '/fonts/roboto.css') {
+      css = css.replace(/@font-face\{[^}]*font-style:\s*italic[^}]*\}/g, '');
+    }
+    if (css.includes('</style')) {
+      console.error(`inline-critical-fonts: ${href} contains a literal "</style" sequence -- refusing to inline it unescaped.`);
+      process.exit(1);
+    }
+    html = html.replace(tag, () => `<style>${css}</style>`);
+    inlined += 1;
+    bytesBefore += Buffer.byteLength(tag, 'utf8');
+    bytesAfter += Buffer.byteLength(css, 'utf8') + '<style></style>'.length;
+  }
+
+  fs.writeFileSync(page, html);
+  console.log(`inline-critical-fonts: ${route}: inlined ${inlined} font stylesheet(s) `
+    + `(${bytesBefore} bytes of <link> markup -> ${bytesAfter} bytes of inline <style>, font-display unchanged)`);
 }
-
-let html = fs.readFileSync(homepage, 'utf8');
-let inlined = 0;
-let bytesBefore = 0;
-let bytesAfter = 0;
-
-for (const href of FONT_HREFS) {
-  const tag = `<link rel="stylesheet" href="${href}">`;
-  if (!html.includes(tag)) {
-    console.error(`inline-critical-fonts: homepage does not contain the expected tag ${tag} -- `
-      + 'refusing to proceed silently (Base.astro\'s head markup may have changed).');
-    process.exit(1);
-  }
-
-  const cssFile = path.join(distRoot, href.replace(/^\//, ''));
-  if (!fs.existsSync(cssFile)) {
-    console.error(`inline-critical-fonts: homepage references ${href} but ${cssFile} does not exist.`);
-    process.exit(1);
-  }
-
-  let css = fs.readFileSync(cssFile, 'utf8');
-  /* Homepage-only trim: no Roboto text on / is italic (and none uses Roboto
-     as its first family) -- verified in a real browser at 412px and 1280px --
-     so Roboto italic @font-face rules are dead weight in the inlined HTML
-     (~26 KB of a ~250 KB document). Every other route still fetches the
-     complete external roboto.css. */
-  if (href === '/fonts/roboto.css') {
-    css = css.replace(/@font-face\{[^}]*font-style:\s*italic[^}]*\}/g, '');
-  }
-  if (css.includes('</style')) {
-    console.error(`inline-critical-fonts: ${href} contains a literal "</style" sequence -- refusing to inline it unescaped.`);
-    process.exit(1);
-  }
-
-  html = html.replace(tag, `<style>${css}</style>`);
-  inlined += 1;
-  bytesBefore += Buffer.byteLength(tag, 'utf8');
-  bytesAfter += Buffer.byteLength(css, 'utf8') + '<style></style>'.length;
-}
-
-fs.writeFileSync(homepage, html);
-console.log(`inline-critical-fonts: inlined ${inlined} font stylesheet(s) on the homepage only `
-  + `(${bytesBefore} bytes of <link> markup -> ${bytesAfter} bytes of inline <style>, `
-  + `removing ${inlined} render-blocking network request(s), font-display unchanged)`);
