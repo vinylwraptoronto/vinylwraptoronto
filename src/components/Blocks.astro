@@ -858,7 +858,7 @@ const galleryStyle = (b: {
                   ? <a class="feature-ic" href={img(b.iconHref)} tabindex="-1" aria-hidden="true"><i class={b.icon}></i></a>
                   : <span class="feature-ic" aria-hidden="true"><i class={b.icon}></i></span>
               )}
-              {b.image && <img src={img(b.image)} alt={b.alt ?? ''} loading="lazy" decoding="async" />}
+              {b.image && <img src={img(b.image)} alt={b.alt ?? ''} width={dimsOf(b.image)?.[0]} height={dimsOf(b.image)?.[1]} loading="lazy" decoding="async" />}
               {/* `titleHtml` where the title carries emphasis. The warranty
                   box is "3 Year Warranty<sup>*</sup>" and the port took its
                   textContent, so the footnote marker dropped to the baseline
@@ -2330,6 +2330,7 @@ const galleryStyle = (b: {
   .feature img {
     display: block;
     width: 100%;
+    height: auto;
     max-width: 320px;
     border-radius: 4px;
     margin-bottom: 12px;
