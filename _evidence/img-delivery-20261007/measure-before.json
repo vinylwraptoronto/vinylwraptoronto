@@ -1,0 +1,257 @@
+{
+ "@390x3": [
+  {
+   "src": "Chevrolet-Silverado-2018-Decals-PandK-Roofing-5f3e0931-768.webp",
+   "nat": 370,
+   "fig": 370,
+   "img": 370,
+   "h": 208.1,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Partial-Wrap-Truck-Hungarock-Seirra-Side-After-9a70d6f1-768.webp",
+   "nat": 370,
+   "fig": 370,
+   "img": 370,
+   "h": 208.1,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Full-Wrap-Truck-Nissan-Frontier-086ee245-768.webp",
+   "nat": 370,
+   "fig": 370,
+   "img": 370,
+   "h": 208.1,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Mazda-3-2019-Decals-Personal-6926764f-768.webp",
+   "nat": 370,
+   "fig": 370,
+   "img": 370,
+   "h": 208.1,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Partial-Wrap-Car-Fine-Tune-Auto-Mustang-Saleen-Side-After-vinyl-wrap-Toronto-a8489624-768.webp",
+   "nat": 370,
+   "fig": 370,
+   "img": 370,
+   "h": 208.1,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Hyundai-Veloster-2016-Full-Wrap-Personal-1-43957ad8-768.webp",
+   "nat": 370,
+   "fig": 370,
+   "img": 370,
+   "h": 208.1,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Partial-Wrap-Van-HomeFree-Nissan-Back-After-2cd9978c-768.webp",
+   "nat": 370,
+   "fig": 370,
+   "img": 370,
+   "h": 208.1,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "RAM-Promaster-City-2019-Partial-Zuccarini-22c35cfd-768.webp",
+   "nat": 370,
+   "fig": 370,
+   "img": 370,
+   "h": 208.1,
+   "fit": "fill",
+   "cols": "none"
+  }
+ ],
+ "van-wraps/@390x3": [
+  {
+   "src": "RAM-Promaster-City-2019-Partial-Zuccarini-22c35cfd-768.webp",
+   "nat": 370,
+   "fig": 370,
+   "img": 370,
+   "h": 208.1,
+   "fit": "fill",
+   "cols": "none"
+  }
+ ],
+ "@1440x1": [
+  {
+   "src": "Chevrolet-Silverado-2018-Decals-PandK-Roofing-5f3e0931-384.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Partial-Wrap-Truck-Hungarock-Seirra-Side-After-9a70d6f1-384.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Full-Wrap-Truck-Nissan-Frontier-086ee245-384.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Mazda-3-2019-Decals-Personal-6926764f-384.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Partial-Wrap-Car-Fine-Tune-Auto-Mustang-Saleen-Side-After-vinyl-wrap-Toronto-a8489624-384.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Hyundai-Veloster-2016-Full-Wrap-Personal-1-43957ad8-384.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Partial-Wrap-Van-HomeFree-Nissan-Back-After-2cd9978c-384.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "RAM-Promaster-City-2019-Partial-Zuccarini-22c35cfd-384.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  }
+ ],
+ "van-wraps/@1440x1": [
+  {
+   "src": "RAM-Promaster-City-2019-Partial-Zuccarini-22c35cfd-384.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  }
+ ],
+ "@1440x2": [
+  {
+   "src": "Chevrolet-Silverado-2018-Decals-PandK-Roofing-5f3e0931-768.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Partial-Wrap-Truck-Hungarock-Seirra-Side-After-9a70d6f1-768.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Full-Wrap-Truck-Nissan-Frontier-086ee245-768.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Mazda-3-2019-Decals-Personal-6926764f-768.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Partial-Wrap-Car-Fine-Tune-Auto-Mustang-Saleen-Side-After-vinyl-wrap-Toronto-a8489624-768.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Hyundai-Veloster-2016-Full-Wrap-Personal-1-43957ad8-768.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "Partial-Wrap-Van-HomeFree-Nissan-Back-After-2cd9978c-768.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  },
+  {
+   "src": "RAM-Promaster-City-2019-Partial-Zuccarini-22c35cfd-768.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  }
+ ],
+ "van-wraps/@1440x2": [
+  {
+   "src": "RAM-Promaster-City-2019-Partial-Zuccarini-22c35cfd-768.webp",
+   "nat": 384,
+   "fig": 362.6,
+   "img": 362.6,
+   "h": 204,
+   "fit": "fill",
+   "cols": "none"
+  }
+ ]
+}
