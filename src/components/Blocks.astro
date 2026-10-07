@@ -11,6 +11,8 @@ import posts from '../data/posts.json';
 import categories from '../data/categories.json';
 import imgDims from '../data/img-dims.json';
 import galleryThumbs from '../data/gallery-thumbs.json';
+import IMG_OPT from '../data/img-opt.json';
+const optOf = (s: string): { 384: string; 768: string } | undefined => (IMG_OPT as Record<string, { 384: string; 768: string }>)[s];
 import QuoteForm from './QuoteForm.astro';
 import { img, imgHtml } from '../lib/img';
 import { describe, LINKED } from '../lib/image-desc';
@@ -765,7 +767,8 @@ const galleryStyle = (b: {
              covers). */
           const isLcpCandidate = !inColumn && gi === 0 && i === 0 && !b.hide?.length;
           const imgName = b.alt ? describe(b.src, b.alt) : (b.href ? describe(b.src, b.alt, LINKED) : b.alt);
-          const pic = (
+          const opt = optOf(b.src);
+          const imgEl = (
             <img
               src={img(b.src)}
               alt={imgName}
@@ -776,6 +779,17 @@ const galleryStyle = (b: {
               decoding="async"
             />
           );
+          /* Offline-generated webp siblings (scripts/gen-img-opt.mjs) for the
+             home gallery thumbnails; the original jpg stays as the fallback
+             <img>, so non-webp browsers and the img/alt/size markup are
+             unchanged. 768w is the source's full width, so DPR2 keeps full
+             detail; 384w serves DPR1. */
+          const pic = opt ? (
+            <picture>
+              <source type="image/webp" srcset={`${opt[384]} 384w, ${opt[768]} 768w`} sizes="(max-width: 767px) calc(100vw - 20px), 384px" />
+              {imgEl}
+            </picture>
+          ) : imgEl;
           return (
             <figure class={`${b.full ? 'fig fig--full' : 'fig'}${b.imgWidth ? ' fig--iw' : ''}`} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={imgWidthVars(b.imgWidth)}>
               {b.href ? <a href={img(b.href)} aria-label={imgName || 'View image details'}>{pic}</a> : pic}

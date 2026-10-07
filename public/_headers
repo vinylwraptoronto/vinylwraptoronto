@@ -66,3 +66,6 @@ https://www.vinylwraptoronto.com/*
   Cache-Control: public, max-age=31536000, immutable
 /fonts/files/*
   Cache-Control: public, max-age=31536000, immutable
+# Content-hashed (sha1 of source in the filename) gallery webp from scripts/gen-img-opt.mjs.
+/img-opt/*
+  Cache-Control: public, max-age=31536000, immutable
