@@ -238,6 +238,15 @@ const thumbBox = (src: string, c: any): { w?: number; h?: number } => {
  *  A new id belongs here only after the same check: load a page carrying it
  *  and confirm the original's own loop lists the newest posts.
  */
+/** The share-buttons widget's networks: icon, and the share address for a
+ *  page URL (already encoded). */
+const SHARE: Record<string, { icon: string; href: (u: string) => string }> = {
+  facebook: { icon: 'fab fa-facebook', href: (u) => `https://www.facebook.com/sharer/sharer.php?u=${u}` },
+  twitter: { icon: 'fab fa-twitter', href: (u) => `https://twitter.com/intent/tweet?url=${u}` },
+  linkedin: { icon: 'fab fa-linkedin', href: (u) => `https://www.linkedin.com/sharing/share-offsite/?url=${u}` },
+  whatsapp: { icon: 'fab fa-whatsapp', href: (u) => `https://api.whatsapp.com/send?text=${u}` },
+};
+
 const LIVE_LOOPS = new Set(['100f1ef', 'd09f711', '31cc265a']);
 
 /** A posts widget's own per-element rules, at every breakpoint, as CSS on the
@@ -552,6 +561,24 @@ const secMargins = (() => {
                   ? <a class="hlink" href={img(b.href)} aria-label={genericLinkLabel(blocksArr, i, b)}>{b.text}</a>
                   : b.text}
             </Tag>
+          );
+        }
+
+        if (b.type === 'shareicons') {
+          /* Real share links rather than the original's script-driven
+             buttons: the same four networks, the same round navy icons on the
+             widget's green panel, and they work without JavaScript. */
+          const u = encodeURIComponent(new URL(Astro.url.pathname, Astro.site ?? 'https://vinylwraptoronto.com').href);
+          return (
+            <ul class="shareicons" data-eid={b.eid}>
+              {b.networks.map((n) => (
+                <li>
+                  <a href={SHARE[n].href(u)} target="_blank" rel="noopener" aria-label={`Share on ${n}`}>
+                    <i class={SHARE[n].icon} aria-hidden="true"></i>
+                  </a>
+                </li>
+              ))}
+            </ul>
           );
         }
 
@@ -3111,6 +3138,45 @@ const secMargins = (() => {
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--brand-navy);
+  }
+
+  /* #4075310 -- the share-buttons widget: a green panel, 10px in, 5px
+     radius and a soft drop shadow; navy circles 4.5em across with a white
+     glyph at 1.6em, the em being 7px at desktop, 7.5 at tablet and 10 on a
+     phone (where the glyph is 2em); 14 / 10 / 10px apart. */
+  .shareicons {
+    list-style: none;
+    margin: 0;
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 14px;
+    background-color: var(--e-global-color-8c22d81);
+    border-radius: 5px;
+    box-shadow: 0 5px 10px 0 rgba(0, 0, 0, 0.42);
+    font-size: 7px;
+  }
+  .shareicons a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4.5em;
+    height: 4.5em;
+    border-radius: 99.9em;
+    background-color: var(--e-global-color-d077a13);
+    color: var(--e-global-color-accent);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  .shareicons a i { font-size: 1.6em; }
+  .shareicons a:hover { color: var(--e-global-color-f32bb28); }
+  @media (max-width: 1024px) {
+    .shareicons { font-size: 7.5px; gap: 3px; }
+  }
+  @media (max-width: 767px) {
+    .shareicons { font-size: 10px; gap: 10px; }
+    .shareicons a i { font-size: 2em; }
   }
 
   .toc {

@@ -46,6 +46,14 @@ export function applyPostTemplate(sections: Section[], meta: PostMeta = {}): Sec
         meta.date ? { text: meta.date, icon: 'fas fa-calendar' } : null,
       ].filter(Boolean);
       const sideBlocks = [...(side.blocks ?? [])];
+      /* The share buttons (4075310) under "Share This Post", which the
+         extractor dropped -- a 52px panel at desktop, 65 on a phone. */
+      const shareAt = sideBlocks.findIndex((x: any) => x?.eid === 'fb4c9cb');
+      if (shareAt >= 0 && !sideBlocks.some((x: any) => x?.eid === '4075310')) {
+        sideBlocks.splice(shareAt + 1, 0, {
+          type: 'shareicons', eid: '4075310', networks: ['facebook', 'twitter', 'linkedin', 'whatsapp'],
+        } as any);
+      }
       if (info.length && !sideBlocks.some((x: any) => x?.eid === '7e4e00b')) {
         const at = sideBlocks.findIndex((x: any) => x?.eid === 'e4d3235');
         sideBlocks.splice(at >= 0 ? at + 1 : sideBlocks.length, 0, {

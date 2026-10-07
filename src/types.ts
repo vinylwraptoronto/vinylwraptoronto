@@ -95,6 +95,11 @@ export type Block = (
       itemStyle?: string | null;
     }
   | {
+      /** Elementor's share-buttons widget: one round icon per network. */
+      type: 'shareicons';
+      networks: ('facebook' | 'twitter' | 'linkedin' | 'whatsapp')[];
+    }
+  | {
       type: 'feature';
       title: string;
       text: string;
