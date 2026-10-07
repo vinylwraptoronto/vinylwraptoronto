@@ -28,7 +28,10 @@
     z-index: 1100;
     background: rgba(0, 0, 0, 0.92);
     display: grid;
-    grid-template-columns: 60px 1fr 60px;
+    /* minmax(0, 1fr), not 1fr: a bare 1fr track will not shrink below the
+       picture's own width, and at 390 the 94vw cap made the picture 367px
+       wide, which pushed the Next button off the right of the screen. */
+    grid-template-columns: 60px minmax(0, 1fr) 60px;
     grid-template-rows: 1fr auto;
     align-items: center;
     justify-items: center;
@@ -38,7 +41,7 @@
   .lb-img {
     grid-column: 2;
     grid-row: 1;
-    max-width: min(1400px, 94vw);
+    max-width: min(1400px, 100%);
     max-height: 84vh;
     object-fit: contain;
   }
@@ -73,7 +76,7 @@
   }
 
   @media (max-width: 767px) {
-    .lb { grid-template-columns: 40px 1fr 40px; }
+    .lb { grid-template-columns: 40px minmax(0, 1fr) 40px; }
     .lb button { font-size: 32px; }
   }
 
@@ -99,7 +102,11 @@
     /* clipped to the handle position */
     clip-path: inset(0 0 0 var(--split, 50%));
   }
-  :global(.compare-pair[data-juxtapose] img) { display: block; width: 100%; }
+  :global(.compare-pair[data-juxtapose] img) {
+    display: block;
+    width: 100%;
+    -webkit-user-drag: none;
+  }
   :global(.compare-pair[data-juxtapose] figcaption) {
     position: absolute;
     /* Top, not bottom. The original's rule is `.jx-left { align-items:
@@ -174,21 +181,21 @@
   :global(.compare-pair[data-juxtapose]:hover .jx-controller) {
     background: var(--e-global-color-secondary, #232323);
   }
-  :global(.compare-pair[data-juxtapose]:focus-visible) {
+  /* The controller is the focusable slider. A white ring inside a dark one
+     reads on both the light and the dark photographs it can sit over. */
+  :global(.jx-controller:focus) { outline: none; }
+  :global(.jx-controller:focus-visible) {
     outline: 3px solid var(--e-global-color-a8178e9, #99cc33);
     outline-offset: 2px;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 7px rgba(15, 23, 42, 0.55);
   }
   /* Chevrons drawn from a rotated corner rather than fetched as an image. */
   /* The handle is pointer-events:none so it never blocks a drag across the
      picture; the controller opts back in so its chevrons can be pressed. */
   :global(.jx-controller) { pointer-events: auto; cursor: ew-resize; }
   :global(.jx-arrow) {
-    -webkit-appearance: none;
-    appearance: none;
-    background: none;
-    border: 0;
     /* A 7px chevron is far too small to hit. The drawn mark stays 7px; the
-       button around it is padded out to a real target. */
+       span around it is padded out to a real target. */
     padding: 7px 5px;
     cursor: pointer;
     display: block;
@@ -204,11 +211,6 @@
   }
   :global(.jx-arrow--prev::before) { transform: rotate(-135deg); }
   :global(.jx-arrow--next::before) { transform: rotate(45deg); }
-  :global(.jx-arrow:focus-visible) {
-    outline: 2px solid #fff;
-    outline-offset: 1px;
-    border-radius: 3px;
-  }
 </style>
 
 <script>
@@ -358,7 +360,18 @@
          screenful. Paging a screenful at a time drew three bullets under the
          Tesla carousel where the original has eight, and jumped the photographs
          three at a time where the original walks them one by one. */
-      const scroll = Math.max(1, Number(el.dataset.scroll || 1));
+      /* Per breakpoint, as Elementor hands it to Swiper: the widget's own value
+         on desktop, and `slides_to_scroll_tablet` / `_mobile` below that --
+         which default to ONE, not to the desktop value, when the widget leaves
+         them unset. The homepage logos scroll 6 at a time on desktop and one at
+         a time on a phone; scrolling 6 there gave the strip two pages, so
+         autoplay moved once and had nowhere left to go. */
+      const scrollD = Math.max(1, Number(el.dataset.scroll || 1));
+      const scrollAt = () => (window.matchMedia('(max-width: 767px)').matches
+        ? Math.max(1, Number(el.dataset.scrollMobile || 1))
+        : window.matchMedia('(max-width: 1024px)').matches
+          ? Math.max(1, Number(el.dataset.scrollTablet || 1)) : scrollD);
+      let scroll = scrollAt();
       const loop = infinite && slides.length > per();
       const pages = () => (loop
         ? Math.max(1, Math.ceil(slides.length / scroll))
@@ -385,7 +398,10 @@
 
       let page = 0;
       let rewind = 0;
-      const applyPer = () => el.style.setProperty('--per', String(per()));
+      const applyPer = () => {
+        el.style.setProperty('--per', String(per()));
+        scroll = scrollAt();
+      };
       const mark = () => dots?.querySelectorAll('button').forEach((d, i) =>
         d.setAttribute('aria-selected', String(i === page)));
 
@@ -434,7 +450,10 @@
       const start = () => {
         if (!autoplay || pages() < 2) return;
         stop();
-        timer = window.setInterval(() => go(page + 1), delay);
+        /* A strip that does not loop goes back to its first slide after the
+           last, as Swiper's autoplay does unless told to stop there -- rather
+           than sitting on the last page for good. */
+        timer = window.setInterval(() => go(!loop && page >= pages() - 1 ? 0 : page + 1), delay);
       };
       const stop = () => { if (timer) { window.clearInterval(timer); timer = 0; } };
 
@@ -502,8 +521,12 @@
       const tiles = [...grid.querySelectorAll<HTMLElement>('.fgal-item')].filter((t) => !t.hidden);
       for (const tile of tiles) {
         const img = tile.querySelector('img');
-        const w = Number(img?.getAttribute('width')) || 4;
-        const h = Number(img?.getAttribute('height')) || 3;
+        /* The attributes first, so the layout is final before anything has
+           loaded; a picture that arrived without them uses its own size once
+           it is in (see the load listener below), and only an unloaded one
+           with neither falls back to 4:3. */
+        const w = Number(img?.getAttribute('width')) || img?.naturalWidth || 4;
+        const h = Number(img?.getAttribute('height')) || img?.naturalHeight || 3;
         let c = 0;
         for (let i = 1; i < cols; i++) if (heights[i] < heights[c]) c = i;
         tile.style.left = `${c * (colW + gap)}px`;
@@ -573,6 +596,19 @@
       justified.forEach(layoutJustified);
     };
     layoutAll();
+    // A tile with no width/height can only be placed properly once its
+    // picture is in; re-place that gallery when it arrives, once per frame.
+    masonries.forEach((grid) => {
+      let queued = 0;
+      grid.querySelectorAll<HTMLImageElement>('img:not([width])').forEach((im) => {
+        if (im.complete) return;
+        im.addEventListener('load', () => {
+          cancelAnimationFrame(queued);
+          queued = requestAnimationFrame(() => layoutMasonry(grid));
+        }, { once: true });
+      });
+      if (grid.querySelector('img:not([width])')) layoutMasonry(grid);
+    });
     if (masonries.length || justified.length) {
       let raf = 0;
       let lastW = window.innerWidth;
@@ -628,21 +664,28 @@
       handle.className = 'jx-handle';
       // The controller carries a left and a right chevron, as the original's
       // does through its data-prev-icon / data-next-icon attributes.
+      /* The controller is the slider itself, as on the original: juxtapose
+         gives its .jx-controller role="slider", tabindex="0" and the three
+         aria-value* attributes. It was a plain span here, so nothing on the
+         page could take keyboard focus and the comparison could not be moved
+         without a pointer. */
       const controller = document.createElement('span');
       controller.className = 'jx-controller';
-      /* Real buttons, not decoration. They looked clickable and were not: the
-         handle is pointer-events:none, so a press on a chevron fell through to
-         the pair and set the split to where the handle already was, which moved
-         nothing. Anyone who tried them concluded the slider was broken. */
-      const arrows: Record<string, HTMLButtonElement> = {};
+      controller.tabIndex = 0;
+      controller.setAttribute('role', 'slider');
+      controller.setAttribute('aria-label', 'Before and after image comparison');
+      controller.setAttribute('aria-valuemin', '0');
+      controller.setAttribute('aria-valuemax', '100');
+      controller.setAttribute('aria-orientation', 'horizontal');
+      /* The chevrons stay pressable with a pointer, but they are not buttons:
+         a focusable control nested inside a slider is a second, redundant tab
+         stop that a screen reader announces as part of the slider. The
+         keyboard path is the slider's own arrow keys. */
+      const arrows: Record<string, HTMLElement> = {};
       for (const dir of ['prev', 'next']) {
-        const arrow = document.createElement('button');
-        arrow.type = 'button';
+        const arrow = document.createElement('span');
         arrow.className = `jx-arrow jx-arrow--${dir}`;
-        arrow.setAttribute(
-          'aria-label',
-          dir === 'prev' ? 'Show more of the before photo' : 'Show more of the after photo',
-        );
+        arrow.setAttribute('aria-hidden', 'true');
         controller.appendChild(arrow);
         arrows[dir] = arrow;
       }
@@ -652,8 +695,13 @@
       /* The original starts at data-startingposition="50%", which is also the
          CSS fallback; it is set explicitly so the value is always readable. */
       let pct = 50;
+      /* Every movement -- pointer, touch, chevron or key -- goes through here,
+         so the clip, the handle and aria-valuenow can never disagree. */
       const apply = () => {
         pair.style.setProperty('--split', `${pct}%`);
+        const now = String(Math.round(pct));
+        controller.setAttribute('aria-valuenow', now);
+        controller.setAttribute('aria-valuetext', `${now}% after photo shown`);
       };
       const setSplit = (clientX: number) => {
         const r = pair.getBoundingClientRect();
@@ -661,15 +709,18 @@
         apply();
       };
 
-      /* The pair is a labelled group. Its two arrow buttons provide keyboard
-         operation without nesting focusable controls inside another control. */
       pair.setAttribute('role', 'group');
       pair.setAttribute('aria-label', 'Before and after comparison');
       apply();
-      pair.addEventListener('keydown', (e: KeyboardEvent) => {
-        const step = e.shiftKey ? 10 : 2;
-        if (e.key === 'ArrowLeft') pct = Math.max(0, pct - step);
-        else if (e.key === 'ArrowRight') pct = Math.min(100, pct + step);
+      /* The original's juxtapose moves 1% per arrow press. PageUp/PageDown and
+         Shift+arrow take bigger steps, as the ARIA slider pattern expects. */
+      controller.addEventListener('keydown', (e: KeyboardEvent) => {
+        const big = 10;
+        const small = e.shiftKey ? big : 1;
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') pct = Math.max(0, pct - small);
+        else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') pct = Math.min(100, pct + small);
+        else if (e.key === 'PageDown') pct = Math.max(0, pct - big);
+        else if (e.key === 'PageUp') pct = Math.min(100, pct + big);
         else if (e.key === 'Home') pct = 0;
         else if (e.key === 'End') pct = 100;
         else return;
@@ -726,12 +777,48 @@
         });
       }
 
+      /* A press on a photograph followed by a move is, to the browser, the
+         start of dragging the image out of the page. It takes the gesture
+         over and fires pointercancel, so a mouse drag moved the split by the
+         first few pixels and then stopped dead. Touch never showed it, which
+         is why it went unnoticed. The pictures are not meant to be dragged
+         anywhere; refusing that hands the gesture back to the slider. */
+      pair.querySelectorAll('img').forEach((im) => { im.draggable = false; });
+      pair.addEventListener('dragstart', (e) => e.preventDefault());
+
       pair.addEventListener('pointerdown', start);
       pair.addEventListener('pointermove', move);
       pair.addEventListener('pointerup', end);
       pair.addEventListener('pointercancel', end);
     });
   })();
+</script>
+
+<script>
+  /* In-page links glide to their target, as Elementor's do, rather than
+     jumping -- `#partial_wraps` and the other service links on the vehicle-wrap
+     pages. Scoped to the click rather than set as `html { scroll-behavior:
+     smooth }`, which would also slow every script's own window.scrollTo().
+     A reader who asks for reduced motion gets the plain jump. The target's
+     scroll-margin-top keeps it clear of the sticky header either way. */
+  document.addEventListener('click', (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const a = (e.target as Element).closest?.<HTMLAnchorElement>('a[href^="#"]');
+    const hash = a?.getAttribute('href') ?? '';
+    if (!a || hash.length < 2 || a.hasAttribute('data-popup')) return;
+    let target: HTMLElement | null = null;
+    try { target = document.getElementById(decodeURIComponent(hash.slice(1))); } catch { return; }
+    if (!target) return;
+    e.preventDefault();
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    target.scrollIntoView({ behavior: still ? 'auto' : 'smooth', block: 'start' });
+    if (location.hash !== hash) history.pushState(null, '', hash);
+    /* Keyboard and screen-reader users land where the link said. A section
+       is not focusable on its own, so it is made programmatically focusable,
+       and focusing it must not cut the glide short with a jump. */
+    if (!target.matches('a[href], button, input, select, textarea, [tabindex]')) target.tabIndex = -1;
+    target.focus({ preventScroll: true });
+  });
 </script>
 
 <script>

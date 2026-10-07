@@ -140,3 +140,15 @@ label { display: inline-block; line-height: 1; vertical-align: middle; }
 @media (min-width: 1025px) {
   [data-hide~='desktop'] { display: none !important; }
 }
+
+/* In-page link targets -- `#partial_wraps`, `#racing_stripes` and the rest
+   of the service-row links on the vehicle-wrap pages. The margin keeps the
+   target's heading clear of the sticky header, which comes back on any upward
+   jump: 68px of bar plus its 2px border and shadow, with room to spare. The
+   glide itself is in Interactions.astro, scoped to link clicks. */
+.sec[id],
+.cols[id] { scroll-margin-top: 90px; }
+/* Focus is moved to the target so keyboard users land there; the section is
+   only a landing point, not a control, so it draws no ring of its own. */
+.sec[id][tabindex="-1"]:focus,
+.cols[id][tabindex="-1"]:focus { outline: none; }

@@ -1,0 +1,240 @@
+{
+  "4222785": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "26513320": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "e8fc75d": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "5fdfbfee": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "163c1495": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "7ae6fe88": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "38272ffe": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "74c846f": {
+    "color": "var(--e-global-color-d077a13)"
+  },
+  "8b70d05": {
+    "color": "var(--e-global-color-d077a13)"
+  },
+  "3ca9ffb": {
+    "color": "var(--e-global-color-d077a13)"
+  },
+  "81dfcf5": {
+    "color": "var(--e-global-color-a8178e9)"
+  },
+  "48f6f04": {
+    "color": "var(--e-global-color-a8178e9)"
+  },
+  "12ebe09": {
+    "color": "var(--e-global-color-f32bb28)",
+    "titleGap": "5px"
+  },
+  "74d62c5": {
+    "color": "var(--e-global-color-f32bb28)",
+    "titleGap": "5px"
+  },
+  "406556b": {
+    "color": "var(--e-global-color-f32bb28)",
+    "titleGap": "5px"
+  },
+  "706b30a": {
+    "titleGap": "10px"
+  },
+  "9c2ad10": {
+    "titleGap": "10px"
+  },
+  "fe027d5": {
+    "titleGap": "10px"
+  },
+  "5abac91": {
+    "titleGap": "10px"
+  },
+  "e5b48ba": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "016dbab": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "43611cd": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "f9aa413": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "47cbdad3": {
+    "color": "var(--e-global-color-f32bb28)",
+    "titleGap": "5px"
+  },
+  "156aa968": {
+    "color": "var(--e-global-color-f32bb28)",
+    "titleGap": "5px"
+  },
+  "1f6b0142": {
+    "color": "var(--e-global-color-f32bb28)",
+    "titleGap": "5px"
+  },
+  "7621b8b2": {
+    "color": "var(--e-global-color-f32bb28)",
+    "titleGap": "5px"
+  },
+  "391bc2e7": {
+    "color": "var(--e-global-color-f32bb28)",
+    "titleGap": "5px"
+  },
+  "ce3182a": {
+    "color": "var(--e-global-color-f32bb28)",
+    "titleGap": "5px"
+  },
+  "1987d40": {
+    "color": "var(--e-global-color-f32bb28)",
+    "titleGap": "5px"
+  },
+  "201b366": {
+    "color": "var(--e-global-color-f32bb28)",
+    "titleGap": "5px"
+  },
+  "bcca499": {
+    "color": "var(--e-global-color-f32bb28)",
+    "titleGap": "5px"
+  },
+  "c0d88ab": {
+    "color": "var(--e-global-color-f32bb28)",
+    "titleGap": "5px"
+  },
+  "a48919a": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "26172b0": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "7c22314": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "5fbd7a3": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "7fa610b": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "866dd9a": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "7e6095b": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "8d8c282": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "510f5ce": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "1584a57": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "b2f42d7": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "ac1c1e6": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "694f1f3": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "0421490": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "2d0cd1e": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "e2095ba": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "10ad2f2a": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "2649dc27": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "4fd425c6": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "618d5949": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "141e8b09": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "58707ae3": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "4db18995": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "1d0de211": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "6ee0edc": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "6ed6e42": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "f716960": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "23837d7": {
+    "color": "var(--e-global-color-f32bb28)"
+  },
+  "8e6b6fb": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "4efed1e": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "e01122f": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "b963a20": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "4e72829": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "a0f8ed0": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "496aecf": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  },
+  "d5e3096": {
+    "color": "var(--e-global-color-a8178e9)",
+    "titleGap": "5px"
+  }
+}
