@@ -75,6 +75,13 @@ export type Block = (
        *  differ say so per element -- 5px on the loop grid's View Pictures,
        *  25px on the pills. */
       radius?: string;
+      /** The button's own padding, per breakpoint, where the widget sets one
+       *  (scripts/pull-button-padding.py). Elementor's default is 12px 24px and
+       *  most buttons keep it; the heroes' and landing pages' do not -- the
+       *  Cybertruck CTA is 8px 15px, 189x30 where the default drew 207x38. */
+      pad?: string;
+      padT?: string;
+      padM?: string;
     }
   | {
       type: 'list';
@@ -113,6 +120,16 @@ export type Block = (
          without their own colour they came out body-ink on navy. */
       titleStyle?: string | null;
       textStyle?: string | null;
+      /** An image-box's own layout (scripts/pull-image-box.py): where the
+          picture sits against the text, how they align, the picture's width
+          per breakpoint and its distance from the copy. Absent on boxes
+          harvested before it, which keep the old stacked drawing. */
+      imagePos?: 'top' | 'left' | 'right';
+      vAlign?: 'top' | 'middle' | 'bottom';
+      imgW?: string;
+      imgWT?: string;
+      imgWM?: string;
+      imgGap?: string;
     }
   /* `alt` is the original's own alt text, which is not the card title: the port
      used the title and lost the description on 960 pages. An empty string is
@@ -236,6 +253,8 @@ export type Block = (
       submitSize?: string;
       rows?: number;
       submitAlign?: 'stretch' | 'center' | 'start';
+      /** Fields at half width, side by side from 768px up. */
+      half?: string[];
       /** The landing pages carry a different Elementor form from the site-wide
           one — name, phone, email and a requirements box. Names the fields and
           their order; absent means the site-wide set. */
@@ -264,6 +283,13 @@ export type Block = (
       images: { src: string; alt: string; width?: number | null; height?: number | null }[];
       perView: number;
       perViewMobile: number;
+      /** Slides per view at the tablet breakpoint, by Elementor's own default
+       *  map where the widget sets none (scripts/pull-carousel-settings.py). */
+      perViewTablet?: number;
+      /** Prev/next arrows, drawn inside the slide 10px from each edge, and
+       *  their colour. */
+      arrows?: boolean;
+      arrowColor?: string;
       gap: number;
       autoplay: boolean;
       delay: number;
@@ -291,6 +317,20 @@ export type Block = (
        *  into `box`, which drew a rounded corner on the widget instead of on
        *  each logo, and dropped their 1px border entirely. */
       imgStyle?: string;
+    }
+  /* Elementor's testimonial carousel, bubble skin (scripts/pull-testimonials.py).
+     The extractor flattened its five reviews into one text block. */
+  | {
+      type: 'testimonials';
+      items: { text: string; name: string; title: string }[];
+      arrows: boolean;
+      dots: boolean;
+      autoplay: boolean;
+      delay: number;
+      speed: number;
+      infinite: boolean;
+      pauseOnHover: boolean;
+      gap: number;
     }
   | {
       type: 'faq';
@@ -355,6 +395,12 @@ export type GalleryGrid = {
       fixed-ratio grid, which crops every photograph to a common shape and, on
       the 341-tile portfolio, made the section 2,487px too tall. */
   masonry?: boolean;
+  /** Elementor's third layout, `justified`: rows built to an ideal height and
+   *  scaled to fill the width, per breakpoint. Two galleries on the site use it,
+   *  both on /racing-stripes/ (200 / 120 / 100px); the port drew them as
+   *  masonry columns, which at 390px stacked twelve full-width photographs
+   *  where the original lays them two to a row. */
+  rowHeight?: { d: number; t?: number; m?: number } | null;
   gap?: number | null;
   gapTablet?: number | null;
   gapMobile?: number | null;
@@ -368,6 +414,9 @@ export type ColumnsBlock = {
   /** Elementor's `elementor-reverse-tablet` / `-mobile`: at those breakpoints
       the stacked columns run last-to-first. */
   reverse?: ('tablet' | 'mobile')[];
+  /** An Elementor loop grid's equal-height rows: every row the height of the
+      tallest item in the grid. */
+  equalRows?: boolean;
   /** `background` is set only where the column sits on its own colour, and
       `padding` rides along with it — a navy panel needs the original's inset
       or its widgets run into the edge. */
@@ -383,9 +432,24 @@ export type ColumnsBlock = {
     border?: string | null;
     shadow?: string | null;
     radius?: string | null;
-    /** Width at Elementor's mobile breakpoint (percent), from a container's
-        `--width` in its max-width:767px rule. Only meaningful with `flex`. */
+    /** Width at Elementor's mobile breakpoint (percent): a container's
+        `--width`, or a section column's own `width`, in its max-width:767px
+        rule. Absent means Elementor's default there, 100% -- the column stacks.
+        A column that keeps a share of the row on a phone says so: the three
+        vinyl-brand logos on /racing-stripes/ stay side by side at 33.3%, and
+        stacking them made that section 991px tall against the original's 274. */
     mobileWidth?: number | null;
+    /** The same at the tablet breakpoint (<=1024px). Absent means the desktop
+        width holds, as it does in Elementor. */
+    tabletWidth?: number | null;
+    /** The column's own padding at the tablet and mobile breakpoints. */
+    padT?: string | null;
+    padM?: string | null;
+    /** Breakpoints the column itself is hidden at (elementor-hidden-*). The
+        landing pages' header hides its middle column on a phone; the port only
+        hid the list inside it and kept the empty, padded column, which wrapped
+        the row onto three lines. */
+    hide?: string[];
   }[];
   /** Set where the row is an Elementor flex *container* (e-con) rather than a
       legacy section row: the children keep their share of the line at mobile
@@ -418,7 +482,18 @@ export type Section = {
       on each column's widget wrap. Absent means top, Elementor's default. */
   contentAlign?: 'top' | 'middle' | 'bottom' | null;
   padding?: string | null;
+  /** The section's padding at the tablet and mobile breakpoints, where the
+      original changes it (scripts/pull-section-layers.py). The archive
+      listings are 100px top and bottom on desktop and 50px from 1024 down. */
+  paddingT?: string | null;
+  paddingM?: string | null;
   maxWidth?: string | null;
+  /** The boxed content width at tablet and mobile, where the original changes
+      it. The landing pages' sections are 80vw from 768px up and run at
+      Elementor's default -- min(100%, 767px) -- on a phone; holding 80vw there
+      squeezed their content to 312px of a 390px screen. */
+  maxWidthT?: string | null;
+  maxWidthM?: string | null;
   /** The section's own background. Most are #ffffff and match the default, but
       ~7% are navy, near-black or a tint — and the widgets inside those already
       carry the original's white text, so without this they were white on white. */
@@ -435,9 +510,31 @@ export type Section = {
       generic 34px above and below, so a 630px hero rendered 698px tall with
       its content pinned to the top edge. */
   minHeight?: string | null;
+  /** The same height at Elementor's tablet (<=1024px) and mobile (<=767px)
+      breakpoints, where the section sets its own. Elementor writes all three
+      and they differ: the Cybertruck hero is 70vh, 45vh and 60vh, and the port
+      held 70vh at every width -- 700px on a phone where the original is 528. */
+  minHeightT?: string | null;
+  minHeightM?: string | null;
+  /** Where the content sits inside a section taller than it: Elementor's
+      Column Position on a classic section (elementor-section-items-*) and
+      `--justify-content` on a flex container. Not `contentAlign`, which places
+      widgets inside their columns. Absent means middle, the port's default and
+      Elementor's. The Cybertruck, Model 3 and Model S heroes are bottom: their
+      headline sits over the foot of the photograph, 194px below where a
+      centred block puts it at 1440. */
+  itemsAlign?: 'top' | 'middle' | 'bottom' | null;
   /** The inner container's own padding, where it is not the port's generic
       20px gutter — `10px 0` on the hero rows. */
+  /** A classic Elementor section sets its min-height on its inner container,
+      so the section's own padding adds to it; a flex container's includes its
+      padding. True for the former. */
+  minHeightInner?: boolean;
   innerPad?: string | null;
+  /** The same at tablet and on a phone, where they differ from desktop: the
+      archive template's outer column is padded 10px at desktop and 0 below. */
+  innerPadT?: string | null;
+  innerPadM?: string | null;
   /** An Elementor background slideshow: photographs cycling behind the section,
    *  optionally with a Ken Burns zoom.
    *

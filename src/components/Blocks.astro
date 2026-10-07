@@ -11,6 +11,8 @@ import posts from '../data/posts.json';
 import categories from '../data/categories.json';
 import imgDims from '../data/img-dims.json';
 import galleryThumbs from '../data/gallery-thumbs.json';
+import widgetCss from '../data/widget-css.json';
+import sectionCss from '../data/section-css.json';
 import QuoteForm from './QuoteForm.astro';
 import { img, imgHtml } from '../lib/img';
 
@@ -26,13 +28,11 @@ export interface Props {
       The TOC widget almost always sits inside a column, so a renderer that
       only looked at `sections` saw an empty list and drew nothing. */
   toc?: TocEntry[];
-  /** The one heading promoted to the document H1, threaded through columns. */
-  primaryHeadingEid?: string;
 }
 
 type TocEntry = { eid?: string; text: string; level: number; id: string };
 
-const { sections, blocks, toc, primaryHeadingEid: suppliedPrimaryHeadingEid } = Astro.props;
+const { sections, blocks, toc } = Astro.props;
 
 /** True when this call is rendering the inside of a column rather than whole
  *  sections. A before/after pair in a column is drawn at half the content
@@ -66,18 +66,6 @@ const inColumn = !!blocks;
 const groups: { section?: Section; blocks: Block[]; bare: boolean }[] = blocks
   ? [{ blocks, bare: true }]
   : (sections ?? []).map((s) => ({ section: s, blocks: s.blocks, bare: false }));
-
-const headingBlocks = (items: Block[], into: Extract<Block, { type: 'heading' }>[] = []) => {
-  for (const block of items) {
-    if (block.type === 'heading' && !block.tag) into.push(block);
-    if (block.type === 'columns') for (const col of block.cols) headingBlocks(col.blocks, into);
-  }
-  return into;
-};
-const pageHeadings = blocks ? [] : headingBlocks((sections ?? []).flatMap((section) => section.blocks));
-const primaryHeadingEid = suppliedPrimaryHeadingEid ??
-  (pageHeadings.find((heading) => heading.level === 1) ??
-   pageHeadings.find((heading) => heading.level === 2) ?? pageHeadings[0])?.eid;
 
 const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined);
 
@@ -153,7 +141,8 @@ const navTitle = (text: string, dir: 'prev' | 'next'): string =>
  *  the way it did before. */
 const btnStyle = (b: { style?: string | null; bg?: string; hoverBg?: string;
                        hoverColor?: string; hoverBorder?: string;
-                       radius?: string }): string | undefined =>
+                       radius?: string; pad?: string; padT?: string;
+                       padM?: string }): string | undefined =>
   [
     b.style,
     /* As a custom property, not `background-color` itself. Set directly it
@@ -165,6 +154,9 @@ const btnStyle = (b: { style?: string | null; bg?: string; hoverBg?: string;
     b.hoverColor && `--btn-hover-color:${b.hoverColor}`,
     b.hoverBorder && `--btn-hover-border:${b.hoverBorder}`,
     b.radius && `--btn-radius:${b.radius}`,
+    b.pad && `--btn-pad:${b.pad}`,
+    b.padT && `--btn-pad-t:${b.padT}`,
+    b.padM && `--btn-pad-m:${b.padM}`,
   ].filter(Boolean).join(';') || undefined;
 
 /** The upload's own dimensions, shaped like tileOf's result so the two are
@@ -247,6 +239,52 @@ const thumbBox = (src: string, c: any): { w?: number; h?: number } => {
  *  and confirm the original's own loop lists the newest posts.
  */
 const LIVE_LOOPS = new Set(['100f1ef', 'd09f711', '31cc265a']);
+
+/** A posts widget's own per-element rules, at every breakpoint, as CSS on the
+ *  port's card markup (src/data/widget-css.json, from scripts/pull-card-css.py).
+ *
+ *  The extractor kept the desktop title / meta / read-more type inline and
+ *  nothing else, so the archive template's 15px text inset, the 5px under its
+ *  title and read-more, its 16px title from 1024 down and the 2:1 thumbnail
+ *  crop it applies on a phone were all missing -- on 577 archives at once,
+ *  since they share the one widget. Declarations are !important because the
+ *  desktop values they restate, or override per breakpoint, sit inline. */
+const CARD_PART: Record<string, string> = {
+  title: '> li h3, %P > li h3 a',
+  text: ' .card-text',
+  more: ' a.card-more',
+  meta: ' .card-meta',
+  badge: ' .card-badge',
+  card: ' > li',
+  desc: ' .card-desc',
+};
+const cardCss = (eid: string): string => {
+  const rows = (widgetCss as unknown as Record<string, [string, string, string][]>)[eid];
+  if (!rows) return '';
+  const P = `ul.cards[data-eid="${eid}"]`;
+  const imp = (d: string) => d.split(';').filter(Boolean).map((x) => `${x} !important`).join(';');
+  const by: Record<string, string[]> = { d: [], t: [], m: [] };
+  for (const [bp, part, d] of rows) {
+    if (part === 'grid') {
+      const v = d.replace('--grid-row-gap', '--cards-gap-r').replace('--grid-column-gap', '--cards-gap-c');
+      by[bp].push(`${P}{${imp(v)}}`);
+    } else if (part === 'thumb') {
+      /* Elementor's item ratio: the thumbnail box takes padding-bottom R*100%
+         and the image covers it. Where no breakpoint sets one, the box keeps
+         the image's own ratio (elementor-fit-height). */
+      const r = d.replace(/^padding-bottom:/, '');
+      by[bp].push(`${P} .card-thumb{position:relative;display:block;height:0;overflow:hidden;padding-bottom:${r}}` +
+        `${P} .card-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}`);
+    } else if (CARD_PART[part]) {
+      const sel = (P + (CARD_PART[part].startsWith(' ') ? '' : ' ') + CARD_PART[part]).replace('%P', P);
+      const extra = part === 'badge' && /(^|;)right:/.test(d) ? ';inset-inline-start:auto !important' : '';
+      by[bp].push(`${sel}{${imp(d)}${extra}}`);
+    }
+  }
+  return by.d.join('') +
+    (by.t.length ? `@media (max-width:1024px){${by.t.join('')}}` : '') +
+    (by.m.length ? `@media (max-width:767px){${by.m.join('')}}` : '');
+};
 
 const recentCards = (exclude: string, n: number, like?: any) =>
   byNewest
@@ -420,15 +458,42 @@ const galleryStyle = (b: {
   put('--fg-gap-m', typeof b.gapMobile === 'number' ? `${b.gapMobile}px` : null);
   return parts.length ? parts.join(';') : undefined;
 };
+
+/* Each top-level section's own outer margin, per breakpoint
+   (src/data/section-css.json, from scripts/pull-section-margins.py). The port's
+   Section never carried one: the before/after template's 50px above and below
+   its one section, the location pages' 50px between theirs, and the 25px a
+   service page opens between stacked sections on a phone were all missing.
+   Keyed by section id so the template sections of D1-rendered posts get theirs
+   too. */
+const secMargins = (() => {
+  const map = sectionCss as Record<string, { d?: string; t?: string; m?: string }>;
+  const by = { d: [] as string[], t: [] as string[], m: [] as string[] };
+  for (const s of sections ?? []) {
+    const e = s?.id ? map[s.id] : undefined;
+    if (!e) continue;
+    for (const bp of ['d', 't', 'm'] as const) {
+      if (e[bp]) by[bp].push(`section.sec[data-eid="${s.id}"]{${e[bp]}}`);
+    }
+  }
+  return by.d.join('') +
+    (by.t.length ? `@media (max-width:1024px){${by.t.join('')}}` : '') +
+    (by.m.length ? `@media (max-width:767px){${by.m.join('')}}` : '');
+})();
 ---
 
+{secMargins && <style is:inline set:html={secMargins} />}
 {groups.map((group, gi) => {
   const section = group.section;
   const blocksArr = group.blocks;
   const inner = blocksArr.map((b, i) => {
         if (b.type === 'heading') {
-          const level = b.eid === primaryHeadingEid ? 1 : b.level === 1 ? 2 : b.level;
-          const Tag = (b.tag ?? `h${Math.min(Math.max(level, 1), 6)}`) as 'h1';
+          /* The level the original gives the heading, never a rewritten one.
+             A pass that promoted one heading per page to h1 and demoted every
+             other h1 to h2 changed both the outline and the look: the kit
+             styles h1 and h2 differently, so on /locations-served/ pages the
+             title the original draws as an h2 rendered at h1 size. */
+          const Tag = (b.tag ?? `h${Math.min(Math.max(b.level, 1), 6)}`) as 'h1';
           const id = b.eid ? tocIds.get(b.eid) : undefined;
 
           /* The offer price, on 403 pages, and the one place where flattening a
@@ -491,16 +556,48 @@ const galleryStyle = (b: {
         }
 
         if (b.type === 'toc') {
+          /* The widget is set to minimise (`minimize_box: yes`) and to start
+             minimised from the tablet breakpoint down (`minimized_on:
+             tablet`): open with a chevron-up on desktop, a 42px bar with a
+             chevron-down at 1024 and below. The port drew it open at every
+             width, which on a phone put a 900px list in the middle of the
+             sidebar where the original has one line. Collapsed by CSS until
+             the script runs, so there is no flash of the open list. */
+          const tocId = `toc-${b.eid ?? 'list'}`;
           return tocEntries.length > 0 ? (
-            <nav class="toc" aria-label={b.title}>
-              <h4 class="toc-title">{b.title}</h4>
-              <ol>
+            <nav class="toc" aria-label={b.title} data-toc>
+              <div class="toc-head">
+                <h4 class="toc-title">{b.title}</h4>
+                <button type="button" class="toc-toggle" aria-controls={tocId} aria-expanded="true" aria-label="Close table of contents">
+                  <i class="fas fa-chevron-up" aria-hidden="true"></i>
+                </button>
+              </div>
+              <ol id={tocId}>
                 {tocEntries.map((e) => (
                   <li class={e.level === 3 ? 'lvl3' : 'lvl2'}>
                     <a href={`#${e.id}`}>{e.text}</a>
                   </li>
                 ))}
               </ol>
+              <script is:inline set:html={`
+                (function () {
+                  var nav = document.currentScript.closest('[data-toc]');
+                  var btn = nav.querySelector('.toc-toggle'), icon = btn.querySelector('i');
+                  var set = function (open) {
+                    nav.setAttribute('data-state', open ? 'open' : 'closed');
+                    btn.setAttribute('aria-expanded', String(open));
+                    btn.setAttribute('aria-label', (open ? 'Close' : 'Open') + ' table of contents');
+                    icon.className = 'fas fa-chevron-' + (open ? 'up' : 'down');
+                  };
+                  /* Like Elementor's, the default follows the breakpoint as the
+                     window crosses it -- until the visitor opens or closes it
+                     themselves, after which their choice stands. */
+                  var mq = window.matchMedia('(max-width: 1024px)'), touched = false;
+                  set(!mq.matches);
+                  mq.addEventListener('change', function () { if (!touched) set(!mq.matches); });
+                  btn.addEventListener('click', function () { touched = true; set(nav.getAttribute('data-state') !== 'open'); });
+                })();
+              `} />
             </nav>
           ) : null;
         }
@@ -642,6 +739,40 @@ const galleryStyle = (b: {
 
         if (b.type === 'feature') {
           const T = `h${Math.min(Math.max(b.level ?? 3, 1), 6)}` as 'h3';
+          /* An image-box carrying its own layout is drawn as Elementor draws
+             it: the picture in its own box beside or above a text column. */
+          const fi = !!(b.image && b.imagePos);
+          const side = fi && b.imagePos !== 'top';
+          const title = b.title && (
+            <T style={b.titleStyle ?? undefined}>
+              {b.titleHtml ? <Fragment set:html={b.titleHtml} /> : b.title}
+            </T>
+          );
+          const text = b.text && <p style={b.textStyle ?? undefined}>{b.text}</p>;
+          if (fi) {
+            return (
+              <div
+                class:list={['feature', 'feature--fi', `feature--${b.imagePos}`,
+                  b.vAlign ? `feature--va-${b.vAlign}` : null]}
+                data-eid={b.eid}
+                data-hide={b.hide?.join(" ")}
+                style={[
+                  b.box,
+                  b.style,
+                  b.align ? `--feat-align:${b.align}` : '',
+                  b.imgW ? `--fi-w:${b.imgW}` : '',
+                  b.imgWT ? `--fi-w-t:${b.imgWT}` : '',
+                  b.imgWM ? `--fi-w-m:${b.imgWM}` : '',
+                  b.imgGap ? `--fi-gap:${b.imgGap}` : '',
+                ].filter(Boolean).join(";") || undefined}
+              >
+                <figure class="feature-img">
+                  <img src={img(b.image!)} alt={b.alt ?? ''} loading="lazy" decoding="async" />
+                </figure>
+                {side ? <div class="feature-body">{title}{text}</div> : <>{title}{text}</>}
+              </div>
+            );
+          }
           return (
             <div
               class="feature"
@@ -766,7 +897,10 @@ const galleryStyle = (b: {
             LIVE_LOOPS.has(b.eid as string)
               ? recentCards(Astro.url.pathname, b.cards.length || 2, b.cards?.[0])
               : b.cards;
+          const ownCss = b.eid ? cardCss(b.eid) : '';
           return (
+            <>
+            {ownCss && <style is:inline set:html={ownCss} />}
             <ul
               class="cards"
               data-eid={b.eid}
@@ -819,6 +953,7 @@ const galleryStyle = (b: {
                 </li>
               ))}
             </ul>
+            </>
           );
         }
 
@@ -853,6 +988,51 @@ const galleryStyle = (b: {
           );
         }
 
+        if (b.type === 'testimonials') {
+          /* The landing pages' review carousel, measured on /lp/ at 1440 and
+             390: one review at a time in a navy speech bubble, the slider 95%
+             of the widget and centred, 40px held under it for the bullets;
+             20px pink arrows 10px in from the widget's edges. */
+          return (
+            <div
+              class="carou carou--testi"
+              data-eid={b.eid}
+              data-carousel
+              data-per="1"
+              data-per-tablet="1"
+              data-per-mobile="1"
+              data-autoplay={b.autoplay ? 'yes' : 'no'}
+              data-delay={b.delay}
+              data-speed={b.speed}
+              data-pause={b.pauseOnHover ? 'yes' : 'no'}
+              data-infinite={b.infinite ? 'yes' : 'no'}
+              style={[b.box, `--carou-gap:${b.gap}px`].filter(Boolean).join(';')}
+            >
+              <div class="carou-track">
+                {b.items.map((t) => (
+                  <figure class="carou-slide testi">
+                    <blockquote class="testi-bubble"><p>{t.text}</p></blockquote>
+                    <figcaption class="testi-foot">
+                      <cite><span class="testi-name">{t.name}</span><span class="testi-title">{t.title}</span></cite>
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
+              {b.arrows && (
+                <>
+                  <button type="button" class="carou-arrow carou-arrow--prev" aria-label="Previous review">
+                    <svg viewBox="0 0 1000 1000" aria-hidden="true"><path d="M646 125C629 125 613 133 604 142L308 442C296 454 292 471 292 487 292 504 296 521 308 533L604 854C617 867 629 875 646 875 663 875 679 871 692 858 704 846 713 829 713 812 713 796 708 779 692 767L438 487 692 225C700 217 708 204 708 187 708 171 704 154 692 142 675 129 663 125 646 125Z"/></svg>
+                  </button>
+                  <button type="button" class="carou-arrow carou-arrow--next" aria-label="Next review">
+                    <svg viewBox="0 0 1000 1000" aria-hidden="true"><path d="M696 533C708 521 713 504 713 487 713 471 708 454 696 446L400 146C388 133 375 125 354 125 338 125 325 129 313 142 300 154 292 171 292 187 292 204 296 221 308 233L563 492 304 771C292 783 288 800 288 817 288 833 296 850 308 863 321 871 338 875 354 875 371 875 388 867 400 854L696 533Z"/></svg>
+                  </button>
+                </>
+              )}
+              {b.dots && <div class="carou-dots" role="tablist" aria-label="Review" />}
+            </div>
+          );
+        }
+
         if (b.type === 'carousel') {
           return (
             /* `box` belongs on the carousel container; the image style is a
@@ -862,6 +1042,7 @@ const galleryStyle = (b: {
               data-eid={b.eid}
               data-carousel
               data-per={b.perView}
+              data-per-tablet={b.perViewTablet}
               data-per-mobile={b.perViewMobile}
               data-autoplay={b.autoplay ? 'yes' : 'no'}
               data-delay={b.delay}
@@ -885,6 +1066,20 @@ const galleryStyle = (b: {
                   </figure>
                 ))}
               </div>
+              {b.arrows && (
+                <>
+                  {/* Elementor's eicon-chevron-left/right: 25px, inside the
+                      slide 10px from its edge, centred on its height. */}
+                  <button type="button" class="carou-arrow carou-arrow--prev" aria-label="Previous slide"
+                          style={b.arrowColor ? `color:${b.arrowColor}` : undefined}>
+                    <svg viewBox="0 0 1000 1000" aria-hidden="true"><path d="M646 125C629 125 613 133 604 142L308 442C296 454 292 471 292 487 292 504 296 521 308 533L604 854C617 867 629 875 646 875 663 875 679 871 692 858 704 846 713 829 713 812 713 796 708 779 692 767L438 487 692 225C700 217 708 204 708 187 708 171 704 154 692 142 675 129 663 125 646 125Z"/></svg>
+                  </button>
+                  <button type="button" class="carou-arrow carou-arrow--next" aria-label="Next slide"
+                          style={b.arrowColor ? `color:${b.arrowColor}` : undefined}>
+                    <svg viewBox="0 0 1000 1000" aria-hidden="true"><path d="M696 533C708 521 713 504 713 487 713 471 708 454 696 446L400 146C388 133 375 125 354 125 338 125 325 129 313 142 300 154 292 171 292 187 292 204 296 221 308 233L563 492 304 771C292 783 288 800 288 817 288 833 296 850 308 863 321 871 338 875 354 875 371 875 388 867 400 854L696 533Z"/></svg>
+                  </button>
+                </>
+              )}
               {b.dots && (
                 <div
                   class="carou-dots"
@@ -1054,9 +1249,15 @@ const galleryStyle = (b: {
                   ))}
                 </div>
               )}
-              <div class:list={['fgal-grid', { 'fgal-grid--masonry': b.masonry }]} style={galleryStyle(b)}>
+              <div
+                class:list={['fgal-grid', { 'fgal-grid--masonry': b.masonry && !b.rowHeight, 'fgal-grid--justified': !!b.rowHeight }]}
+                style={[galleryStyle(b), b.rowHeight ? `--fg-rh:${b.rowHeight.d}px` : ''].filter(Boolean).join(';') || undefined}
+                data-rh={b.rowHeight?.d}
+                data-rh-t={b.rowHeight?.t}
+                data-rh-m={b.rowHeight?.m}
+              >
                 {b.items.map((it) => {
-                  const t = tileOf(it.src, b.masonry);
+                  const t = tileOf(it.src, b.masonry || !!b.rowHeight);
                   return (
                   <figure class="fgal-item" data-tag={it.tag}>
                     {/* The link carries the full-size upload, as the original's
@@ -1075,7 +1276,7 @@ const galleryStyle = (b: {
                         alt={it.alt ?? it.title}
                         width={t.w}
                         height={t.h}
-                        style={b.masonry && t.w && t.h ? `aspect-ratio:${t.w}/${t.h}` : undefined}
+                        style={(b.masonry || b.rowHeight) && t.w && t.h ? `aspect-ratio:${t.w}/${t.h}` : undefined}
                         loading="lazy"
                         decoding="async"
                       />
@@ -1100,9 +1301,17 @@ const galleryStyle = (b: {
               submitSize={b.submitSize}
               rows={b.rows}
               submitAlign={b.submitAlign}
+              half={b.half}
             />
           );
-          return b.style ? <div class="formwrap" style={b.style}>{form}</div> : form;
+          /* The form widget's own box (a panel colour, padding) and its
+             per-breakpoint visibility, as on every other block. Neither was
+             carried: the landing page's hero form, hidden on a phone on the
+             original, showed there and pushed the hero 239px taller. */
+          const wrapStyle = [b.box, b.style].filter(Boolean).join(';');
+          return wrapStyle || b.hide?.length
+            ? <div class="formwrap" style={wrapStyle || undefined} data-hide={b.hide?.join(' ')}>{form}</div>
+            : form;
         }
 
         if (b.type === 'map') {
@@ -1144,7 +1353,11 @@ const galleryStyle = (b: {
                 b.gap != null ? `--cols-gap:${b.gap}px` : '',
                 b.flex?.justify ? `justify-content:${b.flex.justify}` : '',
                 b.flex?.align ? `align-items:${b.flex.align}` : '',
+                b.equalRows ? `--eq-n:${Math.max(1, Math.round(100 / (b.cols?.[0]?.width || 100)))}` : '',
+                b.equalRows && b.cols?.[0]?.tabletWidth ? `--eq-n-t:${Math.max(1, Math.round(100 / b.cols[0].tabletWidth))}` : '',
+                b.equalRows ? `--eq-n-m:${Math.max(1, Math.round(100 / (b.cols?.[0]?.mobileWidth || 100)))}` : '',
               ].filter(Boolean).join(';') || undefined}
+              data-eqrows={b.equalRows ? '' : undefined}
               data-flexrow={b.flex ? '' : undefined}
               data-reverse={b.reverse?.length ? b.reverse.join(' ') : undefined}
             >
@@ -1154,7 +1367,14 @@ const galleryStyle = (b: {
                 const tinted = c.background && c.background.toLowerCase() !== '#ffffff';
                 const style = [
                   `--col-w:${c.width}%`,
+                  c.tabletWidth != null ? `--col-tw:${c.tabletWidth}%` : '',
+                  c.tabletWidth != null
+                    ? `--col-tgutter:${((b.gap ?? 20) * (1 - Math.min(c.tabletWidth, 100) / 100)).toFixed(2)}px` : '',
                   c.mobileWidth != null ? `--col-mw:${c.mobileWidth}%` : '',
+                  c.mobileWidth != null
+                    ? `--col-mgutter:${((b.gap ?? 20) * (1 - Math.min(c.mobileWidth, 100) / 100)).toFixed(2)}px` : '',
+                  c.padT ? `--col-pad-t:${c.padT}` : '',
+                  c.padM ? `--col-pad-m:${c.padM}` : '',
                   /* The share of the row's gutter this column has to give up so
                      that a full row still fits on one line.
 
@@ -1176,7 +1396,8 @@ const galleryStyle = (b: {
                      heading starts 30px further in than the port's did. Only
                      one other column site-wide declares padding without a
                      colour, so ungating this moves nothing else. */
-                  c.padding ? `padding:${c.padding}` : '',
+                  /* As a property, so a breakpoint value can replace it. */
+                  c.padding ? `--col-pad:${c.padding}` : '',
                   /* Not gated on `tinted`: a border or shadow is drawn whether
                      or not the column sits on a colour of its own. */
                   c.border ? c.border : '',
@@ -1206,8 +1427,9 @@ const galleryStyle = (b: {
                   <div
                     class:list={['col', { 'col--tinted': tinted, 'col--card': isCard }]}
                     style={style}
+                    data-hide={c.hide?.length ? c.hide.join(' ') : undefined}
                   >
-                    <Astro.self blocks={c.blocks} toc={tocEntries} primaryHeadingEid={primaryHeadingEid} />
+                    <Astro.self blocks={c.blocks} toc={tocEntries} />
                   </div>
                 );
               })}
@@ -1222,7 +1444,19 @@ const galleryStyle = (b: {
      skipping it keeps the emitted style attribute to the sections that
      actually sit on a colour. */
   const secStyle = [
-    section?.padding ? `padding:${section.padding}` : '',
+    /* Inline where one value holds at every width. A section that changes
+       its padding per breakpoint carries all three as properties instead,
+       since an inline declaration would hold the desktop one everywhere. */
+    section?.padding && !section.paddingT && !section.paddingM ? `padding:${section.padding}` : '',
+    /* An Elementor section that declares no padding has none. The 34px in the
+       stylesheet is for the port's own sections (archive listings, the
+       pager), which carry no Elementor id; given to the 69 before/after pages'
+       section and the location pages' unpadded rows it added 68px to each. */
+    !section?.padding && !section?.paddingT && !section?.paddingM && !section?.minHeight
+      && /^[0-9a-f]{6,8}$/.test(section?.id ?? '') ? 'padding:0' : '',
+    section?.padding && (section.paddingT || section.paddingM) ? `--sp:${section.padding}` : '',
+    section?.paddingT ? `--sp-t:${section.paddingT}` : '',
+    section?.paddingM ? `--sp-m:${section.paddingM}` : '',
     section?.background && section.background.toLowerCase() !== '#ffffff'
       ? (section.background.startsWith('linear-gradient(')
           ? `background-image:${section.background}`
@@ -1238,13 +1472,24 @@ const galleryStyle = (b: {
     <section
       class:list={[
         'sec',
+        { 'sec--pad': !!(section?.paddingT || section?.paddingM) },
         section?.contentAlign ? `sec--${section.contentAlign}` : null,
         { 'sec--overlaid': section?.overlay || section?.slideshow },
         { 'sec--tall': !!section?.minHeight },
+        { 'sec--mhc': !!(section?.minHeight && section?.minHeightInner) },
+        section?.minHeight && section?.itemsAlign && section.itemsAlign !== 'middle'
+          ? `sec--items-${section.itemsAlign}` : null,
       ]}
       data-eid={section?.id ?? undefined}
-      style={[secStyle, section?.minHeight ? `min-height:${section.minHeight}` : '']
-        .filter(Boolean).join(';') || undefined}
+      style={[
+        secStyle,
+        /* As custom properties, so the stylesheet can pick the right one per
+           breakpoint: inline min-height would hold the desktop value at every
+           width. */
+        section?.minHeight ? `--mh:${section.minHeight}` : '',
+        section?.minHeight && section?.minHeightT ? `--mh-t:${section.minHeightT}` : '',
+        section?.minHeight && section?.minHeightM ? `--mh-m:${section.minHeightM}` : '',
+      ].filter(Boolean).join(';') || undefined}
     >
       {section?.slideshow && section.slideshow.images.length > 0 && (
         /* One layer per photograph, all stacked, cross-fading on a timer. The
@@ -1284,14 +1529,21 @@ const galleryStyle = (b: {
         />
       )}
       <div
-        class:list={['container', 'stack', { 'container--full': section?.fullWidth }]}
+        class:list={['container', 'stack', { 'container--full': section?.fullWidth, 'container--cw': !!(section?.maxWidthT || section?.maxWidthM), 'container--ip': !!(section?.innerPadT || section?.innerPadM) }]}
         style={[
-          section?.maxWidth ? `max-width:${section.maxWidth}` : '',
+          section?.maxWidth && !section.maxWidthT && !section.maxWidthM ? `max-width:${section.maxWidth}` : '',
+          section?.maxWidth && (section.maxWidthT || section.maxWidthM) ? `--cw:${section.maxWidth}` : '',
+          section?.maxWidthT ? `--cw-t:${section.maxWidthT}` : '',
+          section?.maxWidthM ? `--cw-m:${section.maxWidthM}` : '',
           /* Elementor's inner container carries its own padding, which is not
              the port's generic 20px gutter. On the hero rows it is `10px 0`:
              no horizontal inset at all, because the columns inside provide
              it. The generic gutter was taking 40px off the columns' widths. */
-          section?.innerPad ? `padding:${section.innerPad}` : '',
+          section?.innerPad && !section.innerPadT && !section.innerPadM ? `padding:${section.innerPad}` : '',
+          /* Per breakpoint as properties, as the section's own padding is. */
+          section?.innerPadT || section?.innerPadM ? `--ip:${section?.innerPad ?? '0px'}` : '',
+          section?.innerPadT ? `--ip-t:${section.innerPadT}` : '',
+          section?.innerPadM ? `--ip-m:${section.innerPadM}` : '',
         ].filter(Boolean).join(';') || undefined}
       >
         {inner}
@@ -1319,7 +1571,13 @@ const galleryStyle = (b: {
      columns' own, not the container's, and applying it at both levels would
      inset the content twice. */
   .container.stack:has(> .cols) { padding: 0; }
-  .cols > .col { padding: 10px; }
+  .cols > .col { padding: var(--col-pad, 10px); }
+  @media (max-width: 1024px) {
+    .cols > .col { padding: var(--col-pad-t, var(--col-pad, 10px)); }
+  }
+  @media (max-width: 767px) {
+    .cols > .col { padding: var(--col-pad-m, var(--col-pad-t, var(--col-pad, 10px))); }
+  }
 
   /* A section that declares its own min-height is a hero, and Elementor treats
      it as one: the height belongs to the SECTION, and the inner container is
@@ -1332,8 +1590,24 @@ const galleryStyle = (b: {
      port used to draw that read as a layout choice; the moment the background
      slideshow went in, the heading landed on the bright sign in the first
      photograph. The original's own padding here is `0 10px`, not 34px. */
-  .sec--tall { padding-block: 0; display: flex; }
+  .sec--tall { padding-block: 0; display: flex; min-height: var(--mh); }
   .sec--tall > .container { align-self: center; width: 100%; }
+  /* A classic section's min-height is its inner container's, so its own
+     padding adds to it: /thank-you/'s 71vh hero is 71vh plus 50px above and
+     below on the original, 100px taller than a border-box min-height gives.
+     The section sets no width, so content-box changes only the height. */
+  .sec--tall.sec--mhc { box-sizing: content-box; }
+  /* Column Position / justify-content -- see Section.itemsAlign. */
+  .sec--items-top > .container { align-self: flex-start; }
+  .sec--items-bottom > .container { align-self: flex-end; }
+  /* Elementor's mobile value falls back to its tablet one, and that to the
+     desktop one -- the same inheritance as the editor's own responsive fields. */
+  @media (max-width: 1024px) {
+    .sec--tall { min-height: var(--mh-t, var(--mh)); }
+  }
+  @media (max-width: 767px) {
+    .sec--tall { min-height: var(--mh-m, var(--mh-t, var(--mh))); }
+  }
   /* elementor-section-full_width: edge to edge, and no gutter on the inner
      wrapper — the section's own padding is the only inset. */
   .container--full { max-width: none; padding-inline: 0; }
@@ -1468,6 +1742,21 @@ const galleryStyle = (b: {
        inside a 1152px row the original fills with 806/346. */
     gap: var(--cols-gap, 20px);
     width: 100%;
+    /* Every per-column value is a custom property set on its own .col, and
+       custom properties inherit: a row nested inside a column that goes 100%
+       at tablet took that 100% for each of its own columns too, so /contact/'s
+       three-across "Why Choose Us" row stacked at 900px where the original
+       keeps it side by side. Reset at each row, so a column only ever reads
+       what it set itself. */
+    --col-w: initial;
+    --col-gutter: initial;
+    --col-tw: initial;
+    --col-tgutter: initial;
+    --col-mw: initial;
+    --col-mgutter: initial;
+    --col-pad: initial;
+    --col-pad-t: initial;
+    --col-pad-m: initial;
   }
   /* A column is Elementor's `.elementor-widget-wrap`, which frontend.min.css
      makes display:flex, with each widget carrying margin-block-end:20px. The
@@ -1498,6 +1787,11 @@ const galleryStyle = (b: {
      margins still win. Measured 2026-09 on / at 390/820/1440. */
   .stack > :is(h1, h2, h3, h4, h5, h6),
   .cols > .col > :is(h1, h2, h3, h4, h5, h6) { margin-bottom: 0; }
+  /* A heading word wider than its column -- "Equipment/Object" at the archive
+     template's 45px is 446px on a 360px phone column -- breaks rather than
+     running off the page. The original lets it run and its wrapper clips it;
+     nothing narrower than its column is affected. */
+  :is(h1, h2, h3, h4, h5, h6) { overflow-wrap: break-word; }
 
   /* A column holding a before/after slider is a card, which is how the original
      draws the 69 on /our-work/: `border-width: 1px; border-color: #F3F3F3;
@@ -1551,6 +1845,24 @@ const galleryStyle = (b: {
   .sec--middle > .container > .cols > .col { justify-content: center; }
   .sec--bottom > .container > .cols > .col { justify-content: flex-end; }
 
+  /* An Elementor loop grid set to equal height: every row as tall as the
+     tallest item in the whole grid (`grid-auto-rows: 1fr`), so a tile
+     without a "View Pictures" button keeps the height of one with. Laid out
+     as the grid it is rather than as wrapping flex columns, whose rows shrink
+     to their own content. */
+  .cols[data-eqrows] {
+    display: grid;
+    grid-template-columns: repeat(var(--eq-n, 2), minmax(0, 1fr));
+    grid-auto-rows: 1fr;
+    gap: var(--cols-gap, 20px);
+  }
+  .cols[data-eqrows] > .col { width: auto; max-width: none; flex: none; }
+  @media (max-width: 1024px) {
+    .cols[data-eqrows] { grid-template-columns: repeat(var(--eq-n-t, var(--eq-n, 2)), minmax(0, 1fr)); }
+  }
+  @media (max-width: 767px) {
+    .cols[data-eqrows] { grid-template-columns: repeat(var(--eq-n-m, 1), minmax(0, 1fr)); }
+  }
   /* Elementor collapses rows to full width at its tablet breakpoint. */
   /* Elementor stacks columns at its mobile breakpoint, not its tablet one:
      04-frontend.min.css puts `.elementor-column{width:100%}` inside
@@ -1570,11 +1882,22 @@ const galleryStyle = (b: {
   @media (max-width: 767px) {
     .cols[data-reverse~='tablet']:not([data-reverse~='mobile']) { flex-direction: column; }
   }
+  /* A tablet width, where the column sets one; otherwise the desktop share
+     holds, as it does in Elementor. */
+  @media (max-width: 1024px) {
+    .cols > .col {
+      flex-basis: calc(var(--col-tw, var(--col-w, 100%)) - var(--col-tgutter, var(--col-gutter, var(--cols-gap, 20px))));
+      max-width: calc(var(--col-tw, var(--col-w, 100%)) - var(--col-tgutter, var(--col-gutter, var(--cols-gap, 20px))));
+    }
+  }
+  /* Elementor stacks columns at 767px (`.elementor-column{width:100%}`) unless
+     a column sets its own mobile width, and a flex container's children keep
+     theirs (--width) -- either way the line wraps at the column's own share. */
   @media (max-width: 767px) {
-    .cols > .col { flex-basis: 100%; max-width: 100%; }
-    /* An Elementor flex container is not a section row: its children keep
-       their own mobile width (--width in the 767px rule) and the line wraps. */
-    .cols[data-flexrow] > .col { flex-basis: var(--col-mw, 100%); max-width: var(--col-mw, 100%); }
+    .cols > .col {
+      flex-basis: calc(var(--col-mw, 100%) - var(--col-mgutter, 0px));
+      max-width: calc(var(--col-mw, 100%) - var(--col-mgutter, 0px));
+    }
   }
 
   /* Ported post bodies are a different type scale from the page chrome: 17px
@@ -1589,9 +1912,27 @@ const galleryStyle = (b: {
      kit's 1.0), h2-h4 are weight 600 (not 500), and h3/h4 are navy while
      h1/h2 stay body ink. A text widget that declares its own size still wins —
      the extractor carries that inline. */
+  /* overflow-wrap: a bare profile URL in a post body ("https://www.instagram.com/
+     vinylwraptoronto/") is one 415px word; on a phone the original lets it run
+     past the edge and its wrapper clips it. Breaking it keeps it readable and
+     the page from scrolling sideways; ordinary words never reach the edge, so
+     nothing else moves. */
   .rt {
     font-size: 16px;
     line-height: 1.5;
+    overflow-wrap: break-word;
+  }
+  /* A comparison table in a post body is wider than a phone: the original's is
+     511px at 390 and runs off the edge, hidden only because its page wrapper
+     clips. Here it scrolls inside its own box instead, so every column stays
+     reachable and the page itself never scrolls sideways. */
+  .rt :global(figure:has(> table)) { overflow-x: auto; }
+  @media (max-width: 767px) {
+    .rt :global(:not(figure) > table) {
+      display: block;
+      max-width: 100%;
+      overflow-x: auto;
+    }
   }
   .rt :global(h1) {
     font-size: 40px;
@@ -1639,10 +1980,16 @@ const galleryStyle = (b: {
     text-transform: none;
   }
 
-  .rt :global(p) { margin: 0 0 16px; }
+  /* The theme's own spacing, measured on the original's post bodies at 1440
+     and 390: a paragraph keeps 0.9rem (14.4px) under it, and a list sits
+     flush with no margin of its own and the browser's 40px indent. The port's
+     16px and 22px made every paragraph 1.6px further from the next and let
+     each list line run 18px longer, so list items wrapped a line short of the
+     original's on a phone. */
+  .rt :global(p) { margin: 0 0 0.9rem; }
   .rt :global(p:last-child) { margin-bottom: 0; }
   .rt :global(ul),
-  .rt :global(ol) { margin: 0 0 16px; padding-inline-start: 22px; }
+  .rt :global(ol) { margin: 0; padding-inline-start: 40px; }
   /* The original puts no margin on a list item — checked on its rich-text
      lists across several pages and on the sitemap's 400-item list, all
      margin-top and margin-bottom 0. The 6px invented here added six pixels per
@@ -1714,28 +2061,39 @@ const galleryStyle = (b: {
   /* 16px on 24px leading, measured against the original on the 114 pages that
      carry a table — one combination, no exceptions. 15px on 1.45 was invented
      and came out 15/22. */
+  /* The theme's table, measured in the original's post bodies at 1440 and
+     390: 0.9em of the copy (16.2px in an 18px post body), 15px under it, and
+     each cell on 1.5 leading with 0.5em of padding -- 24.3 and 8.1 there. The
+     16/24 and 9px 12px here held only where the copy is 16px. */
+  /* `table-layout: fixed` is the original's: every column the same width
+     (123/123/123 on a phone), where auto layout sized them to their words and
+     let the long column run wide -- each row a line shorter than the
+     original's, 75px over one table. */
   .rt :global(table) {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
-    font-size: 16px;
-    line-height: 24px;
+    font-size: 0.9em;
+    margin-bottom: 15px;
   }
   .rt :global(th),
   .rt :global(td) {
     border: 1px solid #e2e2e2;
-    padding: 9px 12px;
-    text-align: left;
+    padding: 0.5em;
+    line-height: 1.5;
+    text-align: start;
     vertical-align: top;
   }
   /* The header row is bold and centred there, not semibold and left: 90 pages
      agree and the one that differs is already at 700. */
   .rt :global(thead th) {
-    background: #f6f7f8;
     font-family: 'Poppins', sans-serif;
     font-weight: 700;
     text-align: center;
   }
-  .rt :global(tbody tr:nth-child(even)) { background: #fafafa; }
+  /* The theme tints the odd body rows, not the even ones, and leaves the
+     header row on the page's own white. */
+  .rt :global(tbody > tr:nth-child(odd) > td) { background: rgba(128, 128, 128, 0.07); }
   .rt :global(caption) {
     caption-side: bottom;
     margin-top: 6px;
@@ -1790,12 +2148,15 @@ const galleryStyle = (b: {
      later one simply won. */
   /* The original's links reset the weight; the surrounding copy is 300, so
      without this every in-content link came out a stop light. */
-  .rt :global(a) { color: #b8006e; text-decoration: underline; text-underline-offset: 0.15em; font-weight: 400; }
+  .rt :global(a) { color: var(--brand-pink); text-decoration: none; font-weight: 400; }
   .rt :global(a:hover) { text-decoration: underline; }
-  .rt :global(a:hover) { color: #8f0055; }
+  .rt :global(a:hover) { color: var(--brand-pink); }
+  /* The theme's 0.5rem above a heading in copy, measured on every heading of
+     the original's post bodies at 1440 and 390; the 24px here added 16px over
+     each one -- 300px down a long post. */
   .rt :global(h2),
   .rt :global(h3),
-  .rt :global(h4) { margin-top: 24px; }
+  .rt :global(h4) { margin-top: 0.5rem; }
 
   /* A link inside a heading is weight 400 on the original — 64 heading-sized
      anchors across the site, no exceptions. Ours inherited whatever the
@@ -1805,29 +2166,13 @@ const galleryStyle = (b: {
   .hlink { color: inherit; font-weight: 400; text-decoration: none; }
   .hlink:hover { color: var(--brand-pink); }
 
-  /* Readable variants for the source design's dark navy panels. Several
-     captured widgets carried dark inline text colours onto that background. */
-  .sec[style*='d077a13' i] :is(.rt, .feature, .ilist, .hd) { color: #fff !important; }
-  .sec[style*='d077a13' i] :is(.rt, .feature, .ilist, .hd) :global(*) { color: inherit !important; }
-  .sec[style*='d077a13' i] .hlink { color: #fff !important; text-decoration: underline; }
-  .sec[style*='d077a13' i] :global(.qform .checks label),
-  .sec[style*='d077a13' i] :global(.qform .uploadnote),
-  .sec[style*='d077a13' i] :global(.qform input[type='file']) { color: #fff !important; }
-  .sec[style*='d077a13' i] :global(a:not(.btn)) { color: #fff !important; }
-  .sec[style*='8c22d81' i] :is(.rt, .feature, .ilist, .hd),
-  .sec[style*='8c22d81' i] :is(.rt, .feature, .ilist, .hd) :global(*) { color: #111 !important; }
-  .col[style*='d077a13' i] :is(h1, h2, h3, h4, h5, h6, .rt, .feature, .ilist, .hd),
-  .col[style*='d077a13' i] :is(h1, h2, h3, h4, h5, h6, .rt, .feature, .ilist, .hd) :global(*) { color: #fff !important; }
-  .col[style*='d077a13' i] :global(.qform .checks label),
-  .col[style*='d077a13' i] :global(.qform .uploadnote),
-  .col[style*='d077a13' i] :global(.qform input[type='file']) { color: #fff !important; }
-  .col[style*='8c22d81' i] :is(h1, h2, h3, h4, h5, h6, .rt, .feature, .ilist, .hd),
-  .col[style*='8c22d81' i] :is(h1, h2, h3, h4, h5, h6, .rt, .feature, .ilist, .hd) :global(*) { color: #111 !important; }
-  .feature h3 { color: #08735a !important; }
-  #client-submissions,
-  .ilist a { color: #b8006e !important; }
-  .card-more { color: #b8006e !important; }
-  .card-meta { color: #595959 !important; }
+  /* No colour overrides here. A contrast pass once forced its own palette on
+     top of the original's -- every feature title #08735a, content links
+     #b8006e, text on navy panels white and on green panels #111, button labels
+     on green #111 -- and every one of them is a colour the original does not
+     use: it put dark green where the original has navy on the feature cards of
+     30-odd service and location pages, and dark labels on its pink buttons.
+     Each widget carries the original's own colour from its own rule. */
 
   /* The offer price — the animated-headline widget. The old price struck
      through in the brand pink, the price you pay larger underneath. Elementor
@@ -1865,6 +2210,13 @@ const galleryStyle = (b: {
   /* /tesla-vinyl-wraps/ is the one page that sizes the widget itself. */
   .price[data-eid="19b01ef"] { font-size: 28px; }
   .price[data-eid="19b01ef"] .ah-now { font-size: 45px; }
+
+  /* The posts' H1 (cc1fcc1, all 402 of them) is white over the featured
+     image and carries the original's `text-shadow: 0px 0px 6px #000000` to
+     stay legible on it. The extractor dropped every text-shadow on the site;
+     pages get theirs back as data (scripts/pull-text-shadows.py), but posts
+     render from D1, so the post template's lives here. */
+  h1[data-eid="cc1fcc1"] { text-shadow: 0px 0px 6px #000000; }
 
   .fig { margin: 0; }
   .fig img { display: block; border-radius: 4px; }
@@ -1933,7 +2285,8 @@ const galleryStyle = (b: {
        these blocks carry their own font-size inline. */
     font-size: 15px;
     line-height: 1;
-    padding: 12px 24px;
+    /* Elementor's default, unless the widget sets its own (`pad`). */
+    padding: var(--btn-pad, 12px 24px);
     /* Elementor's own default, which the port had as 0 -- so every button on
        the site drew square corners where the original rounds them. The widgets
        that set their own (5px on the loop grid's View Pictures, 25px on the
@@ -1944,8 +2297,6 @@ const galleryStyle = (b: {
        port had every hover on the site snapping instantly. */
     transition: all 0.3s ease;
   }
-  .btn[style*='a8178e9' i] { color: #111 !important; }
-  .btn[data-popup='popup-limited-offer'] { background: #b8006e !important; color: #fff !important; }
   /* Each button's own hover, carried inline from the original's per-element
      rules. The fallbacks are the commonest case, so a button whose colours
      were never harvested still behaves sensibly.
@@ -1955,6 +2306,15 @@ const galleryStyle = (b: {
      #14A278, which is right for the 496 buttons that go green and wrong for
      the 49 that do not. Neither could have been right: Elementor stores the
      colour per button and the site uses thirteen different pairings. */
+  @media (max-width: 1024px) {
+    .btn { padding: var(--btn-pad-t, var(--btn-pad, 12px 24px)); }
+  }
+  @media (max-width: 767px) {
+    .btn { padding: var(--btn-pad-m, var(--btn-pad-t, var(--btn-pad, 12px 24px))); }
+  }
+  /* The posts' "Get a Quote" button (e4d3235, all 402) sets 8px 15px; posts
+     render from D1, so the template's value lives here. */
+  .btnrow[data-eid="e4d3235"] .btn { --btn-pad: 8px 15px; }
   .btn:hover {
     background-color: var(--btn-hover-bg, var(--e-global-color-8c22d81));
     color: var(--btn-hover-color, var(--e-global-color-accent));
@@ -2075,6 +2435,36 @@ const galleryStyle = (b: {
     border-radius: 4px;
     margin-bottom: 12px;
   }
+  /* An image-box with its own layout, as widget-image-box.min.css draws it:
+     the picture's box at the widget's width, centred over the copy and
+     `--fi-gap` above it, or -- from 768px up -- beside the copy, which takes
+     the rest (`width:100%` on the content, shrunk by flex). Below 768px a
+     side box stacks, centred, 15px over its text. */
+  .feature--fi .feature-img {
+    display: inline-block;
+    width: var(--fi-w, 100%);
+    margin: 0 auto var(--fi-gap, 15px);
+    line-height: 0;
+  }
+  .feature--fi .feature-img img { width: 100%; max-width: 100%; height: auto; margin: 0; border-radius: 0; }
+  @media (max-width: 1024px) {
+    .feature--fi .feature-img { width: var(--fi-w-t, var(--fi-w, 100%)); }
+  }
+  @media (min-width: 768px) {
+    .feature--left, .feature--right { display: flex; }
+    .feature--left { flex-direction: row; text-align: start; }
+    .feature--right { flex-direction: row-reverse; text-align: end; }
+    .feature--left .feature-img { margin: 0 var(--fi-gap, 15px) 0 0; }
+    .feature--right .feature-img { margin: 0 0 0 var(--fi-gap, 15px); }
+    .feature-body { width: 100%; }
+    .feature--va-top { align-items: flex-start; }
+    .feature--va-middle { align-items: center; }
+    .feature--va-bottom { align-items: flex-end; }
+  }
+  @media (max-width: 767px) {
+    .feature--fi .feature-img { width: var(--fi-w-m, var(--fi-w-t, var(--fi-w, 100%))); margin-inline: auto; }
+    .feature--left .feature-img, .feature--right .feature-img { margin-bottom: 15px; }
+  }
 
   /* hello-elementor's archive template. Every value here was measured on the
      original at 1440 rather than guessed, because this layout shares nothing
@@ -2151,7 +2541,7 @@ const galleryStyle = (b: {
     background: var(--cd-bg, var(--e-global-color-8c22d81));
     border-radius: 3px;
     text-align: center;
-    color: #111;
+    color: #fff;
   }
   .cdown-item + .cdown-item { margin-left: 5px; }
   .cdown-digits,
@@ -2248,7 +2638,14 @@ const galleryStyle = (b: {
      `12px 14px 14px` made the title box 343 wide against the original's 353,
      so card titles wrapped early on every listing on the site. */
   .cards .card-thumb { margin-bottom: 20px; }
-  .cards .card-text { padding: 0 10px; }
+  /* Elementor's own cards-skin defaults: 30px either side of the text, 20px
+     under the read-more, and 15px 30px around the meta row. A widget that
+     sets its own (the archive template's 15px, the service pages' 10px)
+     arrives from src/data/widget-css.json and wins; the 10px that used to be
+     the base here was one widget's override mistaken for the default, so the
+     related posts under every blog post ran 40px wider text than the
+     original's. */
+  .cards .card-text { padding: 0 30px; }
   .cards h3 {
     /* Same rendering as the span it replaced: the heading is for the document
        outline, not a change of appearance. These are the posts widget's own
@@ -2282,6 +2679,7 @@ const galleryStyle = (b: {
   .cards a.card-more {
     display: inline-block;
     margin-top: 0;
+    margin-bottom: 20px;
     /* The posts widget's own defaults; an instance that sets its own family,
        size, leading, weight or colour arrives inline and wins. */
     font-size: 12px;
@@ -2308,7 +2706,7 @@ const galleryStyle = (b: {
     /* The original rules this row off with a green hairline and pads it 10px
        all round. The port had neither the rule nor the padding. */
     border-top: 1px solid var(--e-global-color-a8178e9); /* #99CC33 */
-    padding: 10px;
+    padding: 15px 30px;
     display: flex;
     flex-wrap: wrap;
     gap: 4px 12px;
@@ -2453,6 +2851,87 @@ const galleryStyle = (b: {
      style and would win over any padding set here. That nesting is also what
      the original does: the gutter is on the carousel wrapper, inside the
      widget container's padding. */
+  /* Elementor's arrows-position-inside: 25px chevrons over the slide, 10px in
+     from each edge, centred on the slide's height. */
+  .carou { position: relative; }
+  .carou-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+    width: 25px;
+    height: 25px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #fff;
+    cursor: pointer;
+    line-height: 0;
+  }
+  .carou-arrow svg { width: 25px; height: 25px; fill: currentColor; }
+  .carou-arrow--prev { left: 10px; }
+  .carou-arrow--next { right: 10px; }
+  .carou--dots .carou-arrow { top: calc(50% - 15px); }
+  /* Testimonial carousel, bubble skin -- values measured on /lp/ (183566e). */
+  .carou--testi { padding-bottom: 40px; }
+  .carou--testi .carou-track { width: 95%; margin: 0 auto; align-items: stretch; }
+  .testi { display: flex; flex-direction: column; padding: 20px; text-align: center; }
+  .testi-bubble {
+    position: relative;
+    margin: 0;
+    padding: 20px;
+    border-radius: 10px;
+    background-color: var(--e-global-color-d077a13);
+  }
+  /* The bubble's tail: a 14px square squeezed and turned, 7px below. */
+  .testi-bubble::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -7px;
+    width: 14px;
+    height: 14px;
+    background-color: inherit;
+    transform: translateX(-7px) scaleX(0.75) rotate(45deg);
+  }
+  .testi-bubble p {
+    margin: 0;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    font-style: italic;
+    line-height: 24px;
+    color: #ffffff;
+  }
+  .testi-foot { display: flex; justify-content: center; margin-top: 25px; }
+  .testi-foot cite {
+    display: flex;
+    flex-direction: column;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-style: normal;
+    line-height: 21px;
+  }
+  .testi-name { color: var(--e-global-color-d077a13); font-weight: 500; }
+  .testi-title { color: var(--e-global-color-f32bb28); font-weight: 400; }
+  .carou--testi .carou-arrow {
+    width: 20px;
+    height: 20px;
+    top: calc((100% - 40px) / 2);
+    color: var(--e-global-color-f32bb28);
+  }
+  .carou--testi .carou-arrow svg { width: 20px; height: 20px; }
+  .carou--testi .carou-dots {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 5px;
+    height: 24px;
+    align-items: center;
+    margin: 0;
+    --dot: var(--e-global-color-a8178e9);
+    --dot-on: var(--e-global-color-f32bb28);
+  }
   .carou--dots .carou-track { margin-bottom: 30px; }
   .carou--dots .carou-dots {
     position: absolute;
@@ -2468,11 +2947,14 @@ const galleryStyle = (b: {
      to the markup, and a scoped rule here matched nothing at all. That is why
      they have been rendering as the browser's own grey buttons. */
   .carou-dots :global(button) {
-    width: 24px; height: 24px; padding: 9px;
-    background-clip: content-box;
+    /* Swiper's own 6px bullet. A contrast pass made these 24px buttons with
+       the dot clipped into the middle, which kept the dot's look but made a
+       row of them four times as wide -- wide enough, with a long strip's
+       worth of pages, to push past a phone's screen. */
+    width: 6px; height: 6px; padding: 0;
     border-radius: 50%;
     border: 0;
-    background-color: var(--dot, var(--rule));
+    background: var(--dot, var(--rule));
     cursor: pointer;
   }
   .carou-dots :global(button[aria-selected='true']) { background: var(--dot-on, var(--brand-green)); }
@@ -2558,7 +3040,33 @@ const galleryStyle = (b: {
     background: var(--panel);
     border: 1px solid #e9e9e9;
     border-radius: 6px;
-    padding: 16px 20px;
+  }
+  /* The widget's header and body each carry 10px: a 42px bar for the title
+     and its toggle, measured on the original at 1440 and 390. */
+  .toc-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px;
+  }
+  .toc-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 16px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #333333;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .toc > ol { padding: 0 10px 10px 30px; }
+  .toc[data-state='closed'] > ol { display: none; }
+  @media (max-width: 1024px) {
+    .toc:not([data-state]) > ol { display: none; }
   }
   /* 22px leading in the kit green, measured against the original on all 402
      pages that carry a table of contents — one combination, no exceptions.
@@ -2574,9 +3082,10 @@ const galleryStyle = (b: {
     line-height: 22px;
     font-weight: 500;
     color: var(--e-global-color-a8178e9); /* #99CC33 */
-    margin: 0 0 10px;
+    margin: 0;
+    flex: 1;
   }
-  .toc ol { margin: 0; padding-inline-start: 20px; }
+  .toc ol { margin: 0; }
   .toc li { margin-bottom: 5px; }
   .toc li.lvl3 { margin-inline-start: 16px; list-style: circle; }
   .toc a { color: var(--brand-green); text-decoration: none; }
@@ -2615,30 +3124,61 @@ const galleryStyle = (b: {
   }
   .catform select:focus { border-color: #333333; }
 
-  /* Elementor filterable gallery */
+  /* Elementor filterable gallery -- #e548c3e on /vinyl-car-wrap-our-portfolio/,
+     the site's only gallery with titles. Its rules, measured at 1440/900/390:
+
+       .elementor-gallery__titles-container  flex, wrap, justify center
+                                             (--titles-container-justify-content),
+                                             margin-bottom 12px, no gap
+                                             (--space-between: 0px)
+       .elementor-gallery-title              Poppins 500 16px/24px, 7px 14px,
+                                             navy; pink when active
+       e--pointer-underline                  ::after, a 3px bar under the
+                                             title: navy and in place on the
+                                             active one, pink and dropping in
+                                             from 10px below on hover
+                                             (e--animation-drop-in)
+
+     The port had a left-aligned row with a grey rule under it and a green
+     active tab, and dropped the type to 14px on phones; the original keeps
+     16px at every width, which is why it wraps to four rows at 390. */
   .fgal-tabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px 22px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid var(--rule);
-    padding-bottom: 10px;
+    justify-content: center;
+    margin-bottom: 12px;
   }
   .fgal-tab {
+    position: relative;
     background: none;
     border: 0;
-    padding: 6px 0;
+    padding: 7px 14px;
     cursor: pointer;
     font-family: 'Poppins', sans-serif;
     font-weight: 500;
     font-size: 16px;
-    color: var(--brand-navy);
-    border-bottom: 2px solid transparent;
+    line-height: 24px;
+    color: var(--e-global-color-d077a13); /* #15334C */
+    transition: 0.3s;
   }
-  .fgal-tab:hover { color: var(--brand-pink); }
-  .fgal-tab[aria-selected='true'] {
-    color: var(--brand-green);
-    border-bottom-color: var(--brand-green);
+  .fgal-tab::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    bottom: -10px;
+    opacity: 0;
+    background-color: var(--e-global-color-f32bb28); /* #FF0099 */
+    transition: 0.3s cubic-bezier(0.58, 0.3, 0.005, 1);
+  }
+  .fgal-tab:hover { color: var(--e-global-color-a8178e9); /* #99CC33 */ }
+  .fgal-tab:hover::after { bottom: 0; opacity: 1; }
+  .fgal-tab[aria-selected='true'] { color: var(--e-global-color-f32bb28); }
+  .fgal-tab[aria-selected='true']::after {
+    bottom: 0;
+    opacity: 1;
+    background-color: var(--e-global-color-d077a13);
   }
 
   /* Columns, crop and gutter come from each gallery widget as custom
@@ -2742,6 +3282,18 @@ const galleryStyle = (b: {
      they are, the item carries its true ratio inline and that wins, so the box
      is reserved before the picture arrives. */
   .fgal-grid--masonry .fgal-item img { aspect-ratio: auto; height: auto; }
+  /* Placed by script, the original's way: each tile in the shortest column.
+     See layoutMasonry in Interactions.astro. */
+  .fgal-grid--masonry.fgal-grid--placed { position: relative; column-count: auto; }
+  .fgal-grid--placed > .fgal-item { position: absolute; margin: 0; }
+  /* Justified rows. Without script: wrapped rows at the ideal height, every
+     picture keeping its own shape; with it, each row scaled to fill the width
+     the original's way (layoutJustified in Interactions.astro). */
+  .fgal-grid--justified { display: flex; flex-wrap: wrap; gap: var(--fg-gap, 10px); }
+  .fgal-grid--justified .fgal-item img { height: var(--fg-rh, 200px); width: auto; aspect-ratio: auto; }
+  .fgal-grid--justified.fgal-grid--placed { display: block; position: relative; }
+  .fgal-grid--justified.fgal-grid--placed .fgal-item :global(a) { height: 100%; }
+  .fgal-grid--justified.fgal-grid--placed .fgal-item img { width: 100%; height: 100%; object-fit: cover; }
 
   /* Elementor's own breakpoints: tablet at 1024px, mobile at 767px. */
   @media (max-width: 1024px) {
@@ -2766,8 +3318,6 @@ const galleryStyle = (b: {
       column-gap: var(--fg-gap-m, 8px);
     }
     .fgal-grid--masonry .fgal-item { margin-bottom: var(--fg-gap-m, 8px); }
-    .fgal-tabs { gap: 4px 14px; }
-    .fgal-tab { font-size: 14px; }
   }
 
 
@@ -2794,4 +3344,33 @@ const galleryStyle = (b: {
     .gallery { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
     .compare-pair:not([data-juxtapose]) { grid-template-columns: 1fr; }
   }
+  /* Breakpoint padding (Section.paddingT / paddingM). As strong as the inline
+     padding it replaces: it has to beat the generic .sec values above and the
+     hero rules that zero a section's block padding, which an inline
+     declaration always did. */
+  /* Breakpoint content width (Section.maxWidthT / maxWidthM), as strong as the
+     inline max-width it replaces. */
+  section.sec > div.container.container--cw { max-width: var(--cw, var(--container-max-width)); }
+  @media (max-width: 1024px) {
+    section.sec > div.container.container--cw { max-width: var(--cw-t, var(--cw, var(--container-max-width))); }
+  }
+  @media (max-width: 767px) {
+    section.sec > div.container.container--cw { max-width: var(--cw-m, var(--cw-t, var(--cw, var(--container-max-width)))); }
+  }
+  section.sec.sec--pad { padding: var(--sp, 34px 0); }
+  @media (max-width: 1024px) {
+    section.sec.sec--pad { padding: var(--sp-t, var(--sp, 34px 0)); }
+  }
+  @media (max-width: 767px) {
+    section.sec.sec--pad { padding: var(--sp-m, var(--sp-t, var(--sp, 24px 0))); }
+  }
+  /* Elementor's tablet value falls back to desktop, and mobile to tablet. */
+  section.sec > div.container.container--ip { padding: var(--ip); }
+  @media (max-width: 1024px) {
+    section.sec > div.container.container--ip { padding: var(--ip-t, var(--ip)); }
+  }
+  @media (max-width: 767px) {
+    section.sec > div.container.container--ip { padding: var(--ip-m, var(--ip-t, var(--ip))); }
+  }
+
 </style>

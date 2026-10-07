@@ -200,3 +200,59 @@ export function blogPageMeta(
 
   return { ...page, title, url, robots, head };
 }
+
+/**
+ * An author archive, drawn the way the original draws it.
+ *
+ * The original builds /author/<name>/ from the same Elementor archive template
+ * (18965) as the category listings under /blogs/: the 45px navy title, the
+ * two-column card grid with its category pills, the sidebar of categories and
+ * "Why Choose Us?" boxes, and a numbered Previous/Next bar under the cards.
+ * The port carried only the title, then listed the posts with a component of
+ * its own, so none of that reached either author page.
+ *
+ * `template` is one category listing's sections (they are the same template on
+ * every one). Its title is replaced by the author's name and its card grid
+ * refilled with this page's posts, newest first, twelve at a time; the
+ * pagination bar goes directly under the cards, as on /blog/.
+ */
+export function authorSections(
+  template: Section[],
+  name: string,
+  members: string[],
+  pageNum: number,
+  base: string,
+  index: BlogEntry[],
+): Section[] {
+  const bySlug = new Map(index.map((e) => [e.slug, e]));
+  const entries = members.map((s) => bySlug.get(s)).filter((e): e is BlogEntry => !!e);
+  const total = pageCount(entries.length);
+  const slice = entries.slice((pageNum - 1) * PER_PAGE, pageNum * PER_PAGE);
+  let filled = false;
+
+  const walkBlocks = (blocks: Block[]): Block[] => {
+    const out: Block[] = [];
+    for (const block of blocks) {
+      if (block.type === 'columns') {
+        out.push({ ...block, cols: block.cols.map((c) => ({ ...c, blocks: walkBlocks(c.blocks) })) });
+        continue;
+      }
+      if (block.type === 'heading' && block.level === 1) {
+        out.push({ ...block, text: name });
+        continue;
+      }
+      if (block.type === 'cards' && !filled) {
+        filled = true;
+        out.push({ ...block, cards: slice.map(toCard) });
+        if (total > 1) {
+          out.push({ type: 'pagination', current: pageNum, total, base } as Block);
+        }
+        continue;
+      }
+      out.push(block);
+    }
+    return out;
+  };
+
+  return template.map((s) => ({ ...s, blocks: walkBlocks(s.blocks) }));
+}

@@ -130,7 +130,7 @@
      navy here. */
   :global(.compare-pair[data-juxtapose] figure:nth-of-type(2) figcaption) {
     right: 10px;
-    background: #b8006e;
+    background: var(--e-global-color-f32bb28, #ff0099);
   }
 
   /* The gallery link must not change how the grid lays out. */
@@ -340,14 +340,18 @@
 
       const slides = [...track.querySelectorAll<HTMLElement>('.carou-slide')];
       const perDesktop = Number(el.dataset.per || 3);
-      const perMobile = Number(el.dataset.perMobile || 2);
+      /* Elementor's defaults for a breakpoint the widget leaves unset: one
+         slide on a phone, two on a tablet (one if the desktop shows one). */
+      const perTablet = Number(el.dataset.perTablet || (perDesktop === 1 ? 1 : 2));
+      const perMobile = Number(el.dataset.perMobile || 1);
       const delay = Number(el.dataset.delay || 5000);
       const speed = Number(el.dataset.speed || 500);
       const infinite = el.dataset.infinite === 'yes';
       const autoplay = el.dataset.autoplay === 'yes';
       const pauseOnHover = el.dataset.pause === 'yes';
 
-      const per = () => (window.matchMedia('(max-width: 767px)').matches ? perMobile : perDesktop);
+      const per = () => (window.matchMedia('(max-width: 767px)').matches ? perMobile
+        : window.matchMedia('(max-width: 1024px)').matches ? perTablet : perDesktop);
 
       /* Elementor moves the strip by its "Slides to Scroll" -- one slide unless
          the widget says otherwise -- and draws one bullet per step, not one per
@@ -364,7 +368,7 @@
          the final steps have nothing left to scroll into and the strip stalls
          with the last photograph pinned to the left. Swiper does the same. */
       if (loop) {
-        for (let i = 0; i < Math.max(perDesktop, perMobile); i++) {
+        for (let i = 0; i < Math.max(perDesktop, perTablet, perMobile); i++) {
           const c = slides[i % slides.length].cloneNode(true) as HTMLElement;
           c.setAttribute('aria-hidden', 'true');
           c.dataset.clone = '';
@@ -439,6 +443,15 @@
         el.addEventListener('mouseleave', start);
       }
 
+      el.querySelector('.carou-arrow--prev')?.addEventListener('click', () => {
+        go(page - 1 < 0 ? pages() - 1 : page - 1);
+        start();
+      });
+      el.querySelector('.carou-arrow--next')?.addEventListener('click', () => {
+        go(page + 1);
+        start();
+      });
+
       buildDots();
       start();
     });
@@ -452,6 +465,7 @@
         items.forEach((it) => {
           it.hidden = index !== 'all' && it.dataset.tag !== index;
         });
+        layoutMasonry(gal.querySelector<HTMLElement>('.fgal-grid--masonry'));
       };
 
       tabs.forEach((tab) => {
@@ -461,6 +475,114 @@
         });
       });
     });
+
+    // ---------- masonry placement -------------------------------------------
+    // The original's e-gallery masonry walks the tiles in order and drops each
+    // into the SHORTEST column, the leftmost on a tie -- measured off the first
+    // twelve tiles of /vinyl-car-wrap-our-portfolio/ at 1440. The CSS columns
+    // the stylesheet falls back to fill top-to-bottom one column at a time, so
+    // every picture landed somewhere else and the columns finished at
+    // different heights. This places them the original's way; with no script
+    // the CSS columns still give a sound gallery.
+    //
+    // Heights come from each picture's own width/height attributes, so the
+    // layout is final before a single image has loaded.
+    function layoutMasonry(grid: HTMLElement | null) {
+      if (!grid) return;
+      // Column count and gutter as the stylesheet resolves them at this width,
+      // read with the absolute layout switched off.
+      grid.classList.remove('fgal-grid--placed');
+      grid.style.height = '';
+      const cs = getComputedStyle(grid);
+      const cols = Math.max(1, parseInt(cs.columnCount, 10) || 1);
+      const gap = parseFloat(cs.columnGap) || 0;
+      const width = grid.clientWidth;
+      const colW = (width - gap * (cols - 1)) / cols;
+      const heights = new Array(cols).fill(0);
+      const tiles = [...grid.querySelectorAll<HTMLElement>('.fgal-item')].filter((t) => !t.hidden);
+      for (const tile of tiles) {
+        const img = tile.querySelector('img');
+        const w = Number(img?.getAttribute('width')) || 4;
+        const h = Number(img?.getAttribute('height')) || 3;
+        let c = 0;
+        for (let i = 1; i < cols; i++) if (heights[i] < heights[c]) c = i;
+        tile.style.left = `${c * (colW + gap)}px`;
+        tile.style.top = `${heights[c]}px`;
+        tile.style.width = `${colW}px`;
+        heights[c] += (colW * h) / w + gap;
+      }
+      grid.style.height = `${Math.max(0, Math.max(...heights) - gap)}px`;
+      grid.classList.add('fgal-grid--placed');
+    }
+    // ---------- justified rows ----------------------------------------------
+    // Elementor's `justified` gallery, measured on /racing-stripes/: tiles go
+    // into a row while adding one keeps the row's height nearer the ideal than
+    // stopping would; the row is then scaled to fill the width exactly. The
+    // last row keeps the ideal height rather than being stretched. With a
+    // 550px column and a 200px ideal that gives two 16:9 tiles at 152px, at
+    // 390px with a 100px ideal two at 101px -- the original's numbers.
+    function layoutJustified(grid: HTMLElement) {
+      const vw = window.innerWidth;
+      const ideal = Number(
+        (vw <= 767 && grid.dataset.rhM) || (vw <= 1024 && grid.dataset.rhT) || grid.dataset.rh,
+      ) || 200;
+      grid.classList.remove('fgal-grid--placed');
+      grid.style.height = '';
+      const gap = parseFloat(getComputedStyle(grid).columnGap) || 0;
+      const width = grid.clientWidth;
+      const tiles = [...grid.querySelectorAll<HTMLElement>('.fgal-item')].filter((t) => !t.hidden);
+      const ratio = (t: HTMLElement) => {
+        const img = t.querySelector('img');
+        return (Number(img?.getAttribute('width')) || 4) / (Number(img?.getAttribute('height')) || 3);
+      };
+      const heightOf = (row: number[]) =>
+        (width - gap * (row.length - 1)) / row.reduce((a, r) => a + r, 0);
+      let y = 0;
+      let i = 0;
+      while (i < tiles.length) {
+        const row = [ratio(tiles[i])];
+        let j = i + 1;
+        while (j < tiles.length) {
+          const next = [...row, ratio(tiles[j])];
+          if (Math.abs(heightOf(next) - ideal) > Math.abs(heightOf(row) - ideal)) break;
+          row.push(ratio(tiles[j]));
+          j++;
+        }
+        const last = j >= tiles.length;
+        const h = last ? Math.min(ideal, heightOf(row)) : heightOf(row);
+        let x = 0;
+        for (let k = i; k < j; k++) {
+          const w = row[k - i] * h;
+          tiles[k].style.left = `${x}px`;
+          tiles[k].style.top = `${y}px`;
+          tiles[k].style.width = `${w}px`;
+          tiles[k].style.height = `${h}px`;
+          x += w + gap;
+        }
+        y += h + gap;
+        i = j;
+      }
+      grid.style.height = `${Math.max(0, y - gap)}px`;
+      grid.classList.add('fgal-grid--placed');
+    }
+
+    const masonries = [...document.querySelectorAll<HTMLElement>('.fgal-grid--masonry')];
+    const justified = [...document.querySelectorAll<HTMLElement>('.fgal-grid--justified')];
+    const layoutAll = () => {
+      masonries.forEach(layoutMasonry);
+      justified.forEach(layoutJustified);
+    };
+    layoutAll();
+    if (masonries.length || justified.length) {
+      let raf = 0;
+      let lastW = window.innerWidth;
+      window.addEventListener('resize', () => {
+        if (window.innerWidth === lastW) return;   // a phone's toolbar, not a reflow
+        lastW = window.innerWidth;
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(layoutAll);
+      });
+    }
 
     // ---------- gallery tiles arriving -------------------------------------
     // The original fades and scales each picture in as it loads. The starting

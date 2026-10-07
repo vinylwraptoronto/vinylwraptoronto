@@ -1,0 +1,46 @@
+---
+/**
+ * A web story, served as the AMP document it is on the original.
+ *
+ * The story's full-screen pages, layering, fonts, animations and tap-to-advance
+ * navigation all belong to the AMP story runtime, so the document is passed
+ * through whole rather than rendered through the site layout: the site's
+ * header, footer and stylesheet are not part of a story on the original either.
+ * scripts/pull-web-stories.mjs fetches each one and rewrites its image and link
+ * addresses for this stack; see there for exactly what changes.
+ */
+import { repairLd } from '../../lib/ld';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+  const docs = import.meta.glob<string>('../../data/stories/*.html', {
+    eager: true,
+    query: '?raw',
+    import: 'default',
+  });
+  return Object.entries(docs).map(([file, html]) => ({
+    params: { story: file.split('/').pop()!.replace(/\.html$/, '') },
+    props: { html },
+  }));
+}
+
+const { html: raw } = Astro.props as { html: string };
+
+/* The story's structured data is the original's, and it carries the same two
+   Rank Math defects the rest of the site's JSON-LD is repaired for: a
+   legalName of "content" and the unit number in addressLocality. Run through
+   the same repair as every other page's, block by block; a block that does
+   not parse is left exactly as it was. */
+const html = raw.replace(
+  /(<script type="application\/ld\+json"[^>]*>)([\s\S]*?)(<\/script>)/g,
+  (whole, open: string, body: string, close: string) => {
+    try {
+      return open + JSON.stringify(repairLd(JSON.parse(body))) + close;
+    } catch {
+      return whole;
+    }
+  },
+);
+---
+<Fragment set:html={html} />

@@ -1,0 +1,1206 @@
+{
+ "locations-served/custom-decals-oakville": [
+  {
+   "sec": "4d209d3",
+   "path": [],
+   "type": "section",
+   "set": {
+    "minHeightT": "350px",
+    "minHeightM": "165px"
+   }
+  },
+  {
+   "sec": "44f4d95",
+   "path": [],
+   "type": "section",
+   "set": {
+    "innerPad": "25px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    0
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    0,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "0b03bf5",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    1
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    1,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "c5183b0",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    2
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    2,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "4721604",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    2,
+    "cols",
+    1
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    2,
+    "cols",
+    1,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "b6da702",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "8149769",
+   "path": [
+    1
+   ],
+   "type": "text",
+   "eid": "ab85dc7",
+   "replace": {
+    "type": "testimonials",
+    "items": [
+     {
+      "text": "These guys are amazing. We had two trucks wrapped here for a new venture and the service, price and quality of work all exceeded our expectations. We were pretty high maintenance and twice had last minute changes, Paulo and his team were patient, gracious and a real pleasure to deal with. Really felt like they appreciated and valued our business, a refreshing change.",
+      "name": "Clancy McNamara",
+      "title": "Decals"
+     },
+     {
+      "text": "Outstanding service. They know best! They conviced me to go Black Satin vs Matte Black for my Tesla Model 3 and I'm happy with the choice. They aren't pushy and provide great feedback. Had some issues with peeling and they fixed it in under an hour. 10/10, will be a return customer",
+      "name": "Richard Andrews",
+      "title": "Colour Change"
+     },
+     {
+      "text": "Paolo and his team have now wrapped two work vans for our company and we plan on using them for any fleet additions! Fantastic to work with from start to finish. They helped us do the initial designs and very responsive to any changes we wanted. Paolo responded to emails immediately and was very accommodative to our busy work schedule. The wraps exceeded our expectations. We also have had our business cards done by his team recently. I highly recommend having any advertisement needs done by Vinyl Wrap Toronto.",
+      "name": "Jessie Taylor",
+      "title": "Fleet Wrap"
+     }
+    ],
+    "arrows": true,
+    "dots": true,
+    "autoplay": true,
+    "delay": 5000,
+    "speed": 500,
+    "infinite": true,
+    "pauseOnHover": true,
+    "gap": 10,
+    "eid": "ab85dc7"
+   }
+  }
+ ],
+ "locations-served/custom-vinyl-wraps-markham": [
+  {
+   "sec": "4d209d3",
+   "path": [],
+   "type": "section",
+   "set": {
+    "minHeightT": "350px",
+    "minHeightM": "165px"
+   }
+  },
+  {
+   "sec": "44f4d95",
+   "path": [],
+   "type": "section",
+   "set": {
+    "innerPad": "25px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    0
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    0,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "0b03bf5",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    1
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    1,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "c5183b0",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    2
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    2,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "4721604",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    2,
+    "cols",
+    1
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    2,
+    "cols",
+    1,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "b6da702",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "8149769",
+   "path": [
+    1
+   ],
+   "type": "text",
+   "eid": "ab85dc7",
+   "replace": {
+    "type": "testimonials",
+    "items": [
+     {
+      "text": "These guys are amazing. We had two trucks wrapped here for a new venture and the service, price and quality of work all exceeded our expectations. We were pretty high maintenance and twice had last minute changes, Paulo and his team were patient, gracious and a real pleasure to deal with. Really felt like they appreciated and valued our business, a refreshing change.",
+      "name": "Clancy McNamara",
+      "title": "Decals"
+     },
+     {
+      "text": "Outstanding service. They know best! They conviced me to go Black Satin vs Matte Black for my Tesla Model 3 and I'm happy with the choice. They aren't pushy and provide great feedback. Had some issues with peeling and they fixed it in under an hour. 10/10, will be a return customer",
+      "name": "Richard Andrews",
+      "title": "Colour Change"
+     },
+     {
+      "text": "Paolo and his team have now wrapped two work vans for our company and we plan on using them for any fleet additions! Fantastic to work with from start to finish. They helped us do the initial designs and very responsive to any changes we wanted. Paolo responded to emails immediately and was very accommodative to our busy work schedule. The wraps exceeded our expectations. We also have had our business cards done by his team recently. I highly recommend having any advertisement needs done by Vinyl Wrap Toronto.",
+      "name": "Jessie Taylor",
+      "title": "Fleet Wrap"
+     }
+    ],
+    "arrows": true,
+    "dots": true,
+    "autoplay": true,
+    "delay": 5000,
+    "speed": 500,
+    "infinite": true,
+    "pauseOnHover": true,
+    "gap": 10,
+    "eid": "ab85dc7"
+   }
+  }
+ ],
+ "locations-served/custom-wraps-mississauga": [
+  {
+   "sec": "4d209d3",
+   "path": [],
+   "type": "section",
+   "set": {
+    "minHeightT": "350px",
+    "minHeightM": "165px"
+   }
+  },
+  {
+   "sec": "44f4d95",
+   "path": [],
+   "type": "section",
+   "set": {
+    "innerPad": "25px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    0
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    0,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "0b03bf5",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    1
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    1,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "c5183b0",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    2
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    2,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "4721604",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    2,
+    "cols",
+    1
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    2,
+    "cols",
+    1,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "b6da702",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "8149769",
+   "path": [
+    1
+   ],
+   "type": "text",
+   "eid": "ab85dc7",
+   "replace": {
+    "type": "testimonials",
+    "items": [
+     {
+      "text": "These guys are amazing. We had two trucks wrapped here for a new venture and the service, price and quality of work all exceeded our expectations. We were pretty high maintenance and twice had last minute changes, Paulo and his team were patient, gracious and a real pleasure to deal with. Really felt like they appreciated and valued our business, a refreshing change.",
+      "name": "Clancy McNamara",
+      "title": "Decals"
+     },
+     {
+      "text": "Outstanding service. They know best! They conviced me to go Black Satin vs Matte Black for my Tesla Model 3 and I'm happy with the choice. They aren't pushy and provide great feedback. Had some issues with peeling and they fixed it in under an hour. 10/10, will be a return customer",
+      "name": "Richard Andrews",
+      "title": "Colour Change"
+     },
+     {
+      "text": "Paolo and his team have now wrapped two work vans for our company and we plan on using them for any fleet additions! Fantastic to work with from start to finish. They helped us do the initial designs and very responsive to any changes we wanted. Paolo responded to emails immediately and was very accommodative to our busy work schedule. The wraps exceeded our expectations. We also have had our business cards done by his team recently. I highly recommend having any advertisement needs done by Vinyl Wrap Toronto.",
+      "name": "Jessie Taylor",
+      "title": "Fleet Wrap"
+     }
+    ],
+    "arrows": true,
+    "dots": true,
+    "autoplay": true,
+    "delay": 5000,
+    "speed": 500,
+    "infinite": true,
+    "pauseOnHover": true,
+    "gap": 10,
+    "eid": "ab85dc7"
+   }
+  }
+ ],
+ "locations-served/custom-wraps-north-york": [
+  {
+   "sec": "4d209d3",
+   "path": [],
+   "type": "section",
+   "set": {
+    "minHeightT": "350px",
+    "minHeightM": "165px"
+   }
+  },
+  {
+   "sec": "44f4d95",
+   "path": [],
+   "type": "section",
+   "set": {
+    "innerPad": "25px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    0
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    0,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "0b03bf5",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    1
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    1,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "c5183b0",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    2
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    2,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "4721604",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    2,
+    "cols",
+    1
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    2,
+    "cols",
+    1,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "b6da702",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "8149769",
+   "path": [
+    1
+   ],
+   "type": "text",
+   "eid": "ab85dc7",
+   "replace": {
+    "type": "testimonials",
+    "items": [
+     {
+      "text": "These guys are amazing. We had two trucks wrapped here for a new venture and the service, price and quality of work all exceeded our expectations. We were pretty high maintenance and twice had last minute changes, Paulo and his team were patient, gracious and a real pleasure to deal with. Really felt like they appreciated and valued our business, a refreshing change.",
+      "name": "Clancy McNamara",
+      "title": "Decals"
+     },
+     {
+      "text": "Outstanding service. They know best! They conviced me to go Black Satin vs Matte Black for my Tesla Model 3 and I'm happy with the choice. They aren't pushy and provide great feedback. Had some issues with peeling and they fixed it in under an hour. 10/10, will be a return customer",
+      "name": "Richard Andrews",
+      "title": "Colour Change"
+     },
+     {
+      "text": "Paolo and his team have now wrapped two work vans for our company and we plan on using them for any fleet additions! Fantastic to work with from start to finish. They helped us do the initial designs and very responsive to any changes we wanted. Paolo responded to emails immediately and was very accommodative to our busy work schedule. The wraps exceeded our expectations. We also have had our business cards done by his team recently. I highly recommend having any advertisement needs done by Vinyl Wrap Toronto.",
+      "name": "Jessie Taylor",
+      "title": "Fleet Wrap"
+     }
+    ],
+    "arrows": true,
+    "dots": true,
+    "autoplay": true,
+    "delay": 5000,
+    "speed": 500,
+    "infinite": true,
+    "pauseOnHover": true,
+    "gap": 10,
+    "eid": "ab85dc7"
+   }
+  }
+ ],
+ "locations-served/custom-wraps-scarborough": [
+  {
+   "sec": "4d209d3",
+   "path": [],
+   "type": "section",
+   "set": {
+    "minHeightT": "350px",
+    "minHeightM": "165px"
+   }
+  },
+  {
+   "sec": "44f4d95",
+   "path": [],
+   "type": "section",
+   "set": {
+    "innerPad": "25px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    0
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    0,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "0b03bf5",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    1
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    1,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "c5183b0",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    2
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    2,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "4721604",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    2,
+    "cols",
+    1
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    2,
+    "cols",
+    1,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "b6da702",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "8149769",
+   "path": [
+    1
+   ],
+   "type": "text",
+   "eid": "ab85dc7",
+   "replace": {
+    "type": "testimonials",
+    "items": [
+     {
+      "text": "These guys are amazing. We had two trucks wrapped here for a new venture and the service, price and quality of work all exceeded our expectations. We were pretty high maintenance and twice had last minute changes, Paulo and his team were patient, gracious and a real pleasure to deal with. Really felt like they appreciated and valued our business, a refreshing change.",
+      "name": "Clancy McNamara",
+      "title": "Decals"
+     },
+     {
+      "text": "Outstanding service. They know best! They conviced me to go Black Satin vs Matte Black for my Tesla Model 3 and I'm happy with the choice. They aren't pushy and provide great feedback. Had some issues with peeling and they fixed it in under an hour. 10/10, will be a return customer",
+      "name": "Richard Andrews",
+      "title": "Colour Change"
+     },
+     {
+      "text": "Paolo and his team have now wrapped two work vans for our company and we plan on using them for any fleet additions! Fantastic to work with from start to finish. They helped us do the initial designs and very responsive to any changes we wanted. Paolo responded to emails immediately and was very accommodative to our busy work schedule. The wraps exceeded our expectations. We also have had our business cards done by his team recently. I highly recommend having any advertisement needs done by Vinyl Wrap Toronto.",
+      "name": "Jessie Taylor",
+      "title": "Fleet Wrap"
+     }
+    ],
+    "arrows": true,
+    "dots": true,
+    "autoplay": true,
+    "delay": 5000,
+    "speed": 500,
+    "infinite": true,
+    "pauseOnHover": true,
+    "gap": 10,
+    "eid": "ab85dc7"
+   }
+  }
+ ],
+ "locations-served/custom-wraps-toronto": [
+  {
+   "sec": "4d209d3",
+   "path": [],
+   "type": "section",
+   "set": {
+    "minHeightT": "350px",
+    "minHeightM": "165px"
+   }
+  },
+  {
+   "sec": "44f4d95",
+   "path": [],
+   "type": "section",
+   "set": {
+    "innerPad": "25px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    0
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    0,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "0b03bf5",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    1
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    1,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "c5183b0",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    2
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    2,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "4721604",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    2,
+    "cols",
+    1
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    2,
+    "cols",
+    1,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "b6da702",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "8149769",
+   "path": [
+    1
+   ],
+   "type": "text",
+   "eid": "ab85dc7",
+   "replace": {
+    "type": "testimonials",
+    "items": [
+     {
+      "text": "These guys are amazing. We had two trucks wrapped here for a new venture and the service, price and quality of work all exceeded our expectations. We were pretty high maintenance and twice had last minute changes, Paulo and his team were patient, gracious and a real pleasure to deal with. Really felt like they appreciated and valued our business, a refreshing change.",
+      "name": "Clancy McNamara",
+      "title": "Decals"
+     },
+     {
+      "text": "Outstanding service. They know best! They conviced me to go Black Satin vs Matte Black for my Tesla Model 3 and I'm happy with the choice. They aren't pushy and provide great feedback. Had some issues with peeling and they fixed it in under an hour. 10/10, will be a return customer",
+      "name": "Richard Andrews",
+      "title": "Colour Change"
+     },
+     {
+      "text": "Paolo and his team have now wrapped two work vans for our company and we plan on using them for any fleet additions! Fantastic to work with from start to finish. They helped us do the initial designs and very responsive to any changes we wanted. Paolo responded to emails immediately and was very accommodative to our busy work schedule. The wraps exceeded our expectations. We also have had our business cards done by his team recently. I highly recommend having any advertisement needs done by Vinyl Wrap Toronto.",
+      "name": "Jessie Taylor",
+      "title": "Fleet Wrap"
+     }
+    ],
+    "arrows": true,
+    "dots": true,
+    "autoplay": true,
+    "delay": 5000,
+    "speed": 500,
+    "infinite": true,
+    "pauseOnHover": true,
+    "gap": 10,
+    "eid": "ab85dc7"
+   }
+  }
+ ],
+ "locations-served/vehicle-graphics-brampton": [
+  {
+   "sec": "4d209d3",
+   "path": [],
+   "type": "section",
+   "set": {
+    "minHeightT": "350px",
+    "minHeightM": "165px"
+   }
+  },
+  {
+   "sec": "44f4d95",
+   "path": [],
+   "type": "section",
+   "set": {
+    "innerPad": "25px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    0
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    0,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "0b03bf5",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    1
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    1,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "c5183b0",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    2
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    1,
+    "cols",
+    2,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "4721604",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    2,
+    "cols",
+    1
+   ],
+   "type": "col",
+   "set": {
+    "padding": "15px"
+   }
+  },
+  {
+   "sec": "af11207",
+   "path": [
+    2,
+    "cols",
+    1,
+    "blocks",
+    0
+   ],
+   "type": "feature",
+   "eid": "b6da702",
+   "set": {
+    "imagePos": "top",
+    "imgW": "100%",
+    "imgGap": "15px"
+   }
+  },
+  {
+   "sec": "8149769",
+   "path": [
+    1
+   ],
+   "type": "text",
+   "eid": "ab85dc7",
+   "replace": {
+    "type": "testimonials",
+    "items": [
+     {
+      "text": "These guys are amazing. We had two trucks wrapped here for a new venture and the service, price and quality of work all exceeded our expectations. We were pretty high maintenance and twice had last minute changes, Paulo and his team were patient, gracious and a real pleasure to deal with. Really felt like they appreciated and valued our business, a refreshing change.",
+      "name": "Clancy McNamara",
+      "title": "Decals"
+     },
+     {
+      "text": "Outstanding service. They know best! They conviced me to go Black Satin vs Matte Black for my Tesla Model 3 and I'm happy with the choice. They aren't pushy and provide great feedback. Had some issues with peeling and they fixed it in under an hour. 10/10, will be a return customer",
+      "name": "Richard Andrews",
+      "title": "Colour Change"
+     },
+     {
+      "text": "Paolo and his team have now wrapped two work vans for our company and we plan on using them for any fleet additions! Fantastic to work with from start to finish. They helped us do the initial designs and very responsive to any changes we wanted. Paolo responded to emails immediately and was very accommodative to our busy work schedule. The wraps exceeded our expectations. We also have had our business cards done by his team recently. I highly recommend having any advertisement needs done by Vinyl Wrap Toronto.",
+      "name": "Jessie Taylor",
+      "title": "Fleet Wrap"
+     }
+    ],
+    "arrows": true,
+    "dots": true,
+    "autoplay": true,
+    "delay": 5000,
+    "speed": 500,
+    "infinite": true,
+    "pauseOnHover": true,
+    "gap": 10,
+    "eid": "ab85dc7"
+   }
+  }
+ ]
+}

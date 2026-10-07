@@ -45,3 +45,6 @@ _research/screenshots/
 
 # Probe files written by scripts/pull-iconbox-align.py while it runs.
 scripts/.iconbox-align-*
+
+# python bytecode from scripts/
+__pycache__/
