@@ -17,6 +17,7 @@ import spacers from '../data/spacers.json';
 import rowCss from '../data/row-css.json';
 import listSpace from '../data/list-space.json';
 import colCss from '../data/col-css.json';
+import iconSize from '../data/icon-size.json';
 import QuoteForm from './QuoteForm.astro';
 import { img, imgHtml } from '../lib/img';
 
@@ -86,6 +87,13 @@ const rowMarginVars = (b: any): string | undefined => {
 type ListSpace = Partial<Record<'d' | 't' | 'm', number>>;
 const listSpaceOf = (eid?: string): ListSpace | undefined =>
   eid ? (listSpace as unknown as Record<string, ListSpace>)[eid] : undefined;
+
+/** An icon box's own icon size, per breakpoint (src/data/icon-size.json). */
+const iconSizeVars = (eid?: string): string | undefined => {
+  const m = eid ? (iconSize as unknown as Record<string, Partial<Record<'d' | 't' | 'm', string>>>)[eid] : undefined;
+  if (!m) return undefined;
+  return [m.d && `--ic:${m.d}`, m.t && `--ic-t:${m.t}`, m.m && `--ic-m:${m.m}`].filter(Boolean).join(';') || undefined;
+};
 
 /** A column's own vertical margin, per breakpoint (src/data/col-css.json,
  *  from scripts/pull-col-margins.py), keyed by the column's first widget. */
@@ -940,8 +948,8 @@ const secMargins = (() => {
             >
               {b.icon && (
                 b.iconHref
-                  ? <a class="feature-ic" href={img(b.iconHref)} tabindex="-1" aria-hidden="true"><i class={b.icon}></i></a>
-                  : <span class="feature-ic" aria-hidden="true"><i class={b.icon}></i></span>
+                  ? <a class="feature-ic" href={img(b.iconHref)} tabindex="-1" aria-hidden="true" style={iconSizeVars(b.eid)}><i class={b.icon}></i></a>
+                  : <span class="feature-ic" aria-hidden="true" style={iconSizeVars(b.eid)}><i class={b.icon}></i></span>
               )}
               {b.image && <img src={img(b.image)} alt={b.alt ?? ''} loading="lazy" decoding="async" />}
               {/* `titleHtml` where the title carries emphasis. The warranty
@@ -1011,6 +1019,7 @@ const secMargins = (() => {
                         alt={c.alt ?? c.title}
                         width={c.natural ? c.w : undefined}
                         height={c.natural ? c.h : undefined}
+                        style={c.natural && c.w ? `--nw:${c.w}px` : undefined}
                         loading="lazy"
                         decoding="async"
                       />
@@ -2266,7 +2275,9 @@ const secMargins = (() => {
      each list line run 18px longer, so list items wrapped a line short of the
      original's on a phone. */
   .rt :global(p) { margin: 0 0 0.9rem; }
-  .rt :global(p:last-child) { margin-bottom: 0; }
+  /* The last paragraph keeps its 0.9rem: an Elementor widget is a flex item,
+     so a margin inside it cannot collapse out, and a text widget ending in a
+     paragraph is 14.4px taller than its text. */
   .rt :global(ul),
   .rt :global(ol) { margin: 0; padding-inline-start: 40px; }
   /* The original puts no margin on a list item — checked on its rich-text
@@ -2669,10 +2680,15 @@ const secMargins = (() => {
        measured on 10 of the 12 icon-boxes across five pages, the other two
        being boxes with no icon at all. */
     margin-bottom: 15px;
-    font-size: 28px;
+    /* Elementor's icon is 50px on a 1 line height unless the widget sets a
+       size (icon-size.json); the port drew every one 28px on a 42px line. */
+    font-size: var(--ic, 50px);
+    line-height: 1;
     color: var(--brand-green);
     text-decoration: none;
   }
+  @media (max-width: 1024px) { .feature-ic { font-size: var(--ic-t, var(--ic, 50px)); } }
+  @media (max-width: 767px) { .feature-ic { font-size: var(--ic-m, var(--ic-t, var(--ic, 50px))); } }
   .ilist > li::before {
     content: '';
     position: absolute;
@@ -2805,7 +2821,10 @@ const secMargins = (() => {
   .arch-thumb { display: block; }
   .arch-thumb img { display: block; width: 100%; height: auto; }
   /* Plugin-converted entries keep the intrinsic size the original served. */
-  .arch-thumb--natural img { width: auto; height: auto; max-width: 100%; }
+  /* At the width the original's markup gives it -- `width:auto` would put
+     back the file's own, and the 1000px Ford Transit cover on
+     /pages_type/vehicle-wraps/ is drawn 800 wide there. */
+  .arch-thumb--natural img { width: var(--nw, auto); height: auto; max-width: 100%; }
 
   /* The story player's resting frame. */
   .arch-story { display: block; max-width: 100%; overflow: hidden; }
