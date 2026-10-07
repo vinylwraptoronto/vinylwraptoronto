@@ -4,8 +4,8 @@
  * snapshot, a no-match fallback, nested columns, and the non-gallery helper
  * (descriptionFor/describeHtml) on responsive variants and look-alike siblings.
  * Negative controls run the same gallery assertions against the pre-fix
- * gallery.ts (git ref CONTROL_REF, default HEAD; use HEAD~1 once committed, i.e. the commit before this
- * change) and must FAIL; a control that passes is itself a failure.
+ * gallery.ts (git ref CONTROL_REF, default 220e94a532fd91511e7f0e3b1d99f246ed3f14c3, the
+ * last commit before the fix; HEAD/HEAD~1 already contain the fix) and must FAIL; a control that passes is itself a failure.
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -24,7 +24,7 @@ const bundle = async (name, entry) => {
 };
 
 const CUR = await bundle('cur', "export { withGalleries } from './gallery'; export { descriptionFor, describeHtml, describe } from './image-desc';");
-const refSrc = process.env.CONTROL_REF || 'HEAD';
+const refSrc = process.env.CONTROL_REF || '220e94a532fd91511e7f0e3b1d99f246ed3f14c3';
 const headSrc = execSync(`git show ${refSrc}:src/lib/gallery.ts`, { maxBuffer: 1 << 26 }).toString().replace(/\0/g, '\\0');
 const OLD = await bundle('old', headSrc);
 
