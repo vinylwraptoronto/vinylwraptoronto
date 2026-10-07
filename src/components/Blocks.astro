@@ -13,6 +13,7 @@ import imgDims from '../data/img-dims.json';
 import galleryThumbs from '../data/gallery-thumbs.json';
 import QuoteForm from './QuoteForm.astro';
 import { img, imgHtml } from '../lib/img';
+import { describe, LINKED } from '../lib/image-desc';
 
 export interface Props {
   /** Normal use: whole sections, each with its own padding and container. */
@@ -763,10 +764,11 @@ const galleryStyle = (b: {
              true single, unconditional first image (e.g. web-story
              covers). */
           const isLcpCandidate = !inColumn && gi === 0 && i === 0 && !b.hide?.length;
+          const imgName = b.alt ? describe(b.src, b.alt) : (b.href ? describe(b.src, b.alt, LINKED) : b.alt);
           const pic = (
             <img
               src={img(b.src)}
-              alt={b.alt}
+              alt={imgName}
               width={num(b.width)}
               height={num(b.height)}
               loading={isLcpCandidate ? 'eager' : 'lazy'}
@@ -776,7 +778,7 @@ const galleryStyle = (b: {
           );
           return (
             <figure class={`${b.full ? 'fig fig--full' : 'fig'}${b.imgWidth ? ' fig--iw' : ''}`} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={imgWidthVars(b.imgWidth)}>
-              {b.href ? <a href={img(b.href)} aria-label={b.alt || 'View image details'}>{pic}</a> : pic}
+              {b.href ? <a href={img(b.href)} aria-label={imgName || 'View image details'}>{pic}</a> : pic}
             </figure>
           );
         }
@@ -858,7 +860,7 @@ const galleryStyle = (b: {
                   ? <a class="feature-ic" href={img(b.iconHref)} tabindex="-1" aria-hidden="true"><i class={b.icon}></i></a>
                   : <span class="feature-ic" aria-hidden="true"><i class={b.icon}></i></span>
               )}
-              {b.image && <img src={img(b.image)} alt={b.alt ?? ''} width={dimsOf(b.image)?.[0]} height={dimsOf(b.image)?.[1]} loading="lazy" decoding="async" />}
+              {b.image && <img src={img(b.image)} alt={describe(b.image, b.alt ?? '')} width={dimsOf(b.image)?.[0]} height={dimsOf(b.image)?.[1]} loading="lazy" decoding="async" />}
               {/* `titleHtml` where the title carries emphasis. The warranty
                   box is "3 Year Warranty<sup>*</sup>" and the port took its
                   textContent, so the footnote marker dropped to the baseline
@@ -923,7 +925,7 @@ const galleryStyle = (b: {
                     >
                       <img
                         src={img(c.image)}
-                        alt={c.alt || c.title}
+                        alt={describe(c.image, c.alt || c.title)}
                         width={c.natural ? c.w : undefined}
                         height={c.natural ? c.h : undefined}
                         loading="lazy"
@@ -980,7 +982,7 @@ const galleryStyle = (b: {
                     <a class="card-thumb" href={c.href} tabindex="-1">
                       <img
                         src={img(c.image)}
-                        alt={c.alt || c.title}
+                        alt={describe(c.image, c.alt || c.title)}
                         width={thumbBox(c.image, c).w}
                         height={thumbBox(c.image, c).h}
                         loading="lazy"
@@ -1098,7 +1100,7 @@ const galleryStyle = (b: {
                         `aspect-ratio` from these attributes even though the CSS
                         only constrains width, which is what keeps a lazy-loaded
                         slide from shifting layout in behind it. */}
-                    <img src={img(i.src)} alt={i.alt} loading="lazy" decoding="async"
+                    <img src={img(i.src)} alt={describe(i.src, i.alt)} loading="lazy" decoding="async"
                          width={i.width ?? undefined} height={i.height ?? undefined}
                          style={b.imgStyle ?? undefined} />
                   </figure>
@@ -1130,7 +1132,7 @@ const galleryStyle = (b: {
                 const d = dimsOf(i.src);
                 return (
                   <a class="lb-link" href={img(i.src)}>
-                    <img src={img(i.src)} alt={i.alt} width={d?.[0]} height={d?.[1]} loading="lazy" decoding="async" />
+                    <img src={img(i.src)} alt={describe(i.src, i.alt)} width={d?.[0]} height={d?.[1]} loading="lazy" decoding="async" />
                   </a>
                 );
               })}
@@ -1239,12 +1241,12 @@ const galleryStyle = (b: {
                 return (
                 <div class="compare-pair">
                   <figure>
-                    <img src={img(bt.src)} data-full={img(p.before.src)} alt={p.before.alt}
+                    <img src={img(bt.src)} data-full={img(p.before.src)} alt={describe(p.before.src, p.before.alt)}
                       width={bt.w} height={bt.h} loading="lazy" decoding="async" />
                     <figcaption>{p.beforeLabel}</figcaption>
                   </figure>
                   <figure>
-                    <img src={img(at.src)} data-full={img(p.after.src)} alt={p.after.alt}
+                    <img src={img(at.src)} data-full={img(p.after.src)} alt={describe(p.after.src, p.after.alt)}
                       width={at.w} height={at.h} loading="lazy" decoding="async" />
                     <figcaption>{p.afterLabel}</figcaption>
                   </figure>
@@ -1291,7 +1293,7 @@ const galleryStyle = (b: {
                           masonry variant gets the file's own. */}
                       <img
                         src={img(t.src)}
-                        alt={it.alt ?? it.title}
+                        alt={describe(it.src, it.alt ?? it.title)}
                         width={t.w}
                         height={t.h}
                         style={b.masonry && t.w && t.h ? `aspect-ratio:${t.w}/${t.h}` : undefined}

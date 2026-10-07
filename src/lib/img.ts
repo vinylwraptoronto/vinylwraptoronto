@@ -25,6 +25,8 @@
  * story for same-origin, non-content-hashed filenames.
  */
 
+import { describeHtml } from './image-desc';
+
 const UPLOADS = '/wp-content/uploads/';
 
 const DEFAULT_BASE = 'https://img.vinylwraptoronto.com';
@@ -47,6 +49,8 @@ export function img<T extends string | null | undefined>(src: T): T {
  * this rewrites the prefix wherever it appears rather than parsing attributes.
  */
 export function imgHtml(html: string): string {
-  if (!BASE || !html) return html;
+  if (!html) return html;
+  html = describeHtml(html);
+  if (!BASE) return html;
   return html.split(UPLOADS).join(BASE + '/');
 }
