@@ -27,7 +27,7 @@ const WORKFLOW = 'deploy.yml';
 const BRANCH = 'main';
 
 export const POST: APIRoute = async ({ request, locals, cookies, url }) => {
-  const guard = await guardWrite(request, locals, cookies, url);
+  const guard = await guardWrite(request, locals, cookies, url, { portal: 'publish' });
   if (!guard.ok) return guard.response;
 
   const env = (locals.runtime?.env ?? {}) as unknown as Record<string, string | undefined>;
