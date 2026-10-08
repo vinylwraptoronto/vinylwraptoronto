@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Publish a post written outside /admin -- by the scheduled blog routine, or
+ * Create a post written outside /admin -- by the scheduled blog routine, or
  * by anyone with a body of HTML and a few fields -- the same way the editor
  * does, in one command.
  *
@@ -20,6 +20,8 @@
  *     "featuredAlt": "…",                     defaults to title
  *     "author": "masoud",                     an authors.name; see src/data/author-archives.json
  *     "publishedAt": "2026-10-06T09:00:00-04:00",
+ *     "status": "draft",                      optional; published when omitted
+ *     "pageCss": "…",                         optional styles scoped to this post
  *     "categories": ["Car Wrap"],             existing category names (not created here)
  *     "tags": ["Matte"],                      created when missing, as the editor does
  *     "body": "2026-10-06-my-post.html"       relative to the spec
@@ -86,6 +88,10 @@ const publishedAt = req('publishedAt');
 if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(publishedAt)) {
   fail('publishedAt must be an ISO datetime with a time zone, e.g. 2026-10-06T09:00:00-04:00 -- a bare date renders a day early in Toronto');
 }
+const status = spec.status ?? 'published';
+if (!['draft', 'published'].includes(status)) fail('status must be draft or published');
+const publicationTime = status === 'published' ? publishedAt : null;
+const pageCss = typeof spec.pageCss === 'string' ? spec.pageCss.trim() : null;
 const featured = (spec.featured ?? '').trim();
 if (featured && !featured.startsWith('/wp-content/uploads/')) fail('featured must be an upload path, /wp-content/uploads/…');
 const author = (spec.author ?? '').trim();
@@ -127,7 +133,7 @@ const doc = {
   featuredPath: featured || null,
   featuredAlt: (spec.featuredAlt ?? '').trim() || title,
   author: author || null,
-  publishedAt,
+  publishedAt: publicationTime,
   modifiedAt: null,
   canonicalUrl: null,
   focusKeyword,
@@ -140,8 +146,26 @@ const doc = {
 };
 
 const report = seo.analyse({ title, seoTitle, description: excerpt, slug, bodyHtml, focusKeyword, extraKeywords });
-const sectionsJson = JSON.stringify(postdoc.buildSections(doc));
-const headJson = JSON.stringify(postdoc.buildHead(doc));
+const sections = postdoc.buildSections(doc);
+const dimensions = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/data/img-dims.json'), 'utf8'))[featured];
+if (Array.isArray(dimensions) && dimensions.length === 2 && dimensions.every((n) => Number.isFinite(n) && n > 0)) {
+  // The authored hero is nested in columns; reserve its box before the image loads.
+  for (const section of sections) for (const block of section.blocks ?? []) {
+    if (block.type !== 'columns') continue;
+    for (const column of block.cols ?? []) for (const child of column.blocks ?? []) {
+      if (child.type === 'image' && child.src === featured) {
+        child.width = dimensions[0];
+        child.height = dimensions[1];
+      }
+    }
+  }
+}
+const sectionsJson = JSON.stringify(sections);
+const head = postdoc.buildHead(doc);
+if (Array.isArray(dimensions) && dimensions.length === 2 && dimensions.every((n) => Number.isFinite(n) && n > 0)) {
+  head.meta.push(['og:image:width', true, String(dimensions[0])], ['og:image:height', true, String(dimensions[1])]);
+}
+const headJson = JSON.stringify(head);
 const robots = postdoc.robotsString(doc);
 
 console.log(`new-post: /${slug}/  ${report.stats.words} words, SEO score ${report.score}`);
@@ -180,10 +204,10 @@ const cols = [
   ['headline', q(headline)],
   ['excerpt', q(excerpt)],
   ['body_html', q(bodyHtml)],
-  ['status', q('published')],
+  ['status', q(status)],
   ['featured_id', featured ? `(SELECT id FROM media WHERE path = ${q(featured)})` : 'NULL'],
   ['author_id', author ? `(SELECT id FROM authors WHERE name = ${q(author)})` : 'NULL'],
-  ['published_at', q(publishedAt)],
+  ['published_at', q(publicationTime)],
   ['canonical_url', 'NULL'],
   ['robots', q(robots)],
   ['head_json', q(headJson)],
@@ -206,6 +230,7 @@ const cols = [
   ['extra_keywords', extraKeywords.length ? q(JSON.stringify(extraKeywords)) : 'NULL'],
   ['faq_json', doc.faq.length ? q(JSON.stringify(doc.faq)) : 'NULL'],
   ['sections_json', q(sectionsJson)],
+  ['page_css', q(pageCss || null)],
 ];
 lines.push(`INSERT INTO posts (${cols.map(([c]) => c).join(', ')}, modified_at)`);
 lines.push(`SELECT ${cols.map(([, v]) => v).join(', ')}, datetime('now')`);
