@@ -38,7 +38,7 @@ const str = (form: FormData, key: string, max = 300): string =>
   String(form.get(key) ?? '').trim().slice(0, max);
 
 export const POST: APIRoute = async ({ request, locals, cookies, url }) => {
-  const guard = await guardWrite(request, locals, cookies, url);
+  const guard = await guardWrite(request, locals, cookies, url, { portal: 'edit' });
   if (!guard.ok) return guard.response;
   const { db, session } = guard.ctx;
   const form = guard.form;
@@ -65,6 +65,13 @@ export const POST: APIRoute = async ({ request, locals, cookies, url }) => {
     return jsonResponse({ error: 'Unknown status.' }, 400);
   }
 
+  /* From the 10XiD portal, an editor drafts and a publisher publishes. A post
+     saved as published goes live with the next deploy, whoever starts it, so
+     saving it that way IS publishing. */
+  if (guard.ctx.portal && (status === 'published' || status === 'scheduled') && !guard.ctx.portal.can.includes('publish')) {
+    return jsonResponse({ error: 'Your role in 10XiD can save drafts but not publish.' }, 403);
+  }
+
   // The slug is the address. Two posts cannot share one.
   const clash = await db
     .prepare('SELECT id FROM posts WHERE slug = ? AND id != ?')
@@ -79,6 +86,16 @@ export const POST: APIRoute = async ({ request, locals, cookies, url }) => {
         .first<Record<string, unknown>>()
     : null;
   if (id && !existing) return jsonResponse({ error: 'That post no longer exists.' }, 404);
+
+  /* Changing a post that is already live, or taking it back to a draft, is
+     publishing as well: the next deploy ships whatever is saved. */
+  if (
+    guard.ctx.portal &&
+    !guard.ctx.portal.can.includes('publish') &&
+    (existing?.status === 'published' || existing?.status === 'scheduled')
+  ) {
+    return jsonResponse({ error: 'This post is live. Your role in 10XiD can edit drafts only.' }, 403);
+  }
 
   const origin = (existing?.origin as string) ?? 'authored';
   const bodyChanged = !!existing && String(existing.body_html ?? '') !== bodyHtml;

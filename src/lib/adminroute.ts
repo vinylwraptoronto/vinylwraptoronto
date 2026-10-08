@@ -15,10 +15,13 @@ import {
   type AdminSession,
   type Db,
 } from './auth';
+import { isPortalRequest, verifyPortalRequest, type PortalActor, type PortalCan } from './portal';
 
 export interface AdminContext {
   db: Db;
   session: AdminSession;
+  /** Set when the request came from the 10XiD portal rather than a session here. */
+  portal?: PortalActor;
 }
 
 /** A page guard: either the context, or the Response the route should return. */
@@ -68,9 +71,36 @@ export async function guardWrite(
   locals: App.Locals,
   cookies: { get(name: string): { value: string } | undefined },
   url: URL,
+  options: {
+    /**
+     * Also accept a signed request from the 10XiD portal, from somebody the
+     * portal allows to do this (lib/portal.ts). Off unless a route opts in, so
+     * the team page, passwords and settings never answer to the portal.
+     */
+    portal?: PortalCan;
+  } = {},
 ): Promise<{ ok: true; ctx: AdminContext; form: FormData } | { ok: false; response: Response }> {
   const db = locals.runtime?.env?.BLOG as unknown as Db | undefined;
   if (!db) return { ok: false, response: jsonResponse({ error: 'No database binding.' }, 503) };
+
+  if (isPortalRequest(request)) {
+    if (!options.portal) return { ok: false, response: jsonResponse({ error: 'Not available to 10XiD.' }, 403) };
+    const env = (locals.runtime?.env ?? {}) as unknown as Record<string, unknown>;
+    const check = await verifyPortalRequest(request, url, env, db);
+    if (!check.ok) return { ok: false, response: jsonResponse({ error: check.error }, check.status) };
+    if (!check.actor.can.includes(options.portal)) {
+      return { ok: false, response: jsonResponse({ error: 'Your role in 10XiD does not allow that.' }, 403) };
+    }
+    let form: FormData;
+    try {
+      form = await new Response(check.body, {
+        headers: { 'content-type': request.headers.get('content-type') ?? '' },
+      }).formData();
+    } catch {
+      return { ok: false, response: jsonResponse({ error: 'Could not read the submission.' }, 400) };
+    }
+    return { ok: true, ctx: { db, session: check.session, portal: check.actor }, form };
+  }
 
   if (!originIsSelf(request, url)) {
     return { ok: false, response: jsonResponse({ error: 'Forbidden.' }, 403) };
@@ -96,4 +126,26 @@ export async function guardWrite(
   }
 
   return { ok: true, ctx: { db, session }, form };
+}
+
+/**
+ * For a GET endpoint the 10XiD portal reads (src/pages/api/10xid/). Only a
+ * signed portal request is accepted; a browser session has the /admin pages.
+ */
+export async function guardPortalRead(
+  request: Request,
+  locals: App.Locals,
+  url: URL,
+  need: PortalCan = 'edit',
+): Promise<{ ok: true; ctx: AdminContext & { portal: PortalActor } } | { ok: false; response: Response }> {
+  const db = locals.runtime?.env?.BLOG as unknown as Db | undefined;
+  if (!db) return { ok: false, response: jsonResponse({ error: 'No database binding.' }, 503) };
+  if (!isPortalRequest(request)) return { ok: false, response: jsonResponse({ error: 'Not found.' }, 404) };
+  const env = (locals.runtime?.env ?? {}) as unknown as Record<string, unknown>;
+  const check = await verifyPortalRequest(request, url, env, db);
+  if (!check.ok) return { ok: false, response: jsonResponse({ error: check.error }, check.status) };
+  if (!check.actor.can.includes(need)) {
+    return { ok: false, response: jsonResponse({ error: 'Your role in 10XiD does not allow that.' }, 403) };
+  }
+  return { ok: true, ctx: { db, session: check.session, portal: check.actor } };
 }
