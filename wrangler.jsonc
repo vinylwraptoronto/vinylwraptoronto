@@ -73,6 +73,14 @@
     }
   ],
 
+  // The 10XiD portal's PUBLIC signing key, so it can draft and publish the
+  // blog (src/lib/portal.ts, docs/10xid-portal.md). Public by design: it can
+  // only check a signature, never make one. To rotate, add the new key beside
+  // this one, move the portal over, then remove the old one.
+  "vars": {
+    "TENXID_PUBLIC_KEYS": "{\"2026-10\":\"0KjEBVwwVaXB7JtpJkfY71urN_hDNMwsU16vcp_bEoc\"}"
+  },
+
   "observability": {
     "enabled": true
   }
