@@ -39,7 +39,7 @@ Two original AI illustrations were uploaded through the existing authenticated a
 
 ## Validation and publication gate
 
-The content source, metadata and generated SQL are committed together. The SQL is idempotent and inserts this article as a draft. The authoring script now supports explicit draft status, post-scoped styles and known featured-image dimensions. Existing specifications retain their published default and canonical policy.
+The content source, metadata and generated SQL are committed together. The SQL is idempotent and inserts this article as a draft. The authoring script now supports explicit draft status, post-scoped styles and known featured-image dimensions. Existing specifications retain their published default and canonical policy. The HTML sanitiser retains labelled region wrappers with `tabindex="0"` or `"-1"` so a horizontally scrolling table can be used with a keyboard; event handlers, scripts, other roles and positive tab orders remain excluded. Article-scoped colours pass the contrast check.
 
 The published snapshots were reconciled using `scripts/pull-posts.mjs`: all 496 already-published D1 posts are preserved, including 17 missing from the previously committed 479-post snapshot. The draft is deliberately excluded. No unrelated post was rewritten in D1.
 

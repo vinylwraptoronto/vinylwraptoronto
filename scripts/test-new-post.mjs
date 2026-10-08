@@ -20,7 +20,7 @@ try {
   db.exec(`ALTER TABLE posts ADD COLUMN faq_json TEXT;
     INSERT INTO authors(slug,name) VALUES('test-author','Test Author');
     INSERT INTO terms(taxonomy,slug,name) VALUES('category','test-category','Test Category');`);
-  fs.writeFileSync(path.join(temporary, 'body.html'), '<h2>Planning a fleet wrap</h2><p>Confirm the artwork and vehicle availability before scheduling the fleet.</p>');
+  fs.writeFileSync(path.join(temporary, 'body.html'), '<h2>Planning a fleet wrap</h2><p>Confirm the artwork and vehicle availability before scheduling the fleet.</p><div role="region" aria-label="Comparison" tabindex="0" onscroll="alert(1)"><table><caption>Comparison</caption><tr><th scope="col">Approach</th></tr></table></div><div role="button" tabindex="9">Other</div><script>alert(1)</script>');
 
   for (const variant of ['draft', 'default', 'invalid']) {
     const spec = {
@@ -49,6 +49,8 @@ try {
     assert.equal(row.status, variant === 'draft' ? 'draft' : 'published');
     assert.equal(row.published_at, variant === 'draft' ? null : spec.publishedAt);
     assert.equal(row.page_css, spec.pageCss);
+    assert.match(row.body_html, /role="region" aria-label="Comparison" tabindex="0"/);
+    assert.doesNotMatch(row.body_html, /onscroll|<script|role="button"|tabindex="9"/);
     assert.equal(row.canonical_url, null);
     const head = JSON.parse(row.head_json);
     const article = head.ld['@graph'].find((item) => item['@type'] === 'BlogPosting');

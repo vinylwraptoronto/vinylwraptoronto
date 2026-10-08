@@ -110,6 +110,7 @@ const ALLOWED_ATTRS: Record<string, Set<string>> = {
   img: new Set(['src', 'alt', 'width', 'height', 'loading', 'decoding']),
   td: new Set(['colspan', 'rowspan']),
   th: new Set(['colspan', 'rowspan', 'scope']),
+  div: new Set(['role', 'aria-label', 'tabindex']),
   '*': new Set(['id', 'class']),
 };
 
@@ -182,6 +183,9 @@ export function sanitizeHtml(input: string): string {
     while ((a = attrRe.exec(m[2] ?? '')) !== null) {
       const attr = a[1]!.toLowerCase();
       let value = a[2] ?? a[3] ?? a[4] ?? '';
+      // A scrollable comparison table needs a labelled keyboard-focusable wrapper.
+      if (attr === 'role' && value !== 'region') continue;
+      if (attr === 'tabindex' && !['0', '-1'].includes(value)) continue;
       // Event handlers and anything unrecognised never make it through.
       const allowed = ALLOWED_ATTRS[name]?.has(attr) || ALLOWED_ATTRS['*']!.has(attr);
       if (!allowed) continue;
