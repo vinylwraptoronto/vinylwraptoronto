@@ -1,6 +1,6 @@
 # Fleet rollout article review
 
-This article uses the existing Astro blog-card and post templates. Its source of truth is D1 post 497, currently **draft**, with no publication timestamp. Review it while signed in at https://astro.vinylwraptoronto.com/admin/posts/497/preview/.
+This article uses the existing Astro blog-card and post templates. Its source of truth is D1 post 497, approved for publication by the user and promoted to **published**. Review it while signed in at https://astro.vinylwraptoronto.com/admin/posts/497/preview/.
 
 - Title: Fleet Wrap Rollout Planning in Toronto: A Practical Guide
 - Slug: `fleet-wrap-rollout-planning-toronto`
@@ -39,13 +39,13 @@ Two original AI illustrations were uploaded through the existing authenticated a
 
 ## Validation and publication gate
 
-The content source, metadata and generated SQL are committed together. The SQL is idempotent and inserts this article as a draft. The authoring script now supports explicit draft status, post-scoped styles and known featured-image dimensions. Existing specifications retain their published default and canonical policy. The HTML sanitiser retains labelled region wrappers with `tabindex="0"` or `"-1"` so a horizontally scrolling table can be used with a keyboard; event handlers, scripts, other roles and positive tab orders remain excluded. Article-scoped colours pass the contrast check.
+The content source, metadata and generated SQL are committed together. The SQL is idempotent and inserts this approved article as published. The existing D1 draft was promoted with a guarded update after approval. The authoring script now supports explicit draft status, post-scoped styles and known featured-image dimensions. Existing specifications retain their published default and canonical policy. The HTML sanitiser retains labelled region wrappers with `tabindex="0"` or `"-1"` so a horizontally scrolling table can be used with a keyboard; event handlers, scripts, other roles and positive tab orders remain excluded. Article-scoped colours pass the contrast check.
 
-The published snapshots were reconciled using `scripts/pull-posts.mjs`: all 496 already-published D1 posts are preserved, including 17 missing from the previously committed 479-post snapshot. The draft is deliberately excluded. No unrelated post was rewritten in D1.
+The published snapshots were reconciled using `scripts/pull-posts.mjs`: all 497 already-published D1 posts are preserved, including 17 missing from the previously committed 479-post snapshot. The approved article is included, bringing the published snapshot to 498 posts. No unrelated post was rewritten in D1.
 
 `npm ci`, `npm run build`, `node scripts/sweep.mjs`, Astro diagnostics, the authoring regression test, and focused browser checks form the validation set. The focused preview builds from the actual D1 draft using existing templates, temporarily overlays local inputs, then restores the faithful published snapshots. Mobile checks cover 320, 390, 768 and 1440 pixels, working card navigation, loaded images, one H1, metadata and the contained table.
 
-**Human approval is required before publication.** After approval, promote this existing D1 draft with the established editor, regenerate its metadata and the committed snapshots, validate the publication diff, then merge through the existing Deploy workflow. Verify the public article and blog listing on `astro.vinylwraptoronto.com` after the workflow succeeds. Do not change DNS or route the primary WordPress domain. Merging this draft-only state alone does not make the article public.
+**Human approval was received: “merge and deploy”.** The existing D1 draft has been promoted, and the published metadata and snapshots regenerated. Validate the publication diff, then merge through the existing Deploy workflow. Verify the public article and blog listing on `astro.vinylwraptoronto.com` after the workflow succeeds. Do not change DNS or route the primary WordPress domain. The deployment must complete before reporting the Astro article as publicly verified.
 
 Run the offline generator regression check with Node 22.5 or newer:
 
