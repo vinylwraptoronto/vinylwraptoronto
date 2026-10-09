@@ -93,6 +93,9 @@ export type Block = (
       /** Elementor sets an icon-list's type and colour on the item text, not on
           the widget, so it needs a key of its own. */
       itemStyle?: string | null;
+      /** The widget's Divider, as a border shorthand ("1px solid #D4D4D4"),
+          drawn between items. */
+      divider?: string | null;
     }
   | {
       /** Elementor's share-buttons widget: one round icon per network. */
@@ -130,6 +133,8 @@ export type Block = (
           per breakpoint and its distance from the copy. Absent on boxes
           harvested before it, which keep the old stacked drawing. */
       imagePos?: 'top' | 'left' | 'right';
+      /** An image-box's Link: where both its picture and its title go. */
+      href?: string | null;
       /** An icon box drawn `elementor-position-inline-start`: the icon beside
           the title and text from 768px up, above them (centred) on a phone,
           where the original switches to its mobile block-start layout. */
@@ -219,6 +224,9 @@ export type Block = (
       total: number;
       /** Page 1 is the bare address; later pages are <base>page/N/. */
       base: string;
+      /** Every page number, no ellipsis: Elementor's archive posts widget with
+          "Shorten" off, as on the category archives' five-page pager. */
+      showAll?: boolean;
     }
   /* Elementor's countdown widget, on the Limited Time Offer panel of 403 post
      pages. It is an *evergreen* countdown: `data-date` is empty and
@@ -273,6 +281,9 @@ export type Block = (
       /** The submit label's text-transform, where the form sets its own: the
           blog sidebar's reads "Request Estimate", not the site-wide capitals. */
       submitCase?: string;
+      /** A form drawn on a dark panel: white option labels and upload note,
+          the lime submit. See QuoteForm's `tone`. */
+      tone?: 'dark';
     }
   | { type: 'map'; src: string }
   /* Elementor's filterable gallery. It ships no <img>; the picture URLs are the

@@ -9,6 +9,9 @@
  * the site emits page 3 of a two-page archive.
  */
 import additions from '../data/post-additions.json';
+import categoryMembers from '../data/category-members.json';
+import blogIndex from '../data/blog-index.json';
+import { pageCount, type BlogEntry } from './bloglist';
 import type { PageData } from '../types';
 
 /**
@@ -27,4 +30,39 @@ export function membersOf(page: PageData): string[] {
      written in /admin is newer than anything the archive was ported with;
      appended, it would land on the last page of the author's archive. */
   return [...new Set([...extra, ...(page.members ?? [])])];
+}
+
+/**
+ * How many pages a category archive's pager offers.
+ *
+ * Elementor's archive posts widget has a "Page Limit" setting, left at its
+ * default of five on the original: /blogs/wrap-projects/ lists pages 1-5 and,
+ * on page 5, shows "Next" disabled -- 60 of its 223 posts are reachable from
+ * the listing, the rest through the subcategory listings and /blog/. The pages
+ * are emitted to the same limit, so the pager never links an address that is
+ * not built.
+ */
+export const ARCHIVE_PAGE_LIMIT = 5;
+
+const indexBySlug = new Map((blogIndex as BlogEntry[]).map((e) => [e.slug, e]));
+
+/**
+ * A category archive's listing, newest first, as cards can draw it -- or null
+ * for any archive that is not a category (the author archives, /blog/).
+ *
+ * The membership comes from D1 through scripts/pull-posts.mjs
+ * (src/data/category-members.json): every post filed under the category or a
+ * category below it. A post the blog index does not carry has no card data and
+ * is left out.
+ */
+export function categoryEntries(page: PageData): BlogEntry[] | null {
+  if (page.kind !== 'archive') return null;
+  const slugs = (categoryMembers as Record<string, string[]>)[`/${page.slug}/`];
+  if (!slugs) return null;
+  return slugs.map((s) => indexBySlug.get(s)).filter((e): e is BlogEntry => !!e);
+}
+
+/** Pages a category archive is built and paginated to. */
+export function categoryPageCount(entries: BlogEntry[]): number {
+  return Math.min(ARCHIVE_PAGE_LIMIT, pageCount(entries.length));
 }

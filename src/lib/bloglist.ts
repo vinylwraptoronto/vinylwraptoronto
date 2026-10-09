@@ -226,7 +226,47 @@ export function authorSections(
 ): Section[] {
   const bySlug = new Map(index.map((e) => [e.slug, e]));
   const entries = members.map((s) => bySlug.get(s)).filter((e): e is BlogEntry => !!e);
-  const total = pageCount(entries.length);
+  return listingSections(template, entries, pageNum, base, pageCount(entries.length), name);
+}
+
+/**
+ * A category archive, /blogs/<category>/, filled the same way.
+ *
+ * These were ported with the first twelve cards frozen into the page and no
+ * pager -- /blogs/wrap-projects/ showed twelve of its 223 posts and page 2 did
+ * not exist. The page keeps its own sections (title, sidebar, "Why Choose
+ * Us?"); only the card grid is refilled from the category's live listing and
+ * the pager put under it. `total` is already capped by the caller -- see
+ * ARCHIVE_PAGE_LIMIT in src/lib/archive.ts.
+ */
+export function categorySections(
+  sections: Section[],
+  entries: BlogEntry[],
+  pageNum: number,
+  base: string,
+  total: number,
+): Section[] {
+  return listingSections(sections, entries, pageNum, base, total, undefined, true);
+}
+
+/**
+ * The archive template's sections with its card grid holding page `pageNum` of
+ * `entries`, twelve at a time, and a numbered Previous/Next bar directly under
+ * it when there is more than one page. `heading`, when given, replaces the
+ * template's H1 (the author archives borrow a category's template).
+ *
+ * Copies rather than mutates, for the reason blogSections() gives: every page
+ * of a listing is built from one source object.
+ */
+function listingSections(
+  template: Section[],
+  entries: BlogEntry[],
+  pageNum: number,
+  base: string,
+  total: number,
+  heading?: string,
+  showAll = false,
+): Section[] {
   const slice = entries.slice((pageNum - 1) * PER_PAGE, pageNum * PER_PAGE);
   let filled = false;
 
@@ -237,15 +277,15 @@ export function authorSections(
         out.push({ ...block, cols: block.cols.map((c) => ({ ...c, blocks: walkBlocks(c.blocks) })) });
         continue;
       }
-      if (block.type === 'heading' && block.level === 1) {
-        out.push({ ...block, text: name });
+      if (heading !== undefined && block.type === 'heading' && block.level === 1) {
+        out.push({ ...block, text: heading });
         continue;
       }
       if (block.type === 'cards' && !filled) {
         filled = true;
         out.push({ ...block, cards: slice.map(toCard) });
         if (total > 1) {
-          out.push({ type: 'pagination', current: pageNum, total, base } as Block);
+          out.push({ type: 'pagination', current: pageNum, total, base, ...(showAll ? { showAll } : {}) } as Block);
         }
         continue;
       }

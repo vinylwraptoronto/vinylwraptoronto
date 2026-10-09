@@ -958,3 +958,22 @@
     });
   })();
 </script>
+
+<script>
+  /* Single-open FAQs (Blocks.astro): the <details> share a `name`, which makes
+     the browser close the others itself. Where it does not support that, close
+     them here. `toggle` does not bubble, so it is caught on the way down. */
+  document.addEventListener(
+    'toggle',
+    (e) => {
+      const d = e.target;
+      if (!(d instanceof HTMLDetailsElement) || !d.open) return;
+      const faq = d.closest('.faq[data-single]');
+      if (!faq) return;
+      faq.querySelectorAll<HTMLDetailsElement>(':scope > details[open]').forEach((o) => {
+        if (o !== d) o.open = false;
+      });
+    },
+    true,
+  );
+</script>
