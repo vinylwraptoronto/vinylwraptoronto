@@ -325,9 +325,10 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
   }
   /* White on the brand lime measures 1.9:1, so the label is navy (6.9:1) and
      keeps the lime paint; on the teal hover navy alone is 4.0:1, so it
-     darkens (5.2:1). */
+     darkens (5.2:1). !important because global.css forces every
+     .qbtn:hover to #15334c !important, which left the hover at 4.0:1. */
   .qform--dark .qbtn { background-color: var(--e-global-color-a8178e9); color: #15334c; }
-  .qform--dark .qbtn:hover { background-color: var(--e-global-color-8c22d81); color: #0b1f2f; }
+  .qform--dark .qbtn:hover { background-color: var(--e-global-color-8c22d81); color: #0b1f2f !important; }
 
   .sr-only {
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
