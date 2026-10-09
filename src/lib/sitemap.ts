@@ -72,10 +72,30 @@ export const imageCount = () => [...imagesByPath.values()].reduce((n, v) => n + 
 
 export const CHILDREN = Object.keys(groups) as Array<keyof typeof groups>;
 
+/**
+ * A timestamp as the sitemap protocol wants it.
+ *
+ * D1 writes `modified_at` with datetime('now'), which is "YYYY-MM-DD HH:MM:SS"
+ * in UTC and not a W3C datetime; the original's values and the dates set in
+ * the editor are already ISO and pass through untouched.
+ */
+const w3c = (value: string | null | undefined): string | null => {
+  if (!value) return null;
+  return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value) ? value.replace(' ', 'T') + '+00:00' : value;
+};
+
+type PostRow = {
+  slug: string;
+  robots?: string | null;
+  published?: string | null;
+  modified?: string | null;
+};
+
 /** Post slug -> D1 `modified`, for the posts that carry one. */
 const editedInAdmin = new Map<string, string>();
-for (const p of posts as Array<{ slug: string; modified?: string | null }>) {
-  if (p.modified) editedInAdmin.set('/' + p.slug + '/', p.modified);
+for (const p of posts as PostRow[]) {
+  const m = w3c(p.modified);
+  if (m) editedInAdmin.set('/' + p.slug + '/', m);
 }
 
 function lastmodFor(e: Entry): string | null {
@@ -88,11 +108,42 @@ function lastmodFor(e: Entry): string | null {
   return Date.parse(edited) > Date.parse(e.lastmod) ? edited : e.lastmod;
 }
 
+/*
+ * Posts written in /admin.
+ *
+ * sitemap-groups.json is the original's own list, read off its sitemaps on
+ * the day of the port, and nothing appends to it. So a post written since was
+ * live at its address and on /blog/, and in no sitemap at all -- the one place
+ * a crawler is told to look. These are added here, at build time, from
+ * posts.json: that is the one record every new post reaches on its way to a
+ * build, so a post is listed the moment it is pulled, and the groups file
+ * stays what it says it is. Yoast files posts under post-sitemap and the
+ * before/after entries under their own child, and leaves noindex posts out of
+ * both, which is reproduced.
+ */
+const listed = new Set<string>(
+  (Object.values(groups) as Entry[][]).flat().map((e) => e.path),
+);
+const unlisted = new Map<string, Entry[]>();
+for (const p of posts as PostRow[]) {
+  const path = '/' + p.slug + '/';
+  if (listed.has(path)) continue;
+  if (/noindex/i.test(p.robots ?? '')) continue;
+  const child = p.slug.startsWith('wraps-before-after/') ? 'wraps-before-after-sitemap' : 'post-sitemap1';
+  if (!unlisted.has(child)) unlisted.set(child, []);
+  unlisted.get(child)!.push({ path, lastmod: w3c(p.modified) ?? w3c(p.published) });
+}
+// Newest first, which is the order every listing on this site uses.
+for (const list of unlisted.values()) {
+  list.sort((a, b) => Date.parse(b.lastmod ?? '') - Date.parse(a.lastmod ?? ''));
+}
+
 export function entriesFor(child: string): Entry[] {
-  return ((groups as Record<string, Entry[]>)[child] ?? []).map((e) => ({
+  const carried = ((groups as Record<string, Entry[]>)[child] ?? []).map((e) => ({
     path: e.path,
     lastmod: lastmodFor(e),
   }));
+  return [...carried, ...(unlisted.get(child) ?? [])];
 }
 
 /** Newest lastmod in a child, which is what the index reports for it. */

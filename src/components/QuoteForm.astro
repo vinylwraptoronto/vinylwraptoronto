@@ -47,16 +47,25 @@ export interface Props {
       its own width on the two landing pages. The port left-aligned it
       everywhere, which matched neither. */
   submitAlign?: 'stretch' | 'center' | 'start';
+  /** The submit label's text-transform. Site-wide it is capitals; the blog
+      sidebar's form writes "Request Estimate" as is. */
+  submitCase?: string;
+  /** Fields that take half the form's width, side by side, from 768px up --
+      Elementor's `elementor-col-50` field groups. The landing pages' form puts
+      name and phone on one line; on a phone every field is full width again,
+      as Elementor stacks field columns there. */
+  half?: readonly string[];
 }
 const { variant = 'inline', id = 'quote', products, fields, placeholders, submit,
         photoNote = true, radius, submitSize, rows,
-        submitAlign = 'stretch' } = Astro.props;
+        submitAlign = 'stretch', half = [], submitCase } = Astro.props;
 /* Custom properties rather than direct declarations: an inline
    `border-radius` would outrank the stylesheet's own focus and error rules. */
 const formVars = [
   radius ? `--q-radius:${radius}` : '',
   submitSize ? `--q-submit-size:${submitSize}` : '',
   `--q-submit-align:${submitAlign}`,
+  submitCase ? `--q-submit-case:${submitCase}` : '',
 ].filter(Boolean).join(';') || undefined;
 const vehicleTypes = ['Van', 'Truck', 'Car', 'SUV', 'Trailer', 'Boat',
   'Motorcycle', 'Jet Ski', 'Windows', 'Walls', 'Object', 'Other'];
@@ -67,6 +76,14 @@ const SITE_ORDER = ['name', 'email', 'phone', 'wrap_type', 'vehicle', 'photos', 
 /* A given list also sets the order: the landing pages ask name, phone, email —
    not the site-wide name, email, phone. */
 const order: readonly string[] = fields ?? SITE_ORDER;
+/* Consecutive half-width fields share a line; every other field is a group of
+   one, whose wrapper is display:contents and so changes nothing. */
+const groups: string[][] = [];
+for (const f of order) {
+  const last = groups[groups.length - 1];
+  if (half.includes(f) && last && half.includes(last[last.length - 1])) last.push(f);
+  else groups.push([f]);
+}
 const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
 ---
 
@@ -75,7 +92,9 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
     submissions did go through, but every one paid an extra round trip and
     re-uploaded its photographs to follow the redirect. */}
 <form class={`qform qform--${variant}`} data-form={id} method="post" action="/api/quote/" enctype="multipart/form-data" novalidate style={formVars}>
-  {order.map((f) => (
+  {groups.map((g) => (
+    <div class={g.length > 1 ? 'pair' : 'solo'}>
+    {g.map((f) => (
     <>
       {f === 'name' && (
         <div class="row">
@@ -157,6 +176,8 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
         </div>
       )}
     </>
+    ))}
+    </div>
   ))}
 
   {/* Honeypot. Off screen, out of the tab order and hidden from assistive
@@ -178,6 +199,12 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
 <style>
   .qform { display: flex; flex-direction: column; gap: 10px; font-family: 'Poppins', sans-serif; }
   .row { display: flex; flex-direction: column; }
+  .solo { display: contents; }
+  .pair { display: flex; gap: 10px; }
+  .pair > .row { flex: 1 1 0; min-width: 0; }
+  @media (max-width: 767px) {
+    .pair { flex-direction: column; }
+  }
 
   /* Measured on the original, on every form on every page checked: a text
      field is 40px tall with `8px 16px` of padding and a textarea takes
@@ -252,7 +279,7 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
     /* .elementor-button{line-height:1}, uppercase */
     font-size: var(--q-submit-size, 18px);
     line-height: 1;
-    text-transform: uppercase;
+    text-transform: var(--q-submit-case, uppercase);
     /* The original's submit is 40px tall with no vertical padding at all --
        the height comes from the button box, not from the text. Reproduced as
        a flex box with a min-height so it stays 40px whatever size the label
@@ -266,10 +293,16 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
     border-radius: var(--q-radius, 3px);
     cursor: pointer;
   }
-  .qbtn:hover { background-color: var(--e-global-color-a8178e9); color: #111; }
+  .qbtn:hover { background-color: var(--e-global-color-a8178e9); }
   .qbtn[disabled] { opacity: 0.6; cursor: default; }
 
   .qstatus { margin: 0; font-size: 14px; min-height: 1.2em; }
+  /* Until there is something to say, the status line takes no room: the
+     original's form ends at its button, and an empty 17px line plus the gap
+     above it made every form here ~30px taller. Out of the flow rather than
+     display:none, so the live region is already in the accessibility tree
+     when a message arrives. */
+  .qstatus:empty { position: absolute; }
   .qstatus[data-state='ok'] { color: var(--brand-green); }
   .qstatus[data-state='err'] { color: #d33; }
 

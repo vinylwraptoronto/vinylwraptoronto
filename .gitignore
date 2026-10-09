@@ -56,3 +56,5 @@ scripts/.iconbox-align-*
 # already-tracked files, and new evidence worth keeping can still be
 # `git add -f`'d deliberately.
 _evidence/*/
+# python bytecode from scripts/
+__pycache__/

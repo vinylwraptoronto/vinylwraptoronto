@@ -23,5 +23,8 @@ import type { PageData } from '../types';
  */
 export function membersOf(page: PageData): string[] {
   const extra = (additions as { members?: Record<string, string[]> }).members?.[page.slug] ?? [];
-  return [...new Set([...(page.members ?? []), ...extra])];
+  /* Additions first. Every listing on this site runs newest first, and a post
+     written in /admin is newer than anything the archive was ported with;
+     appended, it would land on the last page of the author's archive. */
+  return [...new Set([...extra, ...(page.members ?? [])])];
 }

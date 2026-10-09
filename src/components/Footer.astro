@@ -109,7 +109,7 @@ import {
         <h2>Get a Quote</h2>
         <!-- The live footer template (18407) carries the quote form itself,
              which is why a form appears on every page of the site. -->
-        <QuoteForm id="footer-quote" />
+        <QuoteForm id="footer-quote" rows={3} />
 
         {/* The "Get an Estimate / Send a Message" pair that used to sit here is
             not in the live footer at all — it is the sticky bar, which
@@ -179,8 +179,9 @@ import {
   /* #70aa3a51 > .elementor-element-populated{padding:15px} */
   .col { padding: 15px; color: #ffffff; }
   .col--areas { width: 25%; }
-  /* #6ef5e811 overrides the 15px with 20px */
-  .col--process { width: 41.332%; padding: 20px; }
+  /* #6ef5e811 is 15px on desktop like its neighbour; its 20px is the tablet
+     value (measured: Workflow sits 15px into the column at 1440, 20 at 900). */
+  .col--process { width: 41.332%; }
   /* The white card carries #53f81f9's own 25px, so the column adds none. */
   .col--quote { width: 33.668%; padding: 0; }
 
@@ -208,7 +209,10 @@ import {
     font-weight: 500;
     text-transform: uppercase;
     color: var(--e-global-color-accent); /* #FFFFFF */
-    margin: 0 0 12px;
+    /* No margin of its own: a heading widget's is 0, and the space under it is
+       the column's widget gap -- 10px in the first column, 20 elsewhere. The
+       12px here collapsed with that gap and pushed every list 2px down. */
+    margin: 0;
     /* measured 20px on the live render, not the 1.3 ratio */
     line-height: 20px;
   }
@@ -223,6 +227,7 @@ import {
     font-weight: 400;
     line-height: 1.5;
   }
+  .col > .list { margin-bottom: 0; }
   /* Elementor splits an icon-list's spacing in half either side of each item,
      so the gap between two rows is the full value. The two lists are set
      differently and were both rendering at the contact list's half-value: the
@@ -251,19 +256,35 @@ import {
     width: 14px;
     font-size: 14px;
     text-align: center;
-    color: #ff66c4;
+    color: var(--e-global-color-f32bb28); /* #FF0099 */
   }
   .list--pink > li > i,
   .list--pink > li > a > i { color: var(--e-global-color-8c22d81); /* #14A278 */ }
-  /* And the Contact Us links themselves are pink, and fill the column rather
-     than shrinking to their text: the original's are 320 wide and display
-     flex, the port's were white and 102 / 228 / 298. */
+  /* The three process lists draw a larger glyph than the contact list, in a
+     wider box: 15px in a 19px slot at desktop, then 8px of the icon's own
+     padding and 5 of the text's before the words start -- 32px in all, where
+     the port's 22 let each line run 10px longer and wrap differently. The
+     glyph grows to 16 at tablet and 18 on a phone (#32151746, #5e0da4c1,
+     #1a2d9479). */
+  .col--process .list > li { gap: 13px; }
+  .col--process .list > li > i { font-size: 15px; width: 19px; }
+  @media (max-width: 1024px) {
+    .col--process .list > li > i { font-size: 16px; width: 20px; }
+  }
+  @media (max-width: 767px) {
+    .col--process .list > li > i { font-size: 18px; width: 23px; }
+  }
+  /* The Contact Us links fill the column rather than shrinking to their text:
+     the original's are 320 wide and display flex, the port's were 102 / 228 /
+     298. Their TEXT is white. The original's anchor computes pink, but every
+     word in it sits in an .elementor-icon-list-text span set to #FFFFFF, so the
+     pink is never painted -- measured on the live footer, all four rows. */
   .list--pink > li > a {
     flex: 1;
     display: flex;
     align-items: baseline;
     gap: 8px;
-    color: #ff66c4;
+    color: #ffffff;
   }
 
   /* Added service-area links use the same icon-list typography as the rest
@@ -295,7 +316,7 @@ import {
     display: flex;
     align-items: flex-start;
     gap: 15px;
-    margin: 14px 0 0;
+    margin: 0;
   }
   .brands-icon {
     font-size: 30px;
@@ -305,8 +326,11 @@ import {
   }
   /* 500 on the original, not 400 — checked against the live footer on every
      page it appears, which is all 678. */
+  /* The title is the icon-box's <p>, which keeps the theme's 0.9em under it:
+     that 14.4px is what makes the box 38px tall rather than the icon's 30. */
   .brands-text {
     flex: 1;
+    margin-bottom: 14.4px;
     font-size: 16px;
     font-weight: 500;
     color: #ffffff;
@@ -338,6 +362,28 @@ import {
     padding: 25px;
   }
   .card h2 { color: var(--e-global-color-d077a13); }
+  /* The card is a column: 20px between its heading, form and icons. */
+  .card > :global(* + *) { margin-block-start: 20px; }
+
+  /* #4f7a1c7 -- the footer's own form widget. The field box is the site-wide
+     one; these are this instance's: 12px between fields, 14px type, a
+     three-row message box, and the checkbox pair on a 24px row. Measured on
+     the original field by field: name 0, email 52, phone 104, checkboxes 156,
+     select 192, upload note 244, file 304, message 343. */
+  /* Prefixed with .site-footer: QuoteForm's own rules carry the same
+     specificity as `.card .qform …` and load after this file, so without the
+     extra class the footer values silently lost. */
+  .site-footer .card :global(.qform) { gap: 12px; }
+  .site-footer .card :global(.qform input[type='text']),
+  .site-footer .card :global(.qform input[type='email']),
+  .site-footer .card :global(.qform input[type='tel']),
+  .site-footer .card :global(.qform select),
+  .site-footer .card :global(.qform textarea) { font-size: 14px; }
+  .site-footer .card :global(.qform select) { height: 40px; padding-block: 5px; }
+  .site-footer .card :global(.qform textarea) { line-height: 19.6px; }
+  .site-footer .card :global(.qform .checks) { min-height: 24px; padding: 0; align-items: center; }
+  .site-footer .card :global(.qform .uploadnote) { margin-bottom: 12px; }
+  .site-footer .card :global(.qform input[type='file']) { height: 27px; }
 
   /* #4b3afc2 — the footer form's own submit button: green, white, and the
      full width of the card, because its field group is elementor-col-100.
@@ -354,17 +400,19 @@ import {
     width: 100%;
     text-align: center;
     background-color: var(--e-global-color-a8178e9); /* #99CC33 */
-    color: #111111;
+    color: #ffffff;
   }
+  /* Measured on the live footer: green with a white label at rest, pink with
+     a white label on hover. */
   .card :global(.qbtn:hover) {
-    background-color: #b8006e;
+    background-color: var(--e-global-color-f32bb28); /* #FF0099 */
     color: #ffffff;
   }
 
   /* #3a97c8c6 — the heading is left-aligned at 20px on desktop, and centred at
      24px once the card goes full width below 1025px. */
   @media (max-width: 1024px) {
-    .card h2 { text-align: center; font-size: 24px; }
+    .card h2 { text-align: center; font-size: 24px; line-height: 24px; }
   }
 
   /* #491c6798 — 20px navy glyphs on white, 12px apart, centred; hovering
@@ -375,7 +423,6 @@ import {
     flex-wrap: wrap;
     justify-content: center;
     gap: 10px 12px;
-    margin: 15px 0 0;
     padding: 0;
   }
   /* Elementor's social-icon widget draws a rounded SQUARE, not a circle: 32px
@@ -468,7 +515,8 @@ import {
     list-style: none;
     margin: 0;
     padding: 0;
-    font-size: 14px;
+    /* 16px on the original at every width; the port's 14 was not its value. */
+    font-size: 16px;
     line-height: 20px;
   }
   /* Elementor's align-justify nav menu grows every item to fill the row and
@@ -493,8 +541,21 @@ import {
   @media (max-width: 1024px) {
     .cols { padding: 10px; }
     .col--areas,
-    .col--process { width: 50%; }
+    .col--process { width: 50%; padding: 20px; }
     .col--quote { width: 100%; }
+    /* #53f81f9 at tablet: 35px above and below the card, 20 inside it. */
+    .col--quote { margin: 35px 0; }
+    .card { padding: 20px; }
+    /* The three process headings take 1.3em leading and centre from 1024 down
+       (#71701d39, #5c96fcd4, #4a07070d); the phone rule puts them back left. */
+    .col--process h4 { line-height: 1.3em; text-align: center; }
+    /* #491c6798 at tablet: 10px either way between the icons. */
+    .social { gap: 10px; }
+    /* The legal menu and the credit split 40/60 at tablet, and the menu's
+       links lose their side padding (#37ceb7c). */
+    .legal { width: 40%; }
+    .by { width: 60%; }
+    .legal a { padding: 13px 0; }
     /* The process lists open up as the columns narrow. */
     .col--process .list > li:not(:last-child) { padding-block-end: calc(8px / 2); }
     .col--process .list > li:not(:first-child) { margin-block-start: calc(8px / 2); }
@@ -506,12 +567,22 @@ import {
     .col--areas { padding: 20px 10px; margin: 35px 0; }
     .col--areas > .areas-more + h2 { margin-block-start: 40px; }
     .col--quote { margin: 30px 0; }
+    .col--process h4 { text-align: start; }
     .col--process .list > li:not(:last-child) { padding-block-end: calc(13px / 2); }
     .col--process .list > li:not(:first-child) { margin-block-start: calc(13px / 2); }
+    /* Elementor's icon-box stacks on a phone: the icon over the title, 15px
+       apart, both at the left. */
+    .brands { flex-direction: column; gap: 15px; }
+    /* #491c6798 on a phone: 21px glyphs in 0.4em of padding, 5px apart
+       across and 10 down, with 15px above and 14 below the row. */
+    .social { gap: 10px 5px; margin-block-start: 35px; padding-bottom: 14px; }
+    .social a { width: auto; height: auto; font-size: 21px; padding: 0.4em; }
+    .social a :global(i) { width: 1em; height: 1em; display: block; text-align: center; }
+    /* The legal menu stays one justified row; the two credit lines centre
+       under it, the copyright at 15px and the credit at 12, both on 25px. */
     .legal,
-    .by { width: 100%; text-align: start; }
-    .legal { justify-content: flex-start; gap: 20px; flex-wrap: wrap; }
-    .legal li { flex: 0 0 auto; }
-    .legal a { padding: 0; }
+    .by { width: 100%; }
+    .by { text-align: center; line-height: 25px; }
+    .by .copyright { font-size: 15px; }
   }
 </style>

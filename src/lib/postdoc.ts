@@ -19,6 +19,7 @@
  * contents and quote form in the sidebar.
  */
 import type { Block, HeadData, Section } from '../types';
+import { verificationFor } from '../../seo.config.mjs';
 
 /** Read off a live post: --e-global-color-d077a13 is the navy, in tokens.css. */
 const NAVY = 'var( --e-global-color-d077a13 )';
@@ -109,6 +110,7 @@ const ALLOWED_ATTRS: Record<string, Set<string>> = {
   img: new Set(['src', 'alt', 'width', 'height', 'loading', 'decoding']),
   td: new Set(['colspan', 'rowspan']),
   th: new Set(['colspan', 'rowspan', 'scope']),
+  div: new Set(['role', 'aria-label', 'tabindex']),
   '*': new Set(['id', 'class']),
 };
 
@@ -181,6 +183,9 @@ export function sanitizeHtml(input: string): string {
     while ((a = attrRe.exec(m[2] ?? '')) !== null) {
       const attr = a[1]!.toLowerCase();
       let value = a[2] ?? a[3] ?? a[4] ?? '';
+      // A scrollable comparison table needs a labelled keyboard-focusable wrapper.
+      if (attr === 'role' && value !== 'region') continue;
+      if (attr === 'tabindex' && !['0', '-1'].includes(value)) continue;
       // Event handlers and anything unrecognised never make it through.
       const allowed = ALLOWED_ATTRS[name]?.has(attr) || ALLOWED_ATTRS['*']!.has(attr);
       if (!allowed) continue;
@@ -348,6 +353,13 @@ export function buildHead(post: PostDoc): HeadData {
     ['og:url', true, url],
     ['og:site_name', true, 'Vinyl Wrap Toronto'],
   ];
+
+  /* The site-ownership tokens. The original serves three of them (Pinterest,
+     Ahrefs, Statvoo) on every page, and imported posts carry them inside the
+     head they were ported with -- so a post written here was the one kind of
+     page on the site without them. seo.config.mjs is the record of which tags
+     go where; the two homepage-only ones are excluded by the path. */
+  for (const v of verificationFor(new URL(url).pathname)) meta.push([v.name, false, v.content]);
 
   if (post.publishedAt) meta.push(['article:published_time', true, isoOf(post.publishedAt)]);
   if (post.modifiedAt) meta.push(['article:modified_time', true, isoOf(post.modifiedAt)]);

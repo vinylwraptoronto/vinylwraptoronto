@@ -16,9 +16,16 @@ import pageSeo from '../data/page-seo.json';
 import blogIndex from '../data/blog-index.json';
 import { applyPageSeo, type PageSeoOverride } from '../lib/pageseo';
 import { withGalleries } from '../lib/gallery';
-import { blogPageMeta, blogSections, pageCount, PER_PAGE, type BlogEntry } from '../lib/bloglist';
+import { authorSections, blogPageMeta, blogSections, pageCount, PER_PAGE, type BlogEntry } from '../lib/bloglist';
+/* Any one category listing: they are all Elementor archive template 18965,
+   which the author archives share. See authorSections. */
+import archiveTemplate from '../data/pages/blogs__ai-to-print.json';
 import { membersOf } from '../lib/archive';
+import { applyPostTemplate, applyPostLayout } from '../lib/post-template';
 import { img } from '../lib/img';
+/* Author name -> archive slug, shared with scripts/pull-posts.mjs so a post
+   written in /admin is filed under the same archive its byline links to. */
+import authorArchives from '../data/author-archives.json';
 
 export const prerender = true;
 
@@ -34,7 +41,9 @@ export async function getStaticPaths() {
     eager: true,
     import: 'default',
   });
-  const notPosts = Object.values(files).filter((p) => p.kind !== 'post');
+  /* Web stories are served whole, as the AMP documents they are, by
+     src/pages/web-stories/[story].astro -- not drawn here as an article. */
+  const notPosts = Object.values(files).filter((p) => p.kind !== 'post' && p.kind !== 'story');
   const fromDb = posts as unknown as PageData[];
 
   if (!fromDb.length) {
@@ -107,7 +116,7 @@ const blogTotal = pageCount((blogIndex as BlogEntry[]).length);
 const archivePages = pageCount(membersOf(raw).length);
 const isPagedArchive = raw.kind === 'archive' && archivePages > 1;
 
-const page = isBlogIndex
+const basePage = isBlogIndex
   ? {
       ...blogPageMeta(withSeo, pageNum, blogTotal),
       sections: blogSections(withSeo, pageNum, blogIndex as BlogEntry[]),
@@ -116,14 +125,29 @@ const page = isBlogIndex
     ? blogPageMeta(withSeo, pageNum, archivePages, `/${raw.slug}/`)
     : withSeo;
 
+/* The author archives are drawn through the category template, with this
+   author's posts in its grid -- see authorSections. */
+const isAuthorArchive = raw.kind === 'archive' && raw.slug.startsWith('author/');
+const authorName = (raw.sections?.[0]?.blocks?.[0] as { text?: string } | undefined)?.text ?? '';
+const page = isAuthorArchive
+  ? {
+      ...basePage,
+      sections: authorSections(
+        (archiveTemplate as unknown as PageData).sections,
+        authorName,
+        membersOf(raw),
+        pageNum,
+        `/${raw.slug}/`,
+        blogIndex as BlogEntry[],
+      ),
+    }
+  : basePage;
+
 /* Every post byline on the original links to that author's archive. Only these
    two archives exist and are linked there; a third author value, "Paolo Leone",
    appears on three pages but /author/paolo* redirects, so it stays plain text. */
-const AUTHOR_ARCHIVES: Record<string, string> = {
-  'Harjit Singh': '/author/harjitbrandingcentres-com/',
-  masoud: '/author/masoud/',
-};
-const authorHref = page.author ? AUTHOR_ARCHIVES[page.author] : undefined;
+const archiveSlug = page.author ? (authorArchives as Record<string, string>)[page.author] : undefined;
+const authorHref = archiveSlug ? `/${archiveSlug}/` : undefined;
 
 /* An archive lists the members extracted from the original site, plus any post
    written in /admin that belongs there. Nearly every archive on this site
@@ -236,35 +260,26 @@ const heroPreload = heroCoversAllBreakpoints
   progress={needsProgress}
   montserrat={needsMontserrat}
 >
-  {page.kind === 'post' && dateLabel && (
-    <div class="postmeta">
-      <div class="container">
-        <time datetime={page.published!}>{dateLabel}</time>
-        {page.author && (
-          <span class="by">
-            by {authorHref ? <a href={authorHref}>{page.author}</a> : page.author}
-          </span>
-        )}
-      </div>
-    </div>
-  )}
 
   {/* A post's body copy is #444, a page's is #333. Both are ported through the
       same rich-text renderer, so the distinction has to come from the page. */}
   {page.kind === 'post' ? (
-    <div class="postbody"><Blocks sections={page.sections} /></div>
+    <div class="postbody"><Blocks sections={applyPostTemplate(applyPostLayout(page.slug, page.sections), { author: page.author, authorHref, date: dateLabel })} /></div>
   ) : (
     <Blocks sections={page.sections} />
   )}
 
-  {page.kind === 'archive' && archiveMembers.length > 0 && (
+  {/* Not on the blog index: its grid is already drawn from the live blog index,
+      a post written in /admin included, so a listing under it printed that
+      post a second time and added 469px the original does not have. */}
+  {page.kind === 'archive' && !isAuthorArchive && raw.slug !== 'blog' && archiveMembers.length > 0 && (
     <ArchiveList members={archiveMembers} />
   )}
 
   {/* The pager goes after the listing, and only when there is more than one
       page of it. It reuses the blog's control, which is the same Elementor
       pagination the original renders on these archives. */}
-  {isPagedArchive && archiveMembers.length > 0 && (
+  {isPagedArchive && !isAuthorArchive && archiveMembers.length > 0 && (
     <div class="container">
       <Blocks
         sections={[
@@ -282,20 +297,6 @@ const heroPreload = heroCoversAllBreakpoints
 </Base>
 
 <style>
-  /* Measured on the live post against .elementor-post-info: 16px/24px in #444,
-     and the byline link is the same ink, unlined — not the site's green link
-     colour. The 13px/#767676 here was invented. */
-  .postmeta {
-    border-bottom: 1px solid #ececec;
-    padding: 14px 0;
-    font-family: 'Poppins', sans-serif;
-    font-size: 16px;
-    line-height: 1.5;
-    color: #444444;
-  }
-  .postmeta .by { margin-left: 12px; }
-  .postmeta a { color: inherit; text-decoration: none; }
-  .postmeta a:hover { text-decoration: underline; }
 
   /* theme-post-content sets its own ink, a shade darker than the body's. */
   .postbody :global(.rt) { color: #444444; }
