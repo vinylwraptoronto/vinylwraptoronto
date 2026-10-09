@@ -9,8 +9,8 @@
 import QuoteForm from './QuoteForm.astro';
 import { site, social, legalLinks } from '../data/site';
 import {
-  workflow, fasterProcess, warranty, credit, hours, addressFull,
-  contactIcons, warrantyIcon, vinylBrands,
+  workflow, fasterProcess, credit, hours, addressFull,
+  contactIcons, vinylBrands,
 } from '../data/footer';
 ---
 
@@ -82,8 +82,6 @@ import {
       <ul class="list">
         {fasterProcess.map((w) => <li><i class={w.icon} aria-hidden="true"></i>{w.text}</li>)}
       </ul>
-      <h2>Warranty</h2>
-      <ul class="list"><li><i class={warrantyIcon} aria-hidden="true"></i>{warranty}</li></ul>
 
       <!-- #e8fc75d — icon-box, 30px pink ellipsis, both parts linking to /vinyl/.
            The icon half used to carry no text at all (icon glyph only, via
@@ -140,12 +138,12 @@ import {
         and render as h5, not paragraphs. They carry no visual weight of their
         own — the styling below restates what the two element rules set — but
         the tags are part of the page's outline, so they match the original
-        hierarchically: one level below the six h2 column groups above, as
+        hierarchically: one level below the five h2 column groups above, as
         the credit bar is the footer's own subordinate closing row rather
         than another top-level group. Rendered as h3, not the original's
         literal h5, because the outline only has one level between the
         column h2s and here (nothing on the page uses h3/h4 in between) —
-        h5 would reopen the same 2->4-style skip the six h3-to-h2 promotion
+        h5 would reopen the same 2->4-style skip the h3-to-h2 promotion
         just closed, on every page whose own content never reaches h3. */}
     <div class="by">
       <h3 class="copyright">{credit.copyright}</h3>
@@ -194,9 +192,9 @@ import {
   .col--areas > .areas-more + h2 { margin-block-start: 30px; }
 
   /* #51a60bc8 / #e935660 / #71701d39 .elementor-heading-title
-     Promoted from h3 to h2: these six are the footer's own top-level
+     Promoted from h3 to h2: these five are the footer's own top-level
      semantic groups (Areas We Serve / Contact Us / Workflow / Things that
-     make the process Faster / Warranty / Get a Quote) with no heading
+     make the process Faster / Get a Quote) with no heading
      above them inside <footer> and no nested subheading inside any of
      them, so h2 is the correct outline level -- h3 here (with no h2
      anywhere in the footer) was the cause of a 1->3 heading-level skip on
@@ -246,7 +244,7 @@ import {
   /* These were CSS dots standing in for the icons the original actually
      draws — a phone, an envelope, a map pin, a clock, and so on. */
   /* The two lists' icon colours were the wrong way round. Measured on the
-     original's own footer: the Workflow / Faster / Warranty icons are PINK
+     original's own footer: the Workflow / Faster icons are PINK
      and the Contact Us icons are GREEN, and the port had green on the first
      three and pink on Contact. Both at 14px, which is also what the original
      sets -- the port's were 16. */
