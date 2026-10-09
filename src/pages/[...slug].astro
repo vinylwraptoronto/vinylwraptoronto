@@ -16,11 +16,11 @@ import pageSeo from '../data/page-seo.json';
 import blogIndex from '../data/blog-index.json';
 import { applyPageSeo, type PageSeoOverride } from '../lib/pageseo';
 import { withGalleries } from '../lib/gallery';
-import { authorSections, blogPageMeta, blogSections, pageCount, PER_PAGE, type BlogEntry } from '../lib/bloglist';
+import { authorSections, blogPageMeta, blogSections, categorySections, pageCount, PER_PAGE, type BlogEntry } from '../lib/bloglist';
 /* Any one category listing: they are all Elementor archive template 18965,
    which the author archives share. See authorSections. */
 import archiveTemplate from '../data/pages/blogs__ai-to-print.json';
-import { membersOf } from '../lib/archive';
+import { categoryEntries, categoryPageCount, membersOf } from '../lib/archive';
 import { applyPostTemplate, applyPostLayout } from '../lib/post-template';
 import { img } from '../lib/img';
 /* Author name -> archive slug, shared with scripts/pull-posts.mjs so a post
@@ -78,7 +78,10 @@ export async function getStaticPaths() {
      them twelve at a time like the blog, so they do too. */
   for (const page of notPosts) {
     if (page.kind !== 'archive') continue;
-    const total = pageCount(membersOf(page).length);
+    /* A category archive pages through its live listing, to the original's
+       five-page limit; the author archives through their members. */
+    const listing = categoryEntries(page);
+    const total = listing ? categoryPageCount(listing) : pageCount(membersOf(page).length);
     for (let n = 2; n <= total; n++) {
       paths.push({ params: { slug: `${page.slug}/page/${n}` }, props: { page, pageNum: n } });
     }
@@ -113,7 +116,10 @@ const blogTotal = pageCount((blogIndex as BlogEntry[]).length);
    do: their own title and canonical, noindex so the site does not offer Google
    thirty near-identical listings, and no structured data, because the ported
    graph describes page 1 by @id and every node in it references that id. */
-const archivePages = pageCount(membersOf(raw).length);
+const categoryListing = categoryEntries(raw);
+const archivePages = categoryListing
+  ? categoryPageCount(categoryListing)
+  : pageCount(membersOf(raw).length);
 const isPagedArchive = raw.kind === 'archive' && archivePages > 1;
 
 const basePage = isBlogIndex
@@ -129,7 +135,14 @@ const basePage = isBlogIndex
    author's posts in its grid -- see authorSections. */
 const isAuthorArchive = raw.kind === 'archive' && raw.slug.startsWith('author/');
 const authorName = (raw.sections?.[0]?.blocks?.[0] as { text?: string } | undefined)?.text ?? '';
-const page = isAuthorArchive
+/* A category archive: its own template, with the card grid refilled from the
+   category's listing and the pager under it -- see categorySections. */
+const page = categoryListing
+  ? {
+      ...basePage,
+      sections: categorySections(basePage.sections, categoryListing, pageNum, `/${raw.slug}/`, archivePages),
+    }
+  : isAuthorArchive
   ? {
       ...basePage,
       sections: authorSections(
