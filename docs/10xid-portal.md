@@ -16,6 +16,7 @@ operating summary.
 | `GET /api/10xid/deploy/` | edit | the latest deploy run, to show a publish finishing |
 | `POST /api/admin/posts/save/` | edit | save a draft (publish to save a live or published post) |
 | `POST /api/admin/deploy/` | publish | start the deploy workflow |
+| `POST /api/admin/media/upload/` | edit | upload an image for a post (same type and size checks as `/admin`) |
 
 Every other `/api/admin/*` route refuses a portal request outright: the portal
 can never manage this site's team, passwords or settings.
