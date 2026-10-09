@@ -199,7 +199,7 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
       first-party cookie at submit time -- see Analytics.astro. */}
   <input type="hidden" name="attribution" value="" />
 
-  <button type="submit" class="qbtn">{submit ?? 'Send Message'}</button>
+  <button type="submit" class="qbtn" data-sb-avoid={tone === 'dark' ? '' : undefined}>{submit ?? 'Send Message'}</button>
   <p class="qstatus" role="status" aria-live="polite"></p>
 </form>
 
