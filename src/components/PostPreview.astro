@@ -1,0 +1,117 @@
+---
+/**
+ * A saved post drawn the way the build will draw it, for the two previews:
+ * /admin/posts/[id]/preview (signed-in admin) and
+ * /api/10xid/posts/[id]/preview (the 10XiD portal's "Preview on site").
+ *
+ * The same Base layout, the same Blocks renderer and the same post template
+ * (applyPostLayout, then applyPostTemplate with the byline) that
+ * src/pages/[...slug].astro uses for a published post, from the same columns
+ * scripts/pull-posts.mjs reads — so the preview cannot drift into a template
+ * of its own. What it leaves out is what only a public address needs: the
+ * canonical and the ported head tags. It is always noindex.
+ */
+import Base from '../layouts/Base.astro';
+import Blocks from './Blocks.astro';
+import { buildSections, type PostDoc } from '../lib/postdoc';
+import { applyPostTemplate, applyPostLayout } from '../lib/post-template';
+import authorArchives from '../data/author-archives.json';
+import type { Block, Section } from '../types';
+
+interface Props {
+  /** The posts row, with `featured_path` and `author` joined in. */
+  post: Record<string, unknown>;
+  /** Where "back" goes; left out where there is nowhere to go back to (the portal frames this page). */
+  back?: string;
+}
+
+const { post, back } = Astro.props;
+
+function asDoc(row: Record<string, unknown>): PostDoc {
+  return {
+    slug: String(row.slug ?? ''),
+    title: String(row.title ?? ''),
+    headline: (row.headline as string) ?? null,
+    seoTitle: (row.seo_title as string) ?? null,
+    excerpt: (row.excerpt as string) ?? null,
+    bodyHtml: String(row.body_html ?? ''),
+    featuredPath: (row.featured_path as string) ?? null,
+    author: (row.author as string) ?? null,
+    publishedAt: (row.published_at as string) ?? null,
+  };
+}
+
+/* An imported post keeps the Elementor tree it arrived with; one written here
+   is rebuilt from its fields. Falling back to buildSections covers a post
+   saved before sections_json existed. */
+let sections: Section[];
+try {
+  sections = post.sections_json
+    ? (JSON.parse(String(post.sections_json)) as Section[])
+    : buildSections(asDoc(post));
+} catch {
+  sections = buildSections(asDoc(post));
+}
+
+const slug = String(post.slug ?? '');
+const author = (post.author as string | null) ?? null;
+const archiveSlug = author ? (authorArchives as Record<string, string>)[author] : undefined;
+const published = (post.published_at as string | null) ?? null;
+const date = published
+  ? new Date(published).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
+  : null;
+const drawn = applyPostTemplate(applyPostLayout(slug, sections), {
+  author,
+  authorHref: archiveSlug ? `/${archiveSlug}/` : undefined,
+  date,
+});
+
+/* The same three reads [...slug].astro makes off the page's own blocks. */
+const any = (blocks: Block[], test: (b: Block) => boolean): boolean =>
+  blocks.some((b) => (b.type === 'columns' ? b.cols.some((c) => any(c.blocks, test)) : test(b)));
+const offer = drawn.some((s) => any(s.blocks, (b) => b.type === 'button' && b.popup === 'popup-limited-offer'));
+const progress = drawn.some((s) => any(s.blocks, (b) => b.type === 'countdown'));
+const css = (post.page_css as string | null) ?? undefined;
+const montserrat = JSON.stringify(drawn).includes('Montserrat') || (css ?? '').includes('Montserrat');
+
+const title = String(post.seo_title || post.title || 'Preview');
+const status = String(post.status ?? 'draft');
+---
+
+<Base
+  title={title}
+  description={String(post.excerpt ?? '')}
+  robots="noindex, nofollow"
+  pageCss={css}
+  offer={offer}
+  progress={progress}
+  montserrat={montserrat}
+>
+  <div class="preview-bar">
+    <strong>Preview</strong>
+    <span>{status} · {status === 'published' ? 'as last saved' : 'not on the public site until it is published'}</span>
+    {back && <a href={back}>← Back to the editor</a>}
+  </div>
+  <div class="postbody"><Blocks sections={drawn} /></div>
+</Base>
+
+<style>
+  /* Sticky, so it stays visible while reading a long post, and clearly not
+     part of the page being previewed. */
+  .preview-bar {
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 8px 16px;
+    background: #15334c;
+    color: #fff;
+    font: 13px/1.4 system-ui, sans-serif;
+  }
+  .preview-bar span { opacity: 0.8; }
+  .preview-bar a { color: #fff; margin-left: auto; }
+  .postbody :global(.rt) { color: #444444; }
+</style>

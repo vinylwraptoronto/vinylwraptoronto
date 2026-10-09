@@ -30,7 +30,18 @@ jobs:
 
       - run: npm ci
 
+      # The build reads the blog from D1 (scripts/pull-posts.mjs), so it needs
+      # the Cloudflare token as much as the deploy does. Without it, pull-posts
+      # keeps the committed snapshot, and a post published from /admin or the
+      # 10XiD portal since that snapshot never goes live: every deploy between
+      # PR #27 and this fix shipped stale posts that way. REQUIRE_LIVE_POSTS
+      # makes that a failed build instead of a quiet one.
       - run: npm run build
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          REQUIRE_LIVE_POSTS: "1"
 
       # Gate the deploy on the sweep: dead internal links, image references
       # that resolve to nothing, empty pages, or any reference to
@@ -73,9 +84,12 @@ jobs:
       # A missing secret is the empty string here, not an error, which is how
       # the first two runs of this workflow reached the deploy step and failed
       # there with the build already green.
+      # SKIP_BUILD: the build above is the one the sweep checked, so that is the
+      # one to ship; deploy.sh would otherwise build a second time.
       - name: Deploy
         run: npm run deploy
         env:
+          SKIP_BUILD: "1"
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

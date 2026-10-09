@@ -55,10 +55,17 @@ export interface Props {
       name and phone on one line; on a phone every field is full width again,
       as Elementor stacks field columns there. */
   half?: readonly string[];
+  /** A form sitting on a dark panel -- /contact/'s navy "Get In Touch" column.
+      The original's widget there sets its own colours: white option labels
+      and upload note (`.elementor-field-subgroup label`,
+      `.elementor-field-type-html` both #FFFFFF), a white file field, and a
+      lime submit that turns green on hover. Without them the labels and the
+      note were black on navy and the navy button disappeared into the panel. */
+  tone?: 'dark';
 }
 const { variant = 'inline', id = 'quote', products, fields, placeholders, submit,
         photoNote = true, radius, submitSize, rows,
-        submitAlign = 'stretch', half = [], submitCase } = Astro.props;
+        submitAlign = 'stretch', half = [], submitCase, tone } = Astro.props;
 /* Custom properties rather than direct declarations: an inline
    `border-radius` would outrank the stylesheet's own focus and error rules. */
 const formVars = [
@@ -91,7 +98,7 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
     /api/quote answers 308 to /api/quote/. A 308 keeps the method and body, so
     submissions did go through, but every one paid an extra round trip and
     re-uploaded its photographs to follow the redirect. */}
-<form class={`qform qform--${variant}`} data-form={id} method="post" action="/api/quote/" enctype="multipart/form-data" novalidate style={formVars}>
+<form class:list={['qform', `qform--${variant}`, tone && `qform--${tone}`]} data-form={id} method="post" action="/api/quote/" enctype="multipart/form-data" novalidate style={formVars}>
   {groups.map((g) => (
     <div class={g.length > 1 ? 'pair' : 'solo'}>
     {g.map((f) => (
@@ -308,6 +315,17 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
 
   .qform--popup .qbtn { align-self: stretch; text-align: center; }
 
+  /* On a dark panel -- see `tone`. */
+  .qform--dark .checks label,
+  .qform--dark .uploadnote { color: #ffffff; }
+  .qform--dark input[type='file'] {
+    color: #757575;
+    background-color: #ffffff;
+    border-radius: var(--q-radius, 3px);
+  }
+  .qform--dark .qbtn { background-color: var(--e-global-color-a8178e9); color: #ffffff; }
+  .qform--dark .qbtn:hover { background-color: var(--e-global-color-8c22d81); }
+
   .sr-only {
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
     overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
@@ -317,12 +335,27 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
 </style>
 
 <script>
+  import { isPhone } from '../lib/phone';
+
   // Progressive enhancement: the form is a real POST target, so it still works
   // without JS. With JS it submits in place and reports status inline, which is
   // how the Elementor form behaves.
   document.querySelectorAll<HTMLFormElement>('form.qform').forEach((form) => {
     const status = form.querySelector<HTMLParagraphElement>('.qstatus')!;
     const button = form.querySelector<HTMLButtonElement>('.qbtn')!;
+    /* `type="tel"` accepts anything, so the phone field carries its own check
+       (src/lib/phone.ts), the same one /api/quote applies. Kept current as the
+       visitor types, so a corrected number clears its flag before the next
+       press. */
+    const phone = form.querySelector<HTMLInputElement>('input[name="phone"]');
+    const checkPhone = () => {
+      if (!phone) return;
+      phone.setCustomValidity(!phone.value.trim() || isPhone(phone.value) ? '' : 'Please enter a valid phone number.');
+    };
+    phone?.addEventListener('input', () => {
+      checkPhone();
+      if (phone!.getAttribute('aria-invalid') === 'true') phone!.setAttribute('aria-invalid', String(!phone!.checkValidity()));
+    });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -334,6 +367,7 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
 
       // Native validation, but reported without the browser's default bubbles
       // so required fields flag consistently across browsers.
+      checkPhone();
       let firstBad: HTMLElement | null = null;
       form.querySelectorAll<HTMLInputElement>('[required]').forEach((el) => {
         const bad = !el.checkValidity();
@@ -342,7 +376,9 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
       });
       if (firstBad) {
         status.dataset.state = 'err';
-        status.textContent = 'Please complete the required fields.';
+        status.textContent = (firstBad as HTMLElement | null) === phone && phone?.value.trim()
+          ? 'Please enter a valid phone number.'
+          : 'Please complete the required fields.';
         (firstBad as HTMLElement).focus();
         return;
       }

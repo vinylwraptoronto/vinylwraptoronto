@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { clientIp, originIsSelf, type Db } from '../../lib/auth';
+import { isPhone } from '../../lib/phone';
 
 /**
  * Quote form endpoint.
@@ -137,6 +138,9 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return json({ error: 'That email address does not look right.' }, 400);
+  }
+  if (!isPhone(phone)) {
+    return json({ error: 'That phone number does not look right.' }, 400);
   }
 
   const ip = clientIp(request);

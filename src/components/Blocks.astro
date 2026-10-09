@@ -154,6 +154,16 @@ const colMarginVars = (c: any): string[] => {
   return v;
 };
 
+/** A row margin's left and right, summed for calc(), or null where both are 0. */
+const rowSideMargins = (m?: string | null): string | null => {
+  const v = (m ?? '').trim().split(/\s+/).filter(Boolean);
+  if (!v.length) return null;
+  const right = v[1] ?? v[0];
+  const left = v[3] ?? right;
+  const side = [left, right].filter((x) => parseFloat(x) !== 0);
+  return side.length ? side.join(' + ') : null;
+};
+
 /** The image widget's Width control as custom properties, read by `.fig--iw img`. */
 const imgWidthVars = (w?: { d?: string; t?: string; m?: string }): string | undefined => {
   if (!w) return undefined;
@@ -1109,7 +1119,7 @@ const secMargins = (() => {
           const sp = listSpaceOf(b.eid);
           const spVars = sp ? [sp.d != null ? `--lsp:${sp.d}px` : '', sp.t != null ? `--lsp-t:${sp.t}px` : '', sp.m != null ? `--lsp-m:${sp.m}px` : ''] : [];
           return (
-            <ul class="ilist" data-eid={b.eid} data-hide={b.hide?.join(" ")} data-sp={sp ? '' : undefined} style={[b.box, b.style, ...spVars].filter(Boolean).join(";") || undefined}>
+            <ul class="ilist" data-eid={b.eid} data-hide={b.hide?.join(" ")} data-sp={sp ? '' : undefined} data-div={b.divider ? '' : undefined} style={[b.box, b.style, ...spVars, b.divider ? `--ldiv:${b.divider}` : ''].filter(Boolean).join(";") || undefined}>
               {b.items.map((i) => (
                 <li class:list={{ 'has-ic': !!i.icon }} style={b.itemStyle ?? undefined}>
                   {i.icon && <i class:list={['li-ic', i.icon]} aria-hidden="true"></i>}
@@ -1136,9 +1146,15 @@ const secMargins = (() => {
              it: the picture in its own box beside or above a text column. */
           const fi = !!(b.image && b.imagePos);
           const side = fi && b.imagePos !== 'top';
+          /* An image-box's Link setting: Elementor puts the same <a> round the
+             picture and round the title's text, so both open it. */
+          const boxHref = fi && b.href ? img(b.href) : undefined;
+          /* An icon-box's Link does the same for its icon and its title. */
+          const titleHref = boxHref ?? (!fi && b.icon && b.iconHref ? img(b.iconHref) : undefined);
+          const titleInner = b.titleHtml ? <Fragment set:html={b.titleHtml} /> : b.title;
           const title = b.title && (
             <T style={b.titleStyle ?? undefined}>
-              {b.titleHtml ? <Fragment set:html={b.titleHtml} /> : b.title}
+              {titleHref ? <a class="feature-link" href={titleHref}>{titleInner}</a> : titleInner}
             </T>
           );
           const text = b.text && <p style={b.textStyle ?? undefined}>{b.text}</p>;
@@ -1160,7 +1176,13 @@ const secMargins = (() => {
                 ].filter(Boolean).join(";") || undefined}
               >
                 <figure class="feature-img">
-                  <img src={img(b.image!)} alt={b.alt ?? ''} loading="lazy" decoding="async" />
+                  {boxHref ? (
+                    <a class="feature-link" href={boxHref}>
+                      <img src={img(b.image!)} alt={b.alt ?? ''} loading="lazy" decoding="async" />
+                    </a>
+                  ) : (
+                    <img src={img(b.image!)} alt={b.alt ?? ''} loading="lazy" decoding="async" />
+                  )}
                 </figure>
                 {side ? <div class="feature-body">{title}{text}</div> : <>{title}{text}</>}
               </div>
@@ -1210,7 +1232,7 @@ const secMargins = (() => {
               ) : (
                 <span class="page-numbers prev">« Previous</span>
               )}
-              {pagerSteps(b.current, b.total).map((n) =>
+              {(b.showAll ? Array.from({ length: b.total }, (_, i) => i + 1) : pagerSteps(b.current, b.total)).map((n) =>
                 n === '…' ? (
                   <span class="page-numbers dots">…</span>
                 ) : n === b.current ? (
@@ -1533,10 +1555,16 @@ const secMargins = (() => {
         }
 
         if (b.type === 'faq') {
+          /* One answer open at a time, as on the original: all three FAQs are
+             Elementor accordions (max_items_expended "one"), and the port's
+             independent <details> left every answer opened still open. A shared
+             `name` makes them an exclusive group natively, keyboard included;
+             Interactions.astro closes the others where `name` is unsupported. */
+          const group = `faq-${(b.items[0]?.q ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40)}`;
           return (
-            <div class="faq">
+            <div class="faq" data-single>
               {b.items.map((qa, i) => (
-                <details open={b.openIndex === i ? true : undefined}>
+                <details name={group} open={b.openIndex === i ? true : undefined}>
                   <summary>{qa.q}</summary>
                   <div class="rt" set:html={imgHtml(qa.a)} />
                 </details>
@@ -1725,6 +1753,7 @@ const secMargins = (() => {
               submitAlign={b.submitAlign}
               half={b.half}
               submitCase={b.submitCase}
+              tone={b.tone}
             />
           );
           /* The form widget's own box (a panel colour, padding) and its
@@ -1771,6 +1800,9 @@ const secMargins = (() => {
               id={b.anchor ?? undefined}
               style={[
                 b.margin ? `margin:${b.margin}` : '',
+                /* `.cols` is width:100%, so a side margin would push the row
+                   out past its column by that much; take it off the width. */
+                rowSideMargins(b.margin) ? `width:calc(100% - (${rowSideMargins(b.margin)}))` : '',
                 rowMarginVars(b) ?? '',
                 b.minHeight ? `--row-mh:${b.minHeight}` : '',
                 b.minHeightT ? `--row-mh-t:${b.minHeightT}` : '',
@@ -2972,6 +3004,16 @@ const secMargins = (() => {
   @media (max-width: 767px) { .ilist[data-sp] { --lsp-at: var(--lsp-m, var(--lsp-t, var(--lsp, 0px))); } }
   .ilist[data-sp] > li:not(:last-child) { padding-block-end: calc(var(--lsp-at) / 2); }
   .ilist[data-sp] > li:not(:first-child) { margin-block-start: calc(var(--lsp-at) / 2); }
+  /* The widget's Divider: a rule along the foot of every item but the last,
+     inside its half of the Space Between -- /contact/'s phone, email and
+     address rows. */
+  .ilist[data-div] > li:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    border-block-start: var(--ldiv);
+  }
   /* A hand-made dot stood in for the icon the original actually draws. Now
      that the real one is rendered, the dot is only for items without one. */
   .ilist > li.has-ic::before { content: none; }
@@ -3101,6 +3143,10 @@ const secMargins = (() => {
     line-height: 1.2;
     font-weight: 600;
   }
+  /* A box title at any other level keeps the same 1.2 leading -- the theme's,
+     not the heading widget's 1. /racing-stripes/ titles its image-boxes h2,
+     and they rendered 28px on 28 where the original gives 33.6. */
+  .feature :is(h1, h2, h5, h6) { line-height: 1.2; }
   .feature p {
     margin: 0;
     /* the body's own type — 14px/21px here was invented */
@@ -3128,6 +3174,10 @@ const secMargins = (() => {
     line-height: 0;
   }
   .feature--fi .feature-img img { width: 100%; max-width: 100%; height: auto; margin: 0; border-radius: 0; }
+  /* A linked image-box: the title keeps its own colour and the picture its
+     box, as Elementor draws them -- the link changes neither. */
+  .feature-link { color: inherit; text-decoration: none; }
+  .feature-img > .feature-link { display: block; line-height: 0; }
   @media (max-width: 1024px) {
     .feature--fi .feature-img { width: var(--fi-w-t, var(--fi-w, 100%)); }
   }

@@ -38,6 +38,14 @@ function existing() {
 /** Keep the last good snapshot and explain why, or fail if there is none. */
 function bail(why) {
   const have = existing();
+  /* A deploy must ship the posts as they are now. The snapshot is for working
+     without D1 locally; in the Deploy workflow, falling back to it means a
+     post published since never goes live while the deploy reports success. */
+  if (process.env.REQUIRE_LIVE_POSTS === '1') {
+    console.error(`\n✘ pull-posts: ${why}`);
+    console.error('   REQUIRE_LIVE_POSTS is set, so the build stops rather than ship the committed snapshot.\n');
+    process.exit(1);
+  }
   if (have?.length) {
     console.warn(`\n⚠  pull-posts: ${why}`);
     console.warn(`   Keeping the committed snapshot of ${have.length} posts.\n`);
@@ -315,6 +323,28 @@ try {
 
   fs.writeFileSync(path.join(ROOT, 'src/data/categories.json'), JSON.stringify(out));
   console.log(`pull-posts: ${out.length} categories with posts`);
+
+  /* Who each category archive lists, in the order it lists them.
+
+     The /blogs/<category>/ pages were ported with their first twelve cards
+     frozen and no pager, so /blogs/wrap-projects/ showed twelve of its 223
+     posts and /blogs/wrap-projects/page/2/ did not exist. The original's
+     listing is WordPress's category archive: every published post filed under
+     the category or any category below it, newest first -- checked against the
+     first 72 cards of /blogs/wrap-projects/ on the live site, all in this
+     order. The same reach() as the counts above, so a listing and its count in
+     the dropdown can never disagree. */
+  const posts = await d1(`SELECT id, slug, published_at FROM posts WHERE status = 'published'`);
+  const byId = new Map(posts.map((p) => [p.id, p]));
+  const newestFirst = (a, b) =>
+    String(b.published_at ?? '').localeCompare(String(a.published_at ?? '')) || b.id - a.id;
+  const members = {};
+  for (const t of terms) {
+    const list = [...reach(t.id)].map((id) => byId.get(id)).filter(Boolean).sort(newestFirst);
+    if (list.length) members[t.href] = list.map((p) => p.slug);
+  }
+  fs.writeFileSync(path.join(ROOT, 'src/data/category-members.json'), JSON.stringify(members));
+  console.log(`pull-posts: listings for ${Object.keys(members).length} category archives`);
 } catch (e) {
   console.warn(`⚠  pull-posts: could not rebuild the category list (${e.message || e}); keeping the committed copy.`);
 }

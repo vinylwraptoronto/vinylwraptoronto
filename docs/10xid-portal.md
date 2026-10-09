@@ -13,9 +13,11 @@ operating summary.
 | `GET /api/10xid/status/` | edit | the Website card: post counts, whether publishing is wired |
 | `GET /api/10xid/posts/` | edit | the posts list (`q`, `status`, `p`) |
 | `GET /api/10xid/posts/<id or new>/` | edit | one post, as the exact form the save route reads |
+| `GET /api/10xid/posts/<id>/preview/` | edit | the post as an HTML page, drawn as the build will draw it, at any status |
 | `GET /api/10xid/deploy/` | edit | the latest deploy run, to show a publish finishing |
 | `POST /api/admin/posts/save/` | edit | save a draft (publish to save a live or published post) |
 | `POST /api/admin/deploy/` | publish | start the deploy workflow |
+| `POST /api/admin/media/upload/` | edit | upload an image for a post (same type and size checks as `/admin`) |
 
 Every other `/api/admin/*` route refuses a portal request outright: the portal
 can never manage this site's team, passwords or settings.

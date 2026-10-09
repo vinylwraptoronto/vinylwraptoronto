@@ -43,8 +43,16 @@ unset CF_API_TOKEN || true
 # npm script is the one that pulls it first. Calling astro directly would ship
 # whatever snapshot happens to be committed and quietly skip any post edited
 # since. pull-posts falls back to that snapshot on its own if D1 is unreachable.
-echo "==> Building"
-npm run build
+# The Deploy workflow has already built dist and run the sweep over it, and
+# says so with SKIP_BUILD=1: building again here doubled the time a publish
+# took and shipped a second build the sweep had never checked. Run by hand,
+# without it, this still builds.
+if [ "${SKIP_BUILD:-}" = "1" ] && [ -d dist ]; then
+  echo "==> Building: skipped, dist was built and checked earlier in this run"
+else
+  echo "==> Building"
+  npm run build
+fi
 
 echo "==> Uploading version"
 # Keep wrangler's own output on screen and capture it: the id it prints is the
