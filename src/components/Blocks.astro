@@ -25,6 +25,7 @@ import QuoteForm from './QuoteForm.astro';
 import { img, imgHtml } from '../lib/img';
 import { mailtoHrefs } from '../lib/postdoc';
 import { describe, LINKED } from '../lib/image-desc';
+import { withoutWarranty, withoutWarrantyBlocks } from '../lib/warranty';
 
 export interface Props {
   /** Normal use: whole sections, each with its own padding and container. */
@@ -67,7 +68,11 @@ export interface Props {
  *  Elementor/WordPress export. */
 type TocEntry = { eid?: string; text: string; level: number; renderLevel: number; id: string };
 
-const { sections, blocks, toc, primaryHeadingEid: suppliedPrimaryHeadingEid, categoriesLevel: suppliedCategoriesLevel, cardsLevel: suppliedCardsLevel } = Astro.props;
+const { sections: rawSections, blocks: rawBlocks, toc, primaryHeadingEid: suppliedPrimaryHeadingEid, categoriesLevel: suppliedCategoriesLevel, cardsLevel: suppliedCardsLevel } = Astro.props;
+/* The 3-year warranty panels are dropped before anything else reads the page:
+   see src/lib/warranty.ts. */
+const sections = rawSections && withoutWarranty(rawSections);
+const blocks = rawBlocks && withoutWarrantyBlocks(rawBlocks);
 
 /** True when this call is rendering the inside of a column rather than whole
  *  sections. A before/after pair in a column is drawn at half the content

@@ -44,12 +44,8 @@ export const contactIcons = {
   hours: 'far fa-clock',
 };
 
-export const warrantyIcon = 'fas fa-check';
 /* NOT RENDERED: see areasServed above. */
 export const areaIcon = 'fas fa-chevron-circle-right';
-
-export const warranty =
-  'We include a 3-year warranty against peeling, bubbling or fading.';
 
 /* Three lines, not one string: the original sets "Working Hours:" in bold on
    its own line and breaks between the weekday and Saturday hours. Run together
