@@ -38,6 +38,14 @@ function existing() {
 /** Keep the last good snapshot and explain why, or fail if there is none. */
 function bail(why) {
   const have = existing();
+  /* A deploy must ship the posts as they are now. The snapshot is for working
+     without D1 locally; in the Deploy workflow, falling back to it means a
+     post published since never goes live while the deploy reports success. */
+  if (process.env.REQUIRE_LIVE_POSTS === '1') {
+    console.error(`\n✘ pull-posts: ${why}`);
+    console.error('   REQUIRE_LIVE_POSTS is set, so the build stops rather than ship the committed snapshot.\n');
+    process.exit(1);
+  }
   if (have?.length) {
     console.warn(`\n⚠  pull-posts: ${why}`);
     console.warn(`   Keeping the committed snapshot of ${have.length} posts.\n`);
