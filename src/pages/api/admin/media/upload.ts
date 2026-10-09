@@ -14,6 +14,10 @@ import { b2ConfigFrom, mediaKey, storedPath, uploadObject } from '../../../../li
  * Until the B2 credentials are set as Worker secrets this returns 503 with a
  * message saying so, rather than failing with a signature error that reads
  * like a bug.
+ *
+ * Signed requests from the 10XiD portal are accepted from people it allows
+ * to edit posts; the checks below (size, type, the bytes themselves) are the
+ * same for them.
  */
 export const prerender = false;
 
@@ -43,7 +47,9 @@ const TYPES: Record<string, { ext: string; sniff: (b: Uint8Array) => boolean }> 
 };
 
 export const POST: APIRoute = async ({ request, locals, cookies, url }) => {
-  const guard = await guardWrite(request, locals, cookies, url);
+  // The 10XiD portal's blog editor uploads here too, signed as the person
+  // editing (lib/portal.ts): anyone it allows to edit posts may add an image.
+  const guard = await guardWrite(request, locals, cookies, url, { portal: 'edit' });
   if (!guard.ok) return guard.response;
   const { db } = guard.ctx;
 
