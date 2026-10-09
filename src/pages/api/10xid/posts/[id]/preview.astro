@@ -1,0 +1,40 @@
+---
+/**
+ * One post drawn as the site will draw it, at any status, for the 10XiD
+ * portal's "Preview on site". Signed portal requests only.
+ *
+ * The page itself is src/components/PostPreview.astro, the same one
+ * /admin/posts/[id]/preview renders. The portal fetches it, signed as the
+ * person, and serves it to them in a sandboxed frame with this site as its
+ * base, so the stylesheets, fonts and images load from here.
+ */
+import PostPreview from '../../../../../components/PostPreview.astro';
+import { guardPortalRead } from '../../../../../lib/adminroute';
+
+export const prerender = false;
+
+const guard = await guardPortalRead(Astro.request, Astro.locals, Astro.url);
+if (!guard.ok) return guard.response;
+const { db } = guard.ctx;
+
+const id = Number(Astro.params.id ?? '');
+if (!Number.isInteger(id) || id <= 0) return new Response('Bad post id.', { status: 400 });
+
+const post = await db
+  .prepare(
+    `SELECT p.*, m.path AS featured_path, a.name AS author
+       FROM posts p
+       LEFT JOIN media m ON m.id = p.featured_id
+       LEFT JOIN authors a ON a.id = p.author_id
+      WHERE p.id = ?`,
+  )
+  .bind(id)
+  .first<Record<string, unknown>>();
+if (!post) return new Response('That post no longer exists.', { status: 404 });
+
+Astro.response.headers.set('cache-control', 'no-store, private');
+Astro.response.headers.set('x-robots-tag', 'noindex, nofollow, noarchive');
+Astro.response.headers.set('x-content-type-options', 'nosniff');
+---
+
+<PostPreview post={post} />

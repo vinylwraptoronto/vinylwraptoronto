@@ -66,3 +66,8 @@ https://www.vinylwraptoronto.com/*
   Cache-Control: public, max-age=31536000, immutable
 /fonts/files/*
   Cache-Control: public, max-age=31536000, immutable
+# The 10XiD portal shows a draft in a sandboxed frame, whose origin is opaque:
+# a browser fetches fonts in CORS mode, so without this the preview would fall
+# back to system fonts. They are public files either way.
+/fonts/files/*
+  Access-Control-Allow-Origin: *
