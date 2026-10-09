@@ -198,6 +198,9 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
   {/* The click that brought this visitor here (gclid, utm_*), read from the
       first-party cookie at submit time -- see Analytics.astro. */}
   <input type="hidden" name="attribution" value="" />
+  {/* Which form this is, so /api/quote/ can file it in 10XiD as a quote or,
+      for the Limited Time Offer, an estimate -- see src/lib/tenxid-intake.ts. */}
+  <input type="hidden" name="form" value={id} />
 
   <button type="submit" class="qbtn">{submit ?? 'Send Message'}</button>
   <p class="qstatus" role="status" aria-live="polite"></p>
