@@ -239,11 +239,24 @@ const heroBlocks = (page.sections[0]?.blocks ?? []).filter(
 const heroCoversAllBreakpoints =
   heroBlocks.length === 3 &&
   new Set(heroBlocks.flatMap((b) => b.hide as string[])).size === 3;
+/* CSS background-image hero: a different, non-art-directed pattern than the
+   three-image case above. 38 of the 1684 pages (car-wraps and contact among
+   them) draw their first section's background from `bgImage` -- rendered by
+   Blocks.astro as an inline `background-image:url(...)` on the section --
+   rather than from an `<img>`. Chrome's preload scanner cannot discover a CSS
+   background-image at all (it only parses markup, not stylesheets/inline
+   styles), so this image was never found until the section's own style was
+   parsed and painted, measured as the dominant mobile LCP delay on
+   /car-wraps/ (lcp-discovery-insight showed no discovery mechanism). No
+   media query is needed here, unlike the three-image case: it is one image
+   for every breakpoint, so a single unconditional preload is correct. */
 const heroPreload = heroCoversAllBreakpoints
   ? heroBlocks
       .map((b) => ({ media: HERO_MEDIA[[...b.hide!].sort().join(',')], href: img(b.src) }))
       .filter((h): h is { media: string; href: string } => !!h.media)
-  : [];
+  : page.sections[0]?.bgImage
+    ? [{ media: undefined, href: img(page.sections[0].bgImage) }]
+    : [];
 ---
 
 <Base

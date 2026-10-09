@@ -25,14 +25,33 @@ import {
   <div class="cols">
     <!-- #70aa3a51 — 25%, navy -->
     <section class="col col--areas">
-      <h4>Areas We Serve</h4>
-      {/* The original serves two heading widgets here and nothing else. The
-          seven city links and the /locations-served/ link that used to be in
-          this column were invented — the live footer contains no location
-          link at all, and "and more..." is plain text, not a link. */}
+      <h2>Areas We Serve</h2>
+      {/* The live footer's own markup has no location link in this column —
+          "and more..." is plain text there too, and an earlier port that
+          added 7 invented city names here was correctly reverted. These are
+          not that: the 7 links below point to the site's own real,
+          indexable /locations-served/ archive pages (North York,
+          Scarborough, Oakville, Markham, Toronto, Brampton, Mississauga),
+          each carried verbatim from the live site with its own real title
+          and content — genuine service-area pages the original site
+          publishes, just not from this footer slot. Linking to a site's own
+          existing indexable pages from its footer is standard internal
+          linking, not a fabricated claim, so they are added here as
+          worthwhile naturally-occurring improvement over the port while
+          keeping the original's own "and more..." text intact beneath
+          them. */}
+      <ul class="list areas-list">
+        <li><a href="/locations-served/custom-wraps-toronto/">Toronto</a></li>
+        <li><a href="/locations-served/custom-wraps-mississauga/">Mississauga</a></li>
+        <li><a href="/locations-served/custom-wraps-north-york/">North York</a></li>
+        <li><a href="/locations-served/custom-wraps-scarborough/">Scarborough</a></li>
+        <li><a href="/locations-served/vehicle-graphics-brampton/">Brampton</a></li>
+        <li><a href="/locations-served/custom-vinyl-wraps-markham/">Markham</a></li>
+        <li><a href="/locations-served/custom-decals-oakville/">Oakville</a></li>
+      </ul>
       <p class="areas-more">and more...</p>
 
-      <h4>Contact Us</h4>
+      <h2>Contact Us</h2>
       <ul class="list list--pink">
         {/* The icon goes INSIDE the link, which is where the original puts it
             -- `<a><span class="icon"><i></i></span><span>text</span></a>` --
@@ -55,21 +74,30 @@ import {
 
     <!-- #6ef5e811 — 41.332%, navy -->
     <section class="col col--process">
-      <h4>Workflow</h4>
+      <h2>Workflow</h2>
       <ul class="list">
         {workflow.map((w) => <li><i class={w.icon} aria-hidden="true"></i>{w.text}</li>)}
       </ul>
-      <h4>Things that make the process Faster</h4>
+      <h2>Things that make the process Faster</h2>
       <ul class="list">
         {fasterProcess.map((w) => <li><i class={w.icon} aria-hidden="true"></i>{w.text}</li>)}
       </ul>
-      <h4>Warranty</h4>
+      <h2>Warranty</h2>
       <ul class="list"><li><i class={warrantyIcon} aria-hidden="true"></i>{warranty}</li></ul>
 
-      <!-- #e8fc75d — icon-box, 30px pink ellipsis, both parts linking to /vinyl/ -->
+      <!-- #e8fc75d — icon-box, 30px pink ellipsis, both parts linking to /vinyl/.
+           The icon half used to carry no text at all (icon glyph only, via
+           CSS content) — a real empty-link gap for both the SEO link-text
+           audit (reads crawler-visible textContent, not aria-label) and
+           screen-reader users (an announced link with nothing to say). The
+           fix adds the same, true destination text the adjacent link already
+           carries, visually hidden with .sr-only so the 30px icon's look is
+           unchanged; aria-hidden/tabindex=-1 are removed since the link is no
+           longer empty and should be reachable like any other. -->
       <p class="brands">
-        <a class="brands-icon" href={vinylBrands.href} tabindex="-1" aria-hidden="true">
-          <i class={vinylBrands.icon}></i>
+        <a class="brands-icon" href={vinylBrands.href}>
+          <i class={vinylBrands.icon} aria-hidden="true"></i>
+          <span class="sr-only">{vinylBrands.text}</span>
         </a>
         <a class="brands-text" href={vinylBrands.href}>{vinylBrands.text}</a>
       </p>
@@ -78,7 +106,7 @@ import {
     <!-- #53f81f9 — the remainder; a white card, 25px padding, 5px radius -->
     <section class="col col--quote">
       <div class="card">
-        <h4>Get a Quote</h4>
+        <h2>Get a Quote</h2>
         <!-- The live footer template (18407) carries the quote form itself,
              which is why a form appears on every page of the site. -->
         <QuoteForm id="footer-quote" rows={3} />
@@ -111,13 +139,20 @@ import {
     {/* Both lines are heading widgets on the live site (#23c23594, #36dbd408)
         and render as h5, not paragraphs. They carry no visual weight of their
         own — the styling below restates what the two element rules set — but
-        the tags are part of the page's outline, so they match the original. */}
+        the tags are part of the page's outline, so they match the original
+        hierarchically: one level below the six h2 column groups above, as
+        the credit bar is the footer's own subordinate closing row rather
+        than another top-level group. Rendered as h3, not the original's
+        literal h5, because the outline only has one level between the
+        column h2s and here (nothing on the page uses h3/h4 in between) —
+        h5 would reopen the same 2->4-style skip the six h3-to-h2 promotion
+        just closed, on every page whose own content never reaches h3. */}
     <div class="by">
-      <h5 class="copyright">{credit.copyright}</h5>
-      <h5>
+      <h3 class="copyright">{credit.copyright}</h3>
+      <h3>
         {credit.byPrefix}{' '}
         <a class="byname" href={credit.byHref} target="_blank" rel="noopener">{credit.byName}</a>
-      </h5>
+      </h3>
     </div>
   </div>
   </div>
@@ -156,10 +191,20 @@ import {
   .col > * + * { margin-block-start: 20px; }
   .col--areas > * + * { margin-block-start: 10px; }
   /* #e935660 — CONTACT US adds 20px of its own on top of that. */
-  .col--areas > .areas-more + h4 { margin-block-start: 30px; }
+  .col--areas > .areas-more + h2 { margin-block-start: 30px; }
 
-  /* #51a60bc8 / #e935660 / #71701d39 .elementor-heading-title */
-  .col h4 {
+  /* #51a60bc8 / #e935660 / #71701d39 .elementor-heading-title
+     Promoted from h3 to h2: these six are the footer's own top-level
+     semantic groups (Areas We Serve / Contact Us / Workflow / Things that
+     make the process Faster / Warranty / Get a Quote) with no heading
+     above them inside <footer> and no nested subheading inside any of
+     them, so h2 is the correct outline level -- h3 here (with no h2
+     anywhere in the footer) was the cause of a 1->3 heading-level skip on
+     every page whose own content tops out at h1 before the footer. The
+     tag changed in the markup above; every property below is still set
+     explicitly by this scoped rule, so the rendered size/weight/case/
+     colour/spacing are unchanged. */
+  .col h2 {
     font-size: 20px;
     font-weight: 500;
     text-transform: uppercase;
@@ -171,6 +216,7 @@ import {
     /* measured 20px on the live render, not the 1.3 ratio */
     line-height: 20px;
   }
+  .col h2 + ul + h2 { margin-top: 22px; }
 
   /* #441ba18 icon-list: 16px/400 white, 10px/2 spacing between items */
   .list {
@@ -241,6 +287,12 @@ import {
     color: #ffffff;
   }
 
+  /* Added service-area links use the same icon-list typography as the rest
+     of the footer (16px/400 white) but without the icon gutter, since this
+     list has no icon column. */
+  .areas-list { margin: 0 0 8px; }
+  .areas-list > li:not(:last-child) { padding-block-end: 0; margin-block-end: 5px; }
+
   /* measured on the live column: Poppins 400, 16px/16px, white */
   .areas-more {
     margin: 0;
@@ -285,6 +337,21 @@ import {
     text-decoration: none;
   }
   .brands:hover .brands-text { color: var(--e-global-color-f32bb28); }
+  /* Same visually-hidden technique as Blocks.astro's .elementor-screen-only
+     (scoped styles mean that class doesn't reach this component) — text
+     stays in the DOM for crawlers/screen readers, off-screen for sighted
+     users. */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 
   /* #53f81f9 — the quote column is a white card, so the form keeps its own
      colours; the overrides that used to paint its labels white were there
@@ -294,7 +361,7 @@ import {
     border-radius: 5px;
     padding: 25px;
   }
-  .card h4 { color: var(--e-global-color-d077a13); }
+  .card h2 { color: var(--e-global-color-d077a13); }
   /* The card is a column: 20px between its heading, form and icons. */
   .card > :global(* + *) { margin-block-start: 20px; }
 
@@ -345,7 +412,7 @@ import {
   /* #3a97c8c6 — the heading is left-aligned at 20px on desktop, and centred at
      24px once the card goes full width below 1025px. */
   @media (max-width: 1024px) {
-    .card h4 { text-align: center; font-size: 24px; line-height: 24px; }
+    .card h2 { text-align: center; font-size: 24px; line-height: 24px; }
   }
 
   /* #491c6798 — 20px navy glyphs on white, 12px apart, centred; hovering
@@ -401,22 +468,25 @@ import {
   }
   .creditbar { background: #ffffff; padding: 10px; }
   .credit p,
-  .credit h5 { margin: 0; }
-  /* Two heading widgets, 5px apart. */
-  .by h5 + h5 { margin-top: 5px; }
+  .credit h3 { margin: 0; }
   /* The credit line, re-measured against the original element by element:
      12px on 18px leading, weight 400, in the brand navy. What was here — 15px
      on 25px at weight 300 — was wrong on every one of the 678 addresses.
 
      `color: inherit` is the load-bearing one. global.css sets a colour on
      h1..h6 directly, and a direct rule beats an inherited one however specific
-     the ancestor, so .by's navy never reached these two h5s and the credit
+     the ancestor, so .by's navy never reached these two headings (h5 on the
+     live site, h3 here — see the heading-skip note above) and the credit
      rendered black. */
-  .credit h5 {
+  .credit h3 {
     font-size: inherit;
     font-weight: inherit;
     line-height: inherit;
     color: inherit;
+    /* global.css's h3 rule (unlike its h4 rule) adds text-transform:
+       capitalize; cancelled here so promoting the tag doesn't also
+       capitalize every word of the copyright/credit line. */
+    text-transform: none;
   }
   .by {
     /* The other half. 60/40 put the copyright 122px wider than the original's
@@ -495,7 +565,7 @@ import {
     .col--process,
     .col--quote { width: 100%; }
     .col--areas { padding: 20px 10px; margin: 35px 0; }
-    .col--areas > .areas-more + h4 { margin-block-start: 40px; }
+    .col--areas > .areas-more + h2 { margin-block-start: 40px; }
     .col--quote { margin: 30px 0; }
     .col--process h4 { text-align: start; }
     .col--process .list > li:not(:last-child) { padding-block-end: calc(13px / 2); }

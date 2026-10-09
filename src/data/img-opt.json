@@ -1,0 +1,58 @@
+{
+ "/wp-content/uploads/2020/09/RAM-Promaster-City-2019-Partial-Zuccarini-768x432.jpg": {
+  "384": "/img-opt/RAM-Promaster-City-2019-Partial-Zuccarini-107635b40573-384.webp",
+  "768": "/img-opt/RAM-Promaster-City-2019-Partial-Zuccarini-72d2eda3b918-768.webp",
+  "psnr": 38.1,
+  "jpgBytes": 78831,
+  "webpBytes": 61004
+ },
+ "/wp-content/uploads/2020/08/Partial-Wrap-Van-HomeFree-Nissan-Back-After-768x432.jpg": {
+  "384": "/img-opt/Partial-Wrap-Van-HomeFree-Nissan-Back-After-9bbe4b968655-384.webp",
+  "768": "/img-opt/Partial-Wrap-Van-HomeFree-Nissan-Back-After-a21ab238f3ba-768.webp",
+  "psnr": 38,
+  "jpgBytes": 75699,
+  "webpBytes": 54958
+ },
+ "/wp-content/uploads/2020/08/Partial-Wrap-Truck-Hungarock-Seirra-Side-After-768x432.jpg": {
+  "384": "/img-opt/Partial-Wrap-Truck-Hungarock-Seirra-Side-After-074850bfb294-384.webp",
+  "768": "/img-opt/Partial-Wrap-Truck-Hungarock-Seirra-Side-After-76e54b7ee0c1-768.webp",
+  "psnr": 37.8,
+  "jpgBytes": 73956,
+  "webpBytes": 54612
+ },
+ "/wp-content/uploads/2020/08/Partial-Wrap-Car-Fine-Tune-Auto-Mustang-Saleen-Side-After-vinyl-wrap-Toronto-768x432.jpg": {
+  "384": "/img-opt/Partial-Wrap-Car-Fine-Tune-Auto-Mustang-Saleen-Side-After-vinyl-wrap-Toronto-aa2edaa40f36-384.webp",
+  "768": "/img-opt/Partial-Wrap-Car-Fine-Tune-Auto-Mustang-Saleen-Side-After-vinyl-wrap-Toronto-85f6a44b479e-768.webp",
+  "psnr": 38.6,
+  "jpgBytes": 72663,
+  "webpBytes": 51706
+ },
+ "/wp-content/uploads/2020/08/Chevrolet-Silverado-2018-Decals-PandK-Roofing-768x432.jpg": {
+  "384": "/img-opt/Chevrolet-Silverado-2018-Decals-PandK-Roofing-c91fcf184cec-384.webp",
+  "768": "/img-opt/Chevrolet-Silverado-2018-Decals-PandK-Roofing-2ef850d6deb0-768.webp",
+  "psnr": 38.2,
+  "jpgBytes": 67047,
+  "webpBytes": 48534
+ },
+ "/wp-content/uploads/2020/08/Full-Wrap-Truck-Nissan-Frontier-768x432.jpg": {
+  "384": "/img-opt/Full-Wrap-Truck-Nissan-Frontier-9d12014fb7e5-384.webp",
+  "768": "/img-opt/Full-Wrap-Truck-Nissan-Frontier-9f11b9225872-768.webp",
+  "psnr": 39,
+  "jpgBytes": 58871,
+  "webpBytes": 39150
+ },
+ "/wp-content/uploads/2020/08/Mazda-3-2019-Decals-Personal-768x432.jpg": {
+  "384": "/img-opt/Mazda-3-2019-Decals-Personal-4b85dee6b6b8-384.webp",
+  "768": "/img-opt/Mazda-3-2019-Decals-Personal-863447bec2ab-768.webp",
+  "psnr": 38.7,
+  "jpgBytes": 56345,
+  "webpBytes": 37362
+ },
+ "/wp-content/uploads/2020/08/Hyundai-Veloster-2016-Full-Wrap-Personal-1-768x432.jpg": {
+  "384": "/img-opt/Hyundai-Veloster-2016-Full-Wrap-Personal-1-15586115db4a-384.webp",
+  "768": "/img-opt/Hyundai-Veloster-2016-Full-Wrap-Personal-1-001aebed9054-768.webp",
+  "psnr": 39.9,
+  "jpgBytes": 49150,
+  "webpBytes": 29820
+ }
+}

@@ -14,7 +14,7 @@
 import { site } from '../data/site';
 ---
 
-<div class="sb-wrap" data-sticky-bar>
+<div class="sb-wrap" data-sticky-bar role="region" aria-label="Quick contact">
   <div class="sb-pill">
     <!-- #556696d — transparent over the gradient, so it reads navy at the
          left end; the label sits above the number at 10px. -->
@@ -68,9 +68,17 @@ import { site } from '../data/site';
     z-index: 99;
     width: 30%;
     margin-inline: auto;
-    /* Hidden until the script marks it shown, 1000ms after load -- the
-       original's `animation_delay: 1000`. */
-    opacity: 0;
+    /* fadeInUp, 1000ms delay — matches the live animation. Revealed via
+       clip-path rather than opacity: fading the whole wrap's opacity blends
+       the pill's white text AND navy background together against the page
+       behind it, which measured as low as ~1.03:1 composited contrast on
+       .sb-btn--msg partway through the 450ms transition (below the 4.5:1 AA
+       minimum for normal text) before recovering at full opacity. A clip
+       reveal shows progressively more of the already fully-opaque pill
+       instead of a partially-transparent blend, so every visible pixel is
+       always at final (passing) contrast — same slide-up motion and the
+       same settled look, without the transient dip. */
+    clip-path: inset(0 0 100% 0);
     pointer-events: none;
   }
   /* Then Elementor's own entrance: `fadeInUp` from animate.css, which rises
@@ -82,13 +90,15 @@ import { site } from '../data/site';
      bar moves while it plays. Before this it was a 14px, 0.45s transition,
      too slight to read as the original's entrance at all. */
   .sb-wrap[data-shown] {
-    opacity: 1;
+    clip-path: inset(0 0 0 0);
     pointer-events: auto;
     animation: sb-fade-in-up 1.25s both;
   }
   @keyframes sb-fade-in-up {
-    from { opacity: 0; transform: translate3d(0, 100%, 0); }
-    to { opacity: 1; transform: none; }
+    /* No opacity ramp: see the clip-path note above -- a partially
+       transparent pill measured below 4.5:1 contrast mid-fade. */
+    from { transform: translate3d(0, 100%, 0); }
+    to { transform: none; }
   }
 
   /* #1bf9457 */
@@ -172,6 +182,48 @@ import { site } from '../data/site';
   @media (prefers-reduced-motion: reduce) {
     .sb-wrap[data-shown] { animation: none; }
   }
+</style>
+
+{/* The mobile /blog/ target-size collision (axe 2.5.8) first looked like a
+    sticky-positioning overlap -- `.sb-wrap` is `position: sticky; bottom: 0`,
+    so at scroll 0 its 56px pill paints fixed over the viewport's bottom 56px
+    regardless of flow space further down the document, and padding/margin
+    added after the colliding card can't move that card's already-rendered
+    rect, so that class of fix was rejected. The actual root cause was a
+    pre-load layout collapse of the colliding card's own thumbnail image
+    (`.cards img { aspect-ratio: auto }` in Blocks.astro, fixed there) that
+    had nothing to do with this component.
+
+    A second, distinct collision surfaced under real keyboard traversal
+    (sticky-keyboard-closeout-20261003): once the thumbnail-collapse bug
+    above was fixed, axe's static scroll=0 snapshot was clean, but a real
+    Tab to the 3rd /blog/ card's title still ended with the browser's own
+    native focus-scroll settling that card's rect (bottom 810.88) 22.88px
+    into the pill's own band (top 788, mobile 390x844) -- the UA scrolls a
+    newly-focused element to the edge of what it believes is the visible
+    viewport, and it has no way to know this sticky pill paints over the
+    bottom of that viewport once pinned, since the pill is laid out in-flow
+    and only visually pinned via `position: sticky`.
+
+    `scroll-padding-bottom` on the scrolling box is the platform's own
+    answer to exactly this: it is read by the browser's native
+    scroll-into-view/focus-scroll algorithm (not just CSS scroll-snap) as
+    extra inset to keep clear at that edge, so a focused element is settled
+    above the reserved band instead of under it -- no bottom padding is
+    added to any card, list, or the document's static layout, and nothing
+    about already-rendered card rects changes; only where the browser
+    chooses to park a focused element changes. Measured pill heights at the
+    two viewports actually tested: 56px (390x844 mobile), 55px (1440x900
+    desktop). 72px covers both measured cases with a small buffer for
+    sub-pixel layout rounding across browsers; kept as one native value
+    rather than threaded through the component's own width breakpoints since
+    scroll-padding only affects where native scrolling parks a focused
+    element, not any paintable geometry, so slight over-reservation is
+    inert. Verified by `scripts/keyboard-sticky-blog-check.mjs` (real
+    Tab/Shift+Tab, not `.focus()`) across mobile 390x844 and desktop
+    1440x900 only; untested breakpoints are not claimed. */}
+<style is:global>
+  html { scroll-padding-bottom: 72px; }
 </style>
 
 <script>

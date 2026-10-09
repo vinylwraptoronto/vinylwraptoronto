@@ -11,6 +11,8 @@ import posts from '../data/posts.json';
 import categories from '../data/categories.json';
 import imgDims from '../data/img-dims.json';
 import galleryThumbs from '../data/gallery-thumbs.json';
+import IMG_OPT from '../data/img-opt.json';
+const optOf = (s: string): { 384: string; 768: string } | undefined => (IMG_OPT as Record<string, { 384: string; 768: string }>)[s];
 import widgetCss from '../data/widget-css.json';
 import sectionCss from '../data/section-css.json';
 import spacers from '../data/spacers.json';
@@ -21,6 +23,7 @@ import iconSize from '../data/icon-size.json';
 import iconBox from '../data/icon-box.json';
 import QuoteForm from './QuoteForm.astro';
 import { img, imgHtml } from '../lib/img';
+import { describe, LINKED } from '../lib/image-desc';
 
 export interface Props {
   /** Normal use: whole sections, each with its own padding and container. */
@@ -34,11 +37,36 @@ export interface Props {
       The TOC widget almost always sits inside a column, so a renderer that
       only looked at `sections` saw an empty list and drew nothing. */
   toc?: TocEntry[];
+  /** The one heading promoted to the document H1, threaded through columns. */
+  primaryHeadingEid?: string;
+  /** The categories widget's hardcoded `<h5 class="cat-title">` label,
+      clamped like every other heading (see `collectHeadings`) so it never
+      skips past the document's heading sequence so far -- computed once at
+      the top-level call (where `toc` is undefined) and threaded through
+      columns the same way `toc`/`primaryHeadingEid` already are, since the
+      widget almost always sits inside a column and a recursive call has no
+      other way to see where the running heading count had reached. */
+  categoriesLevel?: number;
+  /** The non-stacked `cards` loop widget's hardcoded `<h3 class="elementor-
+      post__title">` card titles, clamped the same way and for the same
+      reason as `categoriesLevel` just above -- at most one non-stacked
+      `cards` block exists per page (confirmed across src/data/pages), so
+      one threaded value is enough. Computed once at the top-level call and
+      threaded through columns the same way. */
+  cardsLevel?: number;
 }
 
-type TocEntry = { eid?: string; text: string; level: number; id: string };
+/** `renderLevel` is `level` unless a heading — structured `heading`-type
+ *  block or one embedded in a rich-text body (`<h3>`/`<h4>`...) — would
+ *  otherwise skip a level, e.g. a standalone `<h4>` card-title widget placed
+ *  directly under an `<h2>` section heading with no `<h3>` in between, or an
+ *  FAQ question hand-authored as `<h4>` the same way inside the rich text.
+ *  Both kinds of block get the same clamp (see `collectHeadings` below);
+ *  neither is pre-audited, since both are carried verbatim from the
+ *  Elementor/WordPress export. */
+type TocEntry = { eid?: string; text: string; level: number; renderLevel: number; id: string };
 
-const { sections, blocks, toc } = Astro.props;
+const { sections, blocks, toc, primaryHeadingEid: suppliedPrimaryHeadingEid, categoriesLevel: suppliedCategoriesLevel, cardsLevel: suppliedCardsLevel } = Astro.props;
 
 /** True when this call is rendering the inside of a column rather than whole
  *  sections. A before/after pair in a column is drawn at half the content
@@ -46,15 +74,22 @@ const { sections, blocks, toc } = Astro.props;
  *  between a 768-wide file being ample and it being an upscale. */
 /* "Learn More" / "More" say nothing out of context. Where a generic heading
    link shares its address with an earlier heading link on the same card
-   ("Full Car Wraps"), name it after that service. The visible text stays
-   first in the name, as label-in-name requires. */
+   ("Full Car Wraps"), its context is appended as real (not aria-label-only)
+   text, visually hidden with .elementor-screen-only. Lighthouse's SEO
+   link-text audit — unlike the accessible-name computation — reads each
+   link's textContent, not its aria-label, because it is checking what a
+   search-engine crawler sees rather than what a screen reader announces; an
+   aria-label alone leaves the crawler-visible text exactly "Learn More" and
+   still fails that audit. Putting the service name in the DOM (hidden only
+   visually) fixes both the SEO text and the accessible name at once, and the
+   visible "Learn More" wording is unchanged. */
 const GENERIC_LINK = /^(learn more|read more|more|view more|see more|click here|here)$/i;
-const genericLinkLabel = (arr: Block[], i: number, b: any): string | undefined => {
+const genericLinkContext = (arr: Block[], i: number, b: any): string | undefined => {
   if (!GENERIC_LINK.test((b.text ?? '').trim())) return undefined;
   for (let j = i - 1; j >= 0; j--) {
     const p = arr[j] as any;
     if (p.type === 'heading' && p.href === b.href && p.text && !GENERIC_LINK.test(p.text.trim())) {
-      return `${b.text.trim()}: ${p.text.trim()}`;
+      return p.text.trim();
     }
   }
   return undefined;
@@ -141,6 +176,18 @@ const inColumn = !!blocks;
 const groups: { section?: Section; blocks: Block[]; bare: boolean }[] = blocks
   ? [{ blocks, bare: true }]
   : (sections ?? []).map((s) => ({ section: s, blocks: s.blocks, bare: false }));
+
+const headingBlocks = (items: Block[], into: Extract<Block, { type: 'heading' }>[] = []) => {
+  for (const block of items) {
+    if (block.type === 'heading' && !block.tag) into.push(block);
+    if (block.type === 'columns') for (const col of block.cols) headingBlocks(col.blocks, into);
+  }
+  return into;
+};
+const pageHeadings = blocks ? [] : headingBlocks((sections ?? []).flatMap((section) => section.blocks));
+const primaryHeadingEid = suppliedPrimaryHeadingEid ??
+  (pageHeadings.find((heading) => heading.level === 1) ??
+   pageHeadings.find((heading) => heading.level === 2) ?? pageHeadings[0])?.eid;
 
 const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined);
 
@@ -520,9 +567,14 @@ function pagerSteps(current: number, total: number): (number | string)[] {
    It has to walk the whole section tree: headings live inside columns, and a
    flat pass over the top-level blocks found none of them, so the panel came
    out empty on all 402 posts that carry the widget. */
-function collectHeadings(node: unknown, into: TocEntry[]): void {
+function collectHeadings(
+  node: unknown,
+  into: TocEntry[],
+  runningMax: { v: number },
+  extra: { categoriesLevel?: number; cardsLevel?: number },
+): void {
   if (Array.isArray(node)) {
-    for (const v of node) collectHeadings(v, into);
+    for (const v of node) collectHeadings(v, into, runningMax, extra);
     return;
   }
   if (!node || typeof node !== 'object') return;
@@ -532,10 +584,73 @@ function collectHeadings(node: unknown, into: TocEntry[]): void {
      headings -- the offer's price, "Get an Estimate", "Read More Blogs" --
      were listed under every post's own and made each TOC four lines longer. */
   if (b.tocSkip) return;
+  // The categories widget's own hardcoded <h5> label (see the render branch
+  // below) is not a TOC-eligible heading -- it names the dropdown next to
+  // it, not a document section -- so it is clamped here (same running-count
+  // mechanism as every other heading) but deliberately NOT pushed into
+  // `into`: the sidebar TOC must keep listing exactly the same entries it
+  // always has. Confirmed sitewide: at most one `categories` block per page,
+  // so there is never more than one value to compute or thread.
+  if (b.type === 'categories' && typeof b.title === 'string') {
+    const renderLevel = Math.min(5, runningMax.v + 1);
+    // Tracks the level of the MOST RECENT heading (not the deepest one ever
+    // seen) — a plain max() ratchet never decreases, so one early H3 (e.g. a
+    // price box) would permanently suppress the skip-detection clamp for
+    // every later heading on the page, even after the document had returned
+    // to H2 (reproduced on /tesla-vinyl-wraps/: H3 "$4,500" then H2 "See The
+    // Results" then gallery H4 cards rendered unclamped as H4, a real
+    // heading-order violation axe caught). Never letting the tracked level
+    // fall below 1 keeps the very first clamp call (right after the H1) safe.
+    runningMax.v = Math.max(1, renderLevel);
+    extra.categoriesLevel = renderLevel;
+  }
+  // The `cards` loop widget's own hardcoded <h3> card titles (see the render
+  // branch below) are, like the categories label just above, not TOC-eligible
+  // section headings -- they are repeated per-card and name the linked post,
+  // not a section of this page -- so they are clamped here (same running-
+  // count mechanism) but not pushed into `into`. On archive/tag/brand
+  // listing templates the cards widget is the first thing after the H1, with
+  // no H2 yet reached, which produced an H1->H3 skip on 613 pages.
+  if (b.type === 'cards' && !b.stacked) {
+    const renderLevel = Math.min(3, runningMax.v + 1);
+    // Tracks the level of the MOST RECENT heading (not the deepest one ever
+    // seen) — a plain max() ratchet never decreases, so one early H3 (e.g. a
+    // price box) would permanently suppress the skip-detection clamp for
+    // every later heading on the page, even after the document had returned
+    // to H2 (reproduced on /tesla-vinyl-wraps/: H3 "$4,500" then H2 "See The
+    // Results" then gallery H4 cards rendered unclamped as H4, a real
+    // heading-order violation axe caught). Never letting the tracked level
+    // fall below 1 keeps the very first clamp call (right after the H1) safe.
+    runningMax.v = Math.max(1, renderLevel);
+    extra.cardsLevel = renderLevel;
+  }
   // `tag` means the widget rendered as p or div, so it is not a heading.
   if (b.type === 'heading' && !b.tag && typeof b.level === 'number' &&
       b.level >= 2 && b.level <= 6 && typeof b.text === 'string') {
-    into.push({ eid: b.eid as string | undefined, text: b.text, level: b.level, id: '' });
+    // Not pre-audited: on some pages a standalone heading WIDGET (not rich
+    // text) skips a level the same way an embedded <h4> can -- e.g.
+    // car-lettering-and-decals-gta's H1 followed directly by an H3 card
+    // subheading, or trailer-wrap-toronto's chosen H1 followed by three H4
+    // card titles with no H2/H3 between. `eid === primaryHeadingEid` mirrors
+    // the promotion the render branch below applies (the page's chosen H1,
+    // whatever its authored level, always renders as <h1>); every other
+    // heading-type block is clamped exactly like a rich-text one: never
+    // raised, only lowered enough to not skip past `runningMax + 1`. The
+    // entry's own `level` stays the AUTHORED one (unclamped) because the
+    // table-of-contents sidebar nesting below reads it, and TOC indentation
+    // must not move just because the on-page tag did.
+    const promoted = b.eid === primaryHeadingEid ? 1 : b.level === 1 ? 2 : b.level;
+    const renderLevel = Math.min(promoted, runningMax.v + 1);
+    // Tracks the level of the MOST RECENT heading (not the deepest one ever
+    // seen) — a plain max() ratchet never decreases, so one early H3 (e.g. a
+    // price box) would permanently suppress the skip-detection clamp for
+    // every later heading on the page, even after the document had returned
+    // to H2 (reproduced on /tesla-vinyl-wraps/: H3 "$4,500" then H2 "See The
+    // Results" then gallery H4 cards rendered unclamped as H4, a real
+    // heading-order violation axe caught). Never letting the tracked level
+    // fall below 1 keeps the very first clamp call (right after the H1) safe.
+    runningMax.v = Math.max(1, renderLevel);
+    into.push({ eid: b.eid as string | undefined, text: b.text, level: b.level, renderLevel, id: '' });
   }
   // Most of a post's headings are inside the rich-text body, not the block
   // model, so a walk over blocks alone listed only the few standalone heading
@@ -546,19 +661,48 @@ function collectHeadings(node: unknown, into: TocEntry[]): void {
     for (const m of b.html.matchAll(/<h([2-6])\b[^>]*>([\s\S]*?)<\/h\1>/g)) {
       const text = m[2].replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').trim();
       if (text) {
-        into.push({ eid: `${b.eid ?? 'rt'}#${n}`, text, level: Number(m[1]), id: '' });
+        const level = Number(m[1]);
+        // The WordPress export carries these tags verbatim, and on ~213
+        // posts the body jumps straight from the H1 (or an H2 section
+        // heading) to an H3/H4 with nothing in between -- e.g. an FAQ
+        // question hand-authored as <h4> directly under its <h2>. Clamp to
+        // one past whatever the document has reached so far; never raises a
+        // level, only prevents a skip. Visual size/weight is preserved
+        // separately via an `rt-lvl*` class keyed on the *authored* level,
+        // so this only changes the tag a screen reader/crawler sees.
+        const renderLevel = Math.min(level, runningMax.v + 1);
+        // Tracks the level of the MOST RECENT heading (not the deepest one ever
+    // seen) — a plain max() ratchet never decreases, so one early H3 (e.g. a
+    // price box) would permanently suppress the skip-detection clamp for
+    // every later heading on the page, even after the document had returned
+    // to H2 (reproduced on /tesla-vinyl-wraps/: H3 "$4,500" then H2 "See The
+    // Results" then gallery H4 cards rendered unclamped as H4, a real
+    // heading-order violation axe caught). Never letting the tracked level
+    // fall below 1 keeps the very first clamp call (right after the H1) safe.
+    runningMax.v = Math.max(1, renderLevel);
+        into.push({ eid: `${b.eid ?? 'rt'}#${n}`, text, level, renderLevel, id: '' });
       }
       n++;
     }
   }
-  for (const v of Object.values(b)) collectHeadings(v, into);
+  for (const v of Object.values(b)) collectHeadings(v, into, runningMax, extra);
 }
+
+/** Populated only by the top-level collectHeadings walk below (where `toc`
+ *  is undefined); a nested `<Astro.self>` call for a column receives the
+ *  already-computed value as the `categoriesLevel` prop instead, exactly
+ *  like `toc`/`primaryHeadingEid`, since recursing into collectHeadings
+ *  again from a column would only see that column's own subtree and could
+ *  not know the running heading count that came before it. */
+const headingExtra: { categoriesLevel?: number; cardsLevel?: number } = {};
 
 const tocEntries: TocEntry[] =
   toc ??
   (() => {
     const found: TocEntry[] = [];
-    collectHeadings(sections ?? [], found);
+    // Seeded at 1: every page has exactly one H1 (verified sitewide), always
+    // ahead of everything collectHeadings walks (which only sees level 2-6).
+    collectHeadings(sections ?? [], found, { v: 1 }, headingExtra);
     // Headings repeat — several posts carry the same price twice — so ids are
     // suffixed on collision, and the heading uses the same id by eid lookup.
     const used = new Map<string, number>();
@@ -573,9 +717,43 @@ const tocEntries: TocEntry[] =
       .filter((e) => e.id);
   })();
 
+/** The clamped render level for this page's single `categories`-block
+ *  `<h5 class="cat-title">` (see `collectHeadings`), falling back to the
+ *  authored 5 if somehow absent (no categories block on this page, or this
+ *  call is nested without the prop threaded -- never observed, since every
+ *  page with the widget has exactly one and the prop is threaded through
+ *  every recursive call). Never raised above 5, only ever lowered. */
+const categoriesLevel = suppliedCategoriesLevel ?? headingExtra.categoriesLevel ?? 5;
+
+/** The clamped render level for this page's single non-stacked `cards`-block
+ *  `<h3 class="elementor-post__title">` card titles (see `collectHeadings`),
+ *  falling back to the authored 3 if absent. Never raised above 3, only
+ *  ever lowered. */
+const cardsLevel = suppliedCardsLevel ?? headingExtra.cardsLevel ?? 3;
+
 /** eid -> anchor id, so a heading and its TOC entry always agree. */
 const tocIds = new Map<string, string>();
 for (const e of tocEntries) if (e.eid) tocIds.set(e.eid, e.id);
+
+/** eid -> corrected heading level, for the rich-text H1→H3/H4 skip fix. Only
+ *  ever lower than the authored level (see `collectHeadings`), and absent
+ *  (falls through unchanged) for the near-all headings that were already
+ *  in order. */
+const tocRenderLevel = new Map<string, number>();
+for (const e of tocEntries) if (e.eid && e.renderLevel !== e.level) tocRenderLevel.set(e.eid, e.renderLevel);
+
+/** eid -> corrected heading level, for structured `heading`-type blocks (the
+ *  same skip-prevention clamp `collectHeadings` already computed, re-exposed
+ *  here keyed by eid so the render branch below can apply it). Compared
+ *  against the SAME primary-heading promotion the render branch itself
+ *  applies, so this only has an entry when the clamp actually lowered the
+ *  level the render branch would otherwise have used. */
+const tocHeadingRenderLevel = new Map<string, number>();
+for (const e of tocEntries) {
+  if (!e.eid || e.eid.includes('#')) continue;
+  const promoted = e.eid === primaryHeadingEid ? 1 : e.level === 1 ? 2 : e.level;
+  if (e.renderLevel !== promoted) tocHeadingRenderLevel.set(e.eid, e.renderLevel);
+}
 
 /* A gallery's grid comes from the widget, not from one site-wide rule: the
    column count per breakpoint, the tile crop and the gutter are all declared
@@ -637,13 +815,17 @@ const secMargins = (() => {
   const blocksArr = group.blocks;
   const inner = blocksArr.map((b, i) => {
         if (b.type === 'heading') {
-          /* The level the original gives the heading, never a rewritten one.
-             A pass that promoted one heading per page to h1 and demoted every
-             other h1 to h2 changed both the outline and the look: the kit
-             styles h1 and h2 differently, so on /locations-served/ pages the
-             title the original draws as an h2 rendered at h1 size. */
-          const Tag = (b.tag ?? `h${Math.min(Math.max(b.level, 1), 6)}`) as 'h1';
+          const promoted = b.eid === primaryHeadingEid ? 1 : b.level === 1 ? 2 : b.level;
+          // Clamped to never skip a level (see collectHeadings/tocHeadingRenderLevel);
+          // only ever lower than `promoted`, never higher.
+          const level = (b.eid ? tocHeadingRenderLevel.get(b.eid) : undefined) ?? promoted;
+          const Tag = (b.tag ?? `h${Math.min(Math.max(level, 1), 6)}`) as 'h1';
           const id = b.eid ? tocIds.get(b.eid) : undefined;
+          // When the clamp lowered the tag, apply a parallel class carrying the
+          // ORIGINAL (authored) level's typography, mirroring `.rt-lvl*` for
+          // rich-text headings -- the visual size/weight/transform must not
+          // move just because the tag did.
+          const hlvlClass = !b.tag && level !== promoted ? `hlvl${b.level}` : undefined;
 
           /* The offer price, on 403 pages, and the one place where flattening a
              widget into plain text changed what a customer is told.
@@ -667,7 +849,7 @@ const secMargins = (() => {
           if (/^\$[\d,]+\s+\$[\d,]+$/.test(b.text.trim())) {
             const [was, now] = b.text.trim().split(/\s+/);
             return (
-              <Tag class:list={["price", { hd: !!b.tag }]} id={id} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
+              <Tag class:list={["price", { hd: !!b.tag }, hlvlClass]} id={id} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
                 <span class="ah-was">{was}</span><br /><span class="ah-now">{now}</span>
               </Tag>
             );
@@ -678,7 +860,7 @@ const secMargins = (() => {
              the paragraph's 1.5 instead of the heading's 1, so it set 18px text
              on 27px leading against the original's 18. */
           return (
-            <Tag class:list={[{ hd: !!b.tag }]} id={id} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
+            <Tag class:list={[{ hd: !!b.tag }, hlvlClass]} id={id} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
               {/* `textHtml` where the heading's content is markup rather than a
                   line of text. Elementor writes a heading as HTML, and the port
                   took its textContent -- so "Colour change wraps start at
@@ -698,7 +880,7 @@ const secMargins = (() => {
               {b.textHtml
                 ? <Fragment set:html={b.textHtml} />
                 : b.href
-                  ? <a class="hlink" href={img(b.href)} aria-label={genericLinkLabel(blocksArr, i, b)}>{b.text}</a>
+                  ? <a class="hlink" href={img(b.href)}>{b.text}{genericLinkContext(blocksArr, i, b) && <span class="elementor-screen-only"> – {genericLinkContext(blocksArr, i, b)}</span>}</a>
                   : b.text}
             </Tag>
           );
@@ -777,9 +959,18 @@ const secMargins = (() => {
         }
 
         if (b.type === 'categories') {
+          // The widget's own label, not a category name (those are the
+          // <option> entries below, correctly non-headings already) -- a
+          // genuine section heading for the dropdown next to it, so it is
+          // clamped the same way every other heading-skip fix in this file
+          // clamps, never turned into a link/non-heading. `.cat-title`'s
+          // declarations are a class selector (see global styles below),
+          // which beats a bare element rule regardless of which tag this
+          // renders as, so appearance is identical at every clamped level.
+          const CatTag = `h${Math.min(Math.max(categoriesLevel, 1), 6)}` as 'h5';
           return (
             <div class="catlist">
-              <h5 class="cat-title">{b.title}</h5>
+              <CatTag class="cat-title">{b.title}</CatTag>
               <form class="catform">
                 <label class="elementor-screen-only" for="cat">{b.title}</label>
                 <select name="cat" id="cat" class="postform" data-catnav>
@@ -806,16 +997,32 @@ const secMargins = (() => {
         }
 
         if (b.type === 'text') {
-          // Give each body heading the id its table-of-contents entry links to.
-          let n = 0;
-          const withIds = imgHtml(b.html).replace(
-            /<h([2-6])\b([^>]*)>/g,
-            (whole, lvl, attrs) => {
-              const key = `${b.eid ?? 'rt'}#${n++}`;
-              const id = tocIds.get(key);
-              return id && !/\bid=/.test(attrs) ? `<h${lvl}${attrs} id="${id}">` : whole;
-            },
-          );
+          // Give each body heading the id its table-of-contents entry links
+          // to, and -- on the ~213 posts where the WordPress export carries
+          // an H3/H4 straight after an H1/H2 with nothing between -- retag
+          // it to close that gap (see `collectHeadings`). The closing tag is
+          // rewritten in lockstep by a second pass keyed on the same opening
+          // order, since headings here never nest. `rt-lvl{authored}` keeps
+          // the original font-size/weight/colour exactly as scraped; only
+          // the tag the DOM/crawler/AT sees changes.
+          let openN = 0;
+          let closeN = 0;
+          const tagNums: number[] = [];
+          const withIds = imgHtml(b.html)
+            .replace(
+              /<h([2-6])\b([^>]*)>/g,
+              (whole, lvl, attrs) => {
+                const key = `${b.eid ?? 'rt'}#${openN++}`;
+                const id = tocIds.get(key);
+                const renderLevel = tocRenderLevel.get(key);
+                const tagNum = renderLevel ?? Number(lvl);
+                tagNums.push(tagNum);
+                const idAttr = id && !/\bid=/.test(attrs) ? ` id="${id}"` : '';
+                const classAttr = renderLevel ? ` class="rt-lvl${lvl}"` : '';
+                return `<h${tagNum}${attrs}${classAttr}${idAttr}>`;
+              },
+            )
+            .replace(/<\/h[2-6]>/g, () => `</h${tagNums[closeN++]}>`);
           const ig = instagramEmbeds(withSpacers(withIds, Astro.url.pathname));
           return (
             <>
@@ -846,10 +1053,12 @@ const secMargins = (() => {
              true single, unconditional first image (e.g. web-story
              covers). */
           const isLcpCandidate = !inColumn && gi === 0 && i === 0 && !b.hide?.length;
-          const pic = (
+          const imgName = b.alt ? describe(b.src, b.alt) : (b.href ? describe(b.src, b.alt, LINKED) : b.alt);
+          const opt = optOf(b.src);
+          const imgEl = (
             <img
               src={img(b.src)}
-              alt={b.alt}
+              alt={imgName}
               width={num(b.width)}
               height={num(b.height)}
               loading={isLcpCandidate ? 'eager' : 'lazy'}
@@ -857,9 +1066,20 @@ const secMargins = (() => {
               decoding="async"
             />
           );
+          /* Offline-generated webp siblings (prebuilt, see docs/img-opt-provenance.md) for the
+             home gallery thumbnails; the original jpg stays as the fallback
+             <img>, so non-webp browsers and the img/alt/size markup are
+             unchanged. 768w is the source's full width, so DPR2 keeps full
+             detail; 384w serves DPR1. */
+          const pic = opt ? (
+            <picture>
+              <source type="image/webp" srcset={`${opt[384]} 384w, ${opt[768]} 768w`} sizes="(max-width: 767px) calc(100vw - 20px), 384px" />
+              {imgEl}
+            </picture>
+          ) : imgEl;
           return (
             <figure class={`${b.full ? 'fig fig--full' : 'fig'}${b.imgWidth ? ' fig--iw' : ''}`} data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[imgWidthVars(b.imgWidth), b.href && b.imgWidth && num(b.width) ? `--iw-cap:${num(b.width)}px` : ''].filter(Boolean).join(';') || undefined}>
-              {b.href ? <a href={img(b.href)} aria-label={b.alt || 'View image details'}>{pic}</a> : pic}
+              {b.href ? <a href={img(b.href)} aria-label={imgName || 'View image details'}>{pic}</a> : pic}
             </figure>
           );
         }
@@ -993,7 +1213,7 @@ const secMargins = (() => {
                   ? <a class="feature-ic" href={img(b.iconHref)} tabindex="-1" aria-hidden="true" style={iconSizeVars(b.eid)}><i class={b.icon}></i></a>
                   : <span class="feature-ic" aria-hidden="true" style={iconSizeVars(b.eid)}><i class={b.icon}></i></span>
               )}
-              {b.image && <img src={img(b.image)} alt={b.alt ?? ''} loading="lazy" decoding="async" />}
+              {b.image && <img src={img(b.image)} alt={describe(b.image, b.alt ?? '')} width={dimsOf(b.image)?.[0]} height={dimsOf(b.image)?.[1]} loading="lazy" decoding="async" />}
               {/* `titleHtml` where the title carries emphasis. The warranty
                   box is "3 Year Warranty<sup>*</sup>" and the port took its
                   textContent, so the footnote marker dropped to the baseline
@@ -1006,7 +1226,7 @@ const secMargins = (() => {
 
         if (b.type === 'pagination') {
           return (
-            <nav class="elementor-pagination" aria-label="Pagination" data-eid={b.eid}>
+            <nav class="elementor-pagination" aria-label={`Pagination ${i + 1}`} data-eid={b.eid}>
               {b.current > 1 ? (
                 <a class="page-numbers prev" href={pagerHref(b.base, b.current - 1)} rel="prev">« Previous</a>
               ) : (
@@ -1054,7 +1274,7 @@ const secMargins = (() => {
                     >
                       <img
                         src={img(c.image)}
-                        alt={c.alt ?? c.title}
+                        alt={describe(c.image, c.alt || c.title)}
                         width={c.natural ? c.w : undefined}
                         height={c.natural ? c.h : undefined}
                         style={c.natural && c.w ? `--nw:${c.w}px` : undefined}
@@ -1115,7 +1335,7 @@ const secMargins = (() => {
                     <a class="card-thumb" href={c.href} tabindex="-1">
                       <img
                         src={img(c.image)}
-                        alt={c.alt ?? c.title}
+                        alt={describe(c.image, c.alt || c.title)}
                         width={thumbBox(c.image, c).w}
                         height={thumbBox(c.image, c).h}
                         loading="lazy"
@@ -1126,17 +1346,42 @@ const secMargins = (() => {
                   <div class="card-text">
                     {/* The original titles each card with
                         <h3 class="elementor-post__title">; a span instead took
-                        1,223 headings out of the document outline. */}
-                    <h3 style={b.titleStyle ?? undefined}><a href={c.href}>{c.title}</a></h3>
+                        1,223 headings out of the document outline. On
+                        archive/tag/brand listing templates this widget sits
+                        directly under the H1 with no H2 yet, so the tag is
+                        clamped (never raised) the same way every other
+                        heading is -- see `collectHeadings`/`cardsLevel`.
+                        `.card-title` (not the tag) now carries the typography
+                        below so it stays put no matter which tag is chosen. */}
+                    {(() => {
+                      const CardTitleTag = `h${cardsLevel}` as 'h3';
+                      return (
+                        <CardTitleTag class="card-title" style={b.titleStyle ?? undefined}>
+                          <a href={c.href}>{c.title}</a>
+                        </CardTitleTag>
+                      );
+                    })()}
                     {'desc' in c && c.desc && <p class="card-desc" style={b.descStyle ?? undefined}>{c.desc}</p>}
+                    {/* `card-more` duplicates the title/thumbnail link's own
+                        `href` purely as decorative "Read More" text -- it was
+                        already pulled out of the tab order (tabindex="-1")
+                        since clicking it reached nothing new. On narrow
+                        viewports a wrapped 2-line title sits close enough
+                        above it (raw node: `li:nth-child(3) > .card-text >
+                        .card-title > a` on mobile /blog/, ~4.6px of gap)
+                        that axe's WCAG 2.5.8 target-size check flags the
+                        pair as two separate, too-closely-spaced interactive
+                        targets. `aria-hidden` alone does not satisfy axe's
+                        check here -- target-size evaluates paintable/
+                        clickable geometry, not the accessibility tree, so a
+                        hidden-but-still-`href`-bearing anchor is still
+                        counted as a second target. Rendering it as a plain
+                        `<span>` (no `href`, not a link) removes it as an
+                        interactive target entirely; the title and
+                        thumbnail links still reach the same destination, so
+                        no destination becomes unreachable. */}
                     {c.more && (
-                      <a
-                        class="card-more"
-                        style={b.moreStyle ?? undefined}
-                        href={c.href}
-                        aria-label={`Read more about ${c.title}`}
-                        tabindex="-1"
-                      >{c.more}</a>
+                      <span class="card-more" style={b.moreStyle ?? undefined}>{c.more}</span>
                     )}
                   </div>
                   {(c.author || c.date) && (
@@ -1255,7 +1500,7 @@ const secMargins = (() => {
                         `aspect-ratio` from these attributes even though the CSS
                         only constrains width, which is what keeps a lazy-loaded
                         slide from shifting layout in behind it. */}
-                    <img src={img(i.src)} alt={i.alt} loading="lazy" decoding="async"
+                    <img src={img(i.src)} alt={describe(i.src, i.alt)} loading="lazy" decoding="async"
                          width={i.width ?? undefined} height={i.height ?? undefined}
                          style={b.imgStyle ?? undefined} />
                   </figure>
@@ -1301,7 +1546,7 @@ const secMargins = (() => {
                 const d = dimsOf(i.src);
                 return (
                   <a class="lb-link" href={img(i.src)}>
-                    <img src={img(i.src)} alt={i.alt} width={d?.[0]} height={d?.[1]} loading="lazy" decoding="async" />
+                    <img src={img(i.src)} alt={describe(i.src, i.alt)} width={d?.[0]} height={d?.[1]} loading="lazy" decoding="async" />
                   </a>
                 );
               })}
@@ -1418,12 +1663,12 @@ const secMargins = (() => {
                 return (
                 <div class="compare-pair">
                   <figure>
-                    <img src={img(bt.src)} data-full={img(p.before.src)} alt={p.before.alt}
+                    <img src={img(bt.src)} data-full={img(p.before.src)} alt={describe(p.before.src, p.before.alt)}
                       width={bt.w} height={bt.h} loading="lazy" decoding="async" />
                     <figcaption>{p.beforeLabel}</figcaption>
                   </figure>
                   <figure>
-                    <img src={img(at.src)} data-full={img(p.after.src)} alt={p.after.alt}
+                    <img src={img(at.src)} data-full={img(p.after.src)} alt={describe(p.after.src, p.after.alt)}
                       width={at.w} height={at.h} loading="lazy" decoding="async" />
                     <figcaption>{p.afterLabel}</figcaption>
                   </figure>
@@ -1478,7 +1723,7 @@ const secMargins = (() => {
                           masonry variant gets the file's own. */}
                       <img
                         src={img(t.src)}
-                        alt={it.alt ?? it.title}
+                        alt={describe(it.src, it.alt ?? it.title)}
                         width={t.w}
                         height={t.h}
                         style={(b.masonry || b.rowHeight) && t.w && t.h ? `aspect-ratio:${t.w}/${t.h}` : undefined}
@@ -1674,7 +1919,7 @@ const secMargins = (() => {
                         ))}
                       </div>
                     )}
-                    <Astro.self blocks={c.blocks} toc={tocEntries} />
+                    <Astro.self blocks={c.blocks} toc={tocEntries} primaryHeadingEid={primaryHeadingEid} categoriesLevel={categoriesLevel} cardsLevel={cardsLevel} />
                   </div>
                 );
               })}
@@ -2024,12 +2269,28 @@ const secMargins = (() => {
     text-decoration: none;
   }
   .elementor-pagination a.page-numbers:hover { color: var(--e-global-color-8c22d81); }
-  .elementor-pagination .page-numbers.current { color: var(--e-global-color-f32bb28); }
+  /* f32bb28 (#ff0099) on white measures 3.67:1 for this 20px/400-weight text
+     (fails AA's 4.5:1 normal-text threshold -- caught scanning the middle/last
+     pagination pages, not page 1, where this class also renders). Reuses the
+     already-validated #d6007d pink (badge-contrast-repair-20261003, 5.05:1). */
+  .elementor-pagination .page-numbers.current { color: #d6007d; }
   /* On page 1 "« Previous" and on page 34 "Next »" are spans, not links — the
      same thing the original renders. Dimming them says so without moving
-     anything, which a display:none would. */
-  .elementor-pagination span.prev,
-  .elementor-pagination span.next { opacity: 0.45; }
+     anything, which a display:none would. opacity:0.45 on the navy token
+     measured at 2.57:1 on white (fails AA); this explicit muted shade keeps
+     the same "disabled" look while clearing 4.5:1 (4.83:1 measured).
+     Selector is `span.page-numbers.prev`/`.next` (3 classes + 1 type =
+     higher specificity than the `.page-numbers:not(.dots)` rule above,
+     which is 3 classes) rather than the plain `span.prev`/`span.next` this
+     task started from (2 classes + 1 type) -- the plain form always lost
+     that specificity contest to `:not(.dots)` since the disabled spans
+     carry both classes, so the rule rendered navy, never muted, despite
+     axe reporting 0 violations either way (navy-on-white already clears
+     AA). Scoped to `span` only -- the enabled `<a class="page-numbers
+     prev">` link intentionally keeps its normal `:not(.dots)` navy/hover
+     colors; this must not repaint that active, clickable state. */
+  .elementor-pagination span.page-numbers.prev,
+  .elementor-pagination span.page-numbers.next { color: #607485; }
 
   /* "Page" before each number, for screen readers only. Same rule Elementor
      ships; the numbers alone read as a bare list of digits. */
@@ -2288,14 +2549,16 @@ const secMargins = (() => {
     color: var(--ink);
     text-transform: none;
   }
-  .rt :global(h2) {
+  .rt :global(h2),
+  .rt :global(.rt-lvl2) {
     font-size: 28px;
     line-height: 1.2;
     font-weight: 600;
     color: var(--ink);
     text-transform: capitalize;
   }
-  .rt :global(h3) {
+  .rt :global(h3),
+  .rt :global(.rt-lvl3) {
     font-size: 22px;
     line-height: 1.2;
     font-weight: 600;
@@ -2305,27 +2568,46 @@ const secMargins = (() => {
   /* h4 had no rule at all, so it fell through to the heading-widget default and
      took every <strong> inside it down with it: `bolder` resolves against the
      parent, so a 500 parent yielded 700 where the original yields 900. */
-  .rt :global(h4) {
+  .rt :global(h4),
+  .rt :global(.rt-lvl4) {
     font-size: 18px;
     line-height: 1.2;
     font-weight: 600;
     color: var(--brand-navy);
     text-transform: none;
   }
-  .rt :global(h5) {
+  .rt :global(h5),
+  .rt :global(.rt-lvl5) {
     font-size: 18px;
     line-height: 1.2;
     font-weight: 500;
     color: #444444;
     text-transform: none;
   }
-  .rt :global(h6) {
+  .rt :global(h6),
+  .rt :global(.rt-lvl6) {
     font-size: 18px;
     line-height: 1.2;
     font-weight: 500;
     color: var(--ink);
     text-transform: none;
   }
+
+  /* Structured `heading`-type widgets (not rich text, so not under `.rt`) get
+     the same skip-prevention clamp as embedded rich-text headings (see
+     `collectHeadings`/`tocHeadingRenderLevel` above): the rendered tag is
+     only ever lowered, never raised, to avoid a level skip. `global.css`'s
+     bare h1-h6 rules already give the right margin/line-height/weight/color
+     for whichever tag actually renders -- only font-size and text-transform
+     are keyed to the tag number there, and those must keep tracking the
+     ORIGINAL authored level, not the lowered one. A class selector always
+     beats the bare element selector it's paired with, regardless of source
+     order, so this needs no `!important` and no reordering of global.css. */
+  :global(.hlvl2) { font-size: 28px; text-transform: capitalize; }
+  :global(.hlvl3) { font-size: 22px; text-transform: capitalize; }
+  :global(.hlvl4),
+  :global(.hlvl5),
+  :global(.hlvl6) { font-size: 18px; text-transform: none; }
 
   /* The theme's own spacing, measured on the original's post bodies at 1440
      and 390: a paragraph keeps 0.9rem (14.4px) under it, and a list sits
@@ -2505,7 +2787,10 @@ const secMargins = (() => {
      each one -- 300px down a long post. */
   .rt :global(h2),
   .rt :global(h3),
-  .rt :global(h4) { margin-top: 0.5rem; }
+  .rt :global(h4),
+  .rt :global(.rt-lvl2),
+  .rt :global(.rt-lvl3),
+  .rt :global(.rt-lvl4) { margin-top: 0.5rem; }
 
   /* A link inside a heading is weight 400 on the original — 64 heading-sized
      anchors across the site, no exceptions. Ours inherited whatever the
@@ -2872,6 +3157,7 @@ const secMargins = (() => {
   .feature img {
     display: block;
     width: 100%;
+    height: auto;
     max-width: 320px;
     border-radius: 4px;
     margin-bottom: 12px;
@@ -3078,7 +3364,20 @@ const secMargins = (() => {
     border-color: var(--e-global-color-a8178e9);
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   }
-  .cards > li:hover h3 a { color: var(--brand-pink); }
+  /* var(--brand-pink) is #ff0099, which measures 3.68:1 for this 16px/500
+     card-title text (fails WCAG AA 4.5:1 for normal text). Using the same
+     already-validated #d6007d pink as the pagination .current fix above
+     (badge-contrast-repair-20261003, 5.05:1+) instead of the brand token. */
+  .cards > li:hover .card-title a { color: #d6007d; }
+  /* Keyboard-only parity: hover above only fires on pointer-over, so Tabbing
+     to a card-title link with no prior mouse hover left no visible change.
+     Matches the hover colour and reuses the site's existing :focus-visible +
+     outline convention (QuoteForm.astro, Interactions.astro). */
+  .card-title a:focus-visible {
+    color: #d6007d;
+    outline: 2px solid var(--e-global-color-a8178e9);
+    outline-offset: 2px;
+  }
   .cards a { text-decoration: none; color: var(--brand-navy); }
   /* Elementor's posts widget is set to `elementor-fit-height` on every grid
      checked -- /trailer-decals-lettering/, /box-truck-wrap/, /blog/,
@@ -3114,7 +3413,7 @@ const secMargins = (() => {
      related posts under every blog post ran 40px wider text than the
      original's. */
   .cards .card-text { padding: 0 30px; }
-  .cards h3 {
+  .cards .card-title {
     /* Same rendering as the span it replaced: the heading is for the document
        outline, not a change of appearance. These are the posts widget's own
        defaults — 16px on a 1.2 ratio, no capitalize — and any instance that
@@ -3144,7 +3443,7 @@ const secMargins = (() => {
      read-more link never got its own colour. Everything else about it —
      family, size, leading, weight, case — differs per posts-widget instance
      and now arrives inline from the widget; only the layout is fixed here. */
-  .cards a.card-more {
+  .cards .card-more {
     display: inline-block;
     margin-top: 0;
     margin-bottom: 20px;
@@ -3168,7 +3467,18 @@ const secMargins = (() => {
     line-height: 1;
     text-transform: uppercase;
   }
-  .cards a.card-more:hover { text-decoration: underline; }
+  /* Accessibility fix: the 578 blog/post-card instances that set
+     background-color: var(--e-global-color-f32bb28) [#FF0099] with inline
+     color:#fff measure 3.67:1 — below WCAG AA's 4.5:1 for this 9px text.
+     The instance's own background-color (inline, highest specificity short
+     of !important) is overridden here for pink-badge instances only, via an
+     attribute match on that same inline declaration, to a darkened pink that
+     holds the brand hue at 5.03:1 with the unchanged white text. Layout,
+     the navy-badge variant (--e-global-color-d077a13, already ~13:1), and
+     every other --e-global-color-f32bb28 usage (nav, accents) are untouched. */
+  .card-badge[style*="f32bb28"] {
+    background-color: #d6007d !important;
+  }
   .card-meta {
     margin-top: auto;
     /* The original rules this row off with a green hairline and pads it 10px
@@ -3304,7 +3614,7 @@ const secMargins = (() => {
   .carou-dots {
     display: flex;
     justify-content: center;
-    gap: 12px;
+    gap: 18px;
     margin-top: 12px;
   }
   /* A carousel with pagination reserves a 30px gutter at its foot and positions
