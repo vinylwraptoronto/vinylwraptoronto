@@ -9,6 +9,7 @@ import {
   sanitizeHtml,
   type PostDoc,
 } from '../../../../lib/postdoc';
+import { bodyAsHtml } from '../../../../lib/markdown';
 
 /**
  * Create or update a post.
@@ -58,7 +59,10 @@ export const POST: APIRoute = async ({ request, locals, cookies, url }) => {
 
   const bodyRaw = String(form.get('body_html') ?? '');
   if (bodyRaw.length > MAX_BODY) return jsonResponse({ error: 'That post is too large to store.' }, 413);
-  const bodyHtml = sanitizeHtml(bodyRaw);
+  /* body_html is HTML. A body sent as Markdown -- as two from the 10XiD
+     portal were -- is rendered to it here, or it is stored, scored and drawn
+     as literal `##` and `**` (src/lib/markdown.ts). */
+  const bodyHtml = sanitizeHtml(bodyAsHtml(bodyRaw));
 
   const status = str(form, 'status', 20);
   if (!['draft', 'published', 'scheduled', 'archived'].includes(status)) {

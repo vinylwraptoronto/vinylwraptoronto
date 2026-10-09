@@ -10,6 +10,8 @@
  */
 import additions from '../data/post-additions.json';
 import categoryMembers from '../data/category-members.json';
+import brandMembers from '../data/brand-members.json';
+import archiveListings from '../data/archive-listings.json';
 import blogIndex from '../data/blog-index.json';
 import { pageCount, type BlogEntry } from './bloglist';
 import type { PageData } from '../types';
@@ -47,8 +49,9 @@ export const ARCHIVE_PAGE_LIMIT = 5;
 const indexBySlug = new Map((blogIndex as BlogEntry[]).map((e) => [e.slug, e]));
 
 /**
- * A category archive's listing, newest first, as cards can draw it -- or null
- * for any archive that is not a category (the author archives, /blog/).
+ * A category or vehicle-brand archive's listing, newest first, as cards can
+ * draw it -- or null for any other archive (the author archives, /blog/), and
+ * for a brand archive with no posts, which keeps the page it was ported with.
  *
  * The membership comes from D1 through scripts/pull-posts.mjs
  * (src/data/category-members.json): every post filed under the category or a
@@ -57,9 +60,30 @@ const indexBySlug = new Map((blogIndex as BlogEntry[]).map((e) => [e.slug, e]));
  */
 export function categoryEntries(page: PageData): BlogEntry[] | null {
   if (page.kind !== 'archive') return null;
-  const slugs = (categoryMembers as Record<string, string[]>)[`/${page.slug}/`];
+  const href = `/${page.slug}/`;
+  const slugs = (categoryMembers as Record<string, string[]>)[href] ?? (brandMembers as Record<string, string[]>)[href];
   if (!slugs) return null;
   return slugs.map((s) => indexBySlug.get(s)).filter((e): e is BlogEntry => !!e);
+}
+
+/** One entry of a theme archive: the title linking the item, its excerpt. */
+export type PortedCard = { title: string; href: string; image: string | null; desc: string | null };
+
+/**
+ * The full listing of an archive drawn by the theme's own archive template --
+ * /wraps-before-after/ and /pages_type/vehicle-wraps/ -- or null for any other.
+ *
+ * Neither can be rebuilt from D1: the before/after projects are listed in the
+ * original's own order (neither date nor id), and pages_type is a taxonomy of
+ * static pages that never reached D1. Their first twelve entries were ported
+ * with the page and the rest were not, so /wraps-before-after/ reached 12 of
+ * its 69 projects and its pages 2-6 were 404s. src/data/archive-listings.json
+ * holds every entry, read off the original's pages the same way the first
+ * page was (its first twelve match the ported ones field for field).
+ */
+export function portedListing(page: PageData): PortedCard[] | null {
+  if (page.kind !== 'archive') return null;
+  return (archiveListings as Record<string, PortedCard[]>)[`/${page.slug}/`] ?? null;
 }
 
 /** Pages a category archive is built and paginated to. */

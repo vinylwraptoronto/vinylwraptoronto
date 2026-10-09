@@ -116,8 +116,21 @@ const ALLOWED_ATTRS: Record<string, Set<string>> = {
 
 const VOID_TAGS = new Set(['br', 'hr', 'img']);
 
+/** An href that is nothing but an email address -- `info@VinylWrapToronto.com`.
+    As a link it is relative, so it resolves to a page under the post and 404s;
+    the original carried one on /metallic-wrap-mazda-cx-90-2024-le-satin-purple-vinyl/. */
+const BARE_EMAIL = /^[^\s@/:?#"'<>]+@[^\s@/:?#"'<>]+\.[a-z]{2,}$/i;
+
+/** Point every bare-email href in a fragment at mailto:, and touch nothing else. */
+export function mailtoHrefs(html: string): string {
+  if (!html || !html.includes('@')) return html;
+  return html.replace(/(\bhref\s*=\s*)(["'])\s*([^"']+?)\s*\2/gi, (whole, pre, q, v) =>
+    BARE_EMAIL.test(v) ? `${pre}${q}mailto:${v}${q}` : whole);
+}
+
 function safeUrl(value: string): string | null {
   const v = value.trim();
+  if (BARE_EMAIL.test(v)) return `mailto:${v}`;
   // Reject anything that could carry script. A scheme-relative URL is allowed
   // through as https, and everything unrecognised is dropped rather than
   // guessed at.

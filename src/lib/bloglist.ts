@@ -230,6 +230,40 @@ export function authorSections(
 }
 
 /**
+ * A theme archive (see portedListing in archive.ts): its stacked entry list
+ * holding page `pageNum`, twelve at a time, with the theme's own
+ * Previous / Next links under it rather than the numbered Elementor pager.
+ */
+export function portedSections(
+  template: Section[],
+  cards: { title: string; href: string; image: string | null; desc: string | null }[],
+  pageNum: number,
+  base: string,
+  total: number,
+): Section[] {
+  const slice = cards.slice((pageNum - 1) * PER_PAGE, pageNum * PER_PAGE);
+  let filled = false;
+  const walkBlocks = (blocks: Block[]): Block[] => {
+    const out: Block[] = [];
+    for (const block of blocks) {
+      if (block.type === 'columns') {
+        out.push({ ...block, cols: block.cols.map((c) => ({ ...c, blocks: walkBlocks(c.blocks) })) });
+        continue;
+      }
+      if (block.type === 'cards' && !filled) {
+        filled = true;
+        out.push({ ...block, cards: slice } as Block);
+        if (total > 1) out.push({ type: 'pagination', current: pageNum, total, base, variant: 'theme' } as Block);
+        continue;
+      }
+      out.push(block);
+    }
+    return out;
+  };
+  return template.map((s) => ({ ...s, blocks: walkBlocks(s.blocks) }));
+}
+
+/**
  * A category archive, /blogs/<category>/, filled the same way.
  *
  * These were ported with the first twelve cards frozen into the page and no

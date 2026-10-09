@@ -31,7 +31,28 @@ import type { Section } from '../types';
     not have, and which made every post 53px taller. */
 export type PostMeta = { author?: string | null; authorHref?: string; date?: string | null };
 
-export function applyPostTemplate(sections: Section[], meta: PostMeta = {}): Section[] {
+/* The before/after project template's title (d632582): 35px Poppins 500,
+   capitalised, centred, in the brand navy. 67 of the 69 projects carry it on
+   the block; two (/wraps-before-after/tesla-model-s-wrap-satin-flip-psychedelic/
+   and .../tesla-model-y-full-car-wrap-colour-change/) came across with no style,
+   so they fell back to the kit's 40px h1 -- 40/40 on a phone where the
+   original is 35/35. The style is the template's, so it is restated here. */
+const PROJECT_TITLE = 'd632582';
+const PROJECT_TITLE_STYLE =
+  'text-align:center;font-family:"Poppins", Sans-serif;font-size:35px;color:var( --e-global-color-8c22d81 );font-weight:500;text-transform:capitalize';
+
+function withTemplateTitle(sections: Section[]): Section[] {
+  const walk = (blocks: any[]): any[] =>
+    blocks.map((b) => {
+      if (b?.type === 'columns') return { ...b, cols: b.cols.map((c: any) => ({ ...c, blocks: walk(c.blocks ?? []) })) };
+      if (b?.type === 'heading' && b.eid === PROJECT_TITLE && !b.style) return { ...b, style: PROJECT_TITLE_STYLE };
+      return b;
+    });
+  return sections.map((s) => (s?.blocks ? { ...s, blocks: walk(s.blocks) } : s));
+}
+
+export function applyPostTemplate(stored: Section[], meta: PostMeta = {}): Section[] {
+  const sections = withTemplateTitle(stored);
   /* Only where the spacer section itself did not survive: on posts where
      525602a carries content (a gallery above the body) it renders as its own
      section, and adding its 40px again put every such post 40px long. */
@@ -140,13 +161,18 @@ export function applyPostTemplate(sections: Section[], meta: PostMeta = {}): Sec
  * and the block moved or changed -- is skipped, so an edit is never
  * overwritten with the original's structure. */
 import postLayout from '../data/post-layout.json';
+import { renderMarkdownBlocks } from './markdown';
 
 type Op = {
   sec?: string; path?: (string | number)[]; type?: string; eid?: string | null;
   set?: Record<string, unknown>; replace?: unknown;
 };
 
-export function applyPostLayout(slug: string, sections: Section[]): Section[] {
+export function applyPostLayout(slug: string, stored: Section[]): Section[] {
+  /* A body written as Markdown is drawn as the HTML it describes -- see
+     src/lib/markdown.ts. Here because the page and the 10XiD preview both
+     start from this step. */
+  const sections = renderMarkdownBlocks(stored);
   const ops = (postLayout as Record<string, Op[]>)[slug];
   if (!ops?.length) return sections;
   const out: Section[] = structuredClone(sections);
