@@ -16,11 +16,11 @@ import pageSeo from '../data/page-seo.json';
 import blogIndex from '../data/blog-index.json';
 import { applyPageSeo, type PageSeoOverride } from '../lib/pageseo';
 import { withGalleries } from '../lib/gallery';
-import { authorSections, blogPageMeta, blogSections, categorySections, pageCount, PER_PAGE, type BlogEntry } from '../lib/bloglist';
+import { authorSections, blogPageMeta, blogSections, categorySections, pageCount, portedSections, PER_PAGE, type BlogEntry } from '../lib/bloglist';
 /* Any one category listing: they are all Elementor archive template 18965,
    which the author archives share. See authorSections. */
 import archiveTemplate from '../data/pages/blogs__ai-to-print.json';
-import { categoryEntries, categoryPageCount, membersOf } from '../lib/archive';
+import { categoryEntries, categoryPageCount, membersOf, portedListing } from '../lib/archive';
 import { applyPostTemplate, applyPostLayout } from '../lib/post-template';
 import { img } from '../lib/img';
 /* Author name -> archive slug, shared with scripts/pull-posts.mjs so a post
@@ -81,7 +81,12 @@ export async function getStaticPaths() {
     /* A category archive pages through its live listing, to the original's
        five-page limit; the author archives through their members. */
     const listing = categoryEntries(page);
-    const total = listing ? categoryPageCount(listing) : pageCount(membersOf(page).length);
+    const ported = portedListing(page);
+    const total = listing
+      ? categoryPageCount(listing)
+      : ported
+        ? pageCount(ported.length)
+        : pageCount(membersOf(page).length);
     for (let n = 2; n <= total; n++) {
       paths.push({ params: { slug: `${page.slug}/page/${n}` }, props: { page, pageNum: n } });
     }
@@ -117,9 +122,12 @@ const blogTotal = pageCount((blogIndex as BlogEntry[]).length);
    thirty near-identical listings, and no structured data, because the ported
    graph describes page 1 by @id and every node in it references that id. */
 const categoryListing = categoryEntries(raw);
+const portedCards = portedListing(raw);
 const archivePages = categoryListing
   ? categoryPageCount(categoryListing)
-  : pageCount(membersOf(raw).length);
+  : portedCards
+    ? pageCount(portedCards.length)
+    : pageCount(membersOf(raw).length);
 const isPagedArchive = raw.kind === 'archive' && archivePages > 1;
 
 const basePage = isBlogIndex
@@ -141,6 +149,11 @@ const page = categoryListing
   ? {
       ...basePage,
       sections: categorySections(basePage.sections, categoryListing, pageNum, `/${raw.slug}/`, archivePages),
+    }
+  : portedCards
+  ? {
+      ...basePage,
+      sections: portedSections(basePage.sections, portedCards, pageNum, `/${raw.slug}/`, archivePages),
     }
   : isAuthorArchive
   ? {

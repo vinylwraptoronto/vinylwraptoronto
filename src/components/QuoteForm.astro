@@ -326,8 +326,12 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
     background-color: #ffffff;
     border-radius: var(--q-radius, 3px);
   }
-  .qform--dark .qbtn { background-color: var(--e-global-color-a8178e9); color: #ffffff; }
-  .qform--dark .qbtn:hover { background-color: var(--e-global-color-8c22d81); }
+  /* Lime, as on the original, with navy text: the original's white on lime is
+     1.9:1, and the site's contrast pass (global.css) gives every lime button
+     navy text (6.9:1). On hover it takes that pass's pink with white. */
+  .qform--dark .qbtn { background-color: var(--e-global-color-a8178e9); color: #15334c; }
+  .qform--dark .qbtn:hover,
+  .qform--dark .qbtn:focus-visible { background-color: #d6007d; color: #ffffff !important; }
 
   .sr-only {
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
