@@ -1204,7 +1204,7 @@ const secMargins = (() => {
 
         if (b.type === 'pagination') {
           return (
-            <nav class="elementor-pagination" aria-label="Pagination" data-eid={b.eid}>
+            <nav class="elementor-pagination" aria-label={`Pagination ${i + 1}`} data-eid={b.eid}>
               {b.current > 1 ? (
                 <a class="page-numbers prev" href={pagerHref(b.base, b.current - 1)} rel="prev">« Previous</a>
               ) : (
@@ -3564,7 +3564,7 @@ const secMargins = (() => {
   .carou-dots {
     display: flex;
     justify-content: center;
-    gap: 12px;
+    gap: 18px;
     margin-top: 12px;
   }
   /* A carousel with pagination reserves a 30px gutter at its foot and positions

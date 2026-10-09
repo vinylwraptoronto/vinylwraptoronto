@@ -152,3 +152,45 @@ label { display: inline-block; line-height: 1; vertical-align: middle; }
    only a landing point, not a control, so it draws no ring of its own. */
 .sec[id][tabindex="-1"]:focus,
 .cols[id][tabindex="-1"]:focus { outline: none; }
+
+/* Accessibility contrast pass (WCAG 2 AA). Brand colours stay as authored;
+   where one fails against its background the nearest passing shade is used:
+   pink #ff0099 -> #d6007d on light (5.05:1) and #ff80c8 on navy, green
+   #14a278 -> #0b6b4f on light (6.5:1) and #7ee0bd on navy, white-on-green
+   panels darken to #0f7a5a (5.3:1), lime buttons carry navy text (6.9:1).
+   Colours arrive as inline styles, hence the attribute selectors and
+   !important. "Navy" below is any element whose inline background is the navy
+   token, or anything inside one. */
+.rt a,
+.rt a:visited,
+.rt a:hover { color: #d6007d !important; text-decoration: underline !important; }
+.has-ic > a { color: #d6007d; }
+[style*=";color:var( --e-global-color-f32bb28" i],
+[style*=";color:#ff0099" i] { color: #d6007d !important; }
+[style*=";color:var( --e-global-color-8c22d81" i],
+[style*=";color:#14a278" i] { color: #0b6b4f !important; }
+.card-more { color: #d6007d; }
+.card-meta,
+.card-author,
+.card-date { color: #5f6368 !important; }
+[style*="background-color:var( --e-global-color-8c22d81" i],
+[style*="background-color:#14a278" i] { background-color: #0f7a5a !important; }
+.btn[style*="f32bb28" i] { --btn-bg: #d6007d; background-color: #d6007d !important; }
+.compare-pair figcaption { background-color: #d6007d !important; }
+.cdown,
+.cdown *,
+.qbtn:hover,
+.qbtn:focus-visible,
+.card .qbtn { color: #15334c !important; }
+.card .qbtn:hover { background-color: #d6007d !important; color: #fff !important; }
+
+[style*="background-color:var( --e-global-color-d077a13" i][style*=";color:var( --e-global-color-f32bb28" i],
+[style*="background-color:var( --e-global-color-d077a13" i] [style*=";color:var( --e-global-color-f32bb28" i],
+[style*="background-color:var( --e-global-color-d077a13" i] .has-ic > a { color: #ff80c8 !important; }
+[style*="background-color:var( --e-global-color-d077a13" i] [style*=";color:var( --e-global-color-8c22d81" i],
+[style*="background-color:var( --e-global-color-d077a13" i] .hd > a[href^="tel:"] { color: #7ee0bd !important; }
+[style*="background-color:var( --e-global-color-d077a13" i] [style*=";color:var( --e-global-color-text" i],
+[style*="background-color:var( --e-global-color-d077a13" i] [style*=";color:#4b4f58" i],
+[style*="background-color:var( --e-global-color-d077a13" i] [style*=";color:#444" i],
+[style*="background-color:var( --e-global-color-d077a13" i] .feature p,
+[style*="background-color:var( --e-global-color-d077a13" i] form[data-form="f-s"] :is(label, .uploadnote, input[type="file"]) { color: #fff !important; }
