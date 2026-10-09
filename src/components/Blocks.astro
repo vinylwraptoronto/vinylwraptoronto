@@ -167,6 +167,18 @@ const groups: { section?: Section; blocks: Block[]; bare: boolean }[] = blocks
   ? [{ blocks, bare: true }]
   : (sections ?? []).map((s) => ({ section: s, blocks: s.blocks, bare: false }));
 
+const headingBlocks = (items: Block[], into: Extract<Block, { type: 'heading' }>[] = []) => {
+  for (const block of items) {
+    if (block.type === 'heading' && !block.tag) into.push(block);
+    if (block.type === 'columns') for (const col of block.cols) headingBlocks(col.blocks, into);
+  }
+  return into;
+};
+const pageHeadings = blocks ? [] : headingBlocks((sections ?? []).flatMap((section) => section.blocks));
+const primaryHeadingEid = suppliedPrimaryHeadingEid ??
+  (pageHeadings.find((heading) => heading.level === 1) ??
+   pageHeadings.find((heading) => heading.level === 2) ?? pageHeadings[0])?.eid;
+
 const num = (v?: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined);
 
 /** The pixel size of an uploaded image, from src/data/img-dims.json.

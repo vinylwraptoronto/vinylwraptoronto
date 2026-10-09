@@ -78,7 +78,11 @@ for (const route of ROUTES) {
     css += '\n' + read(path.join(dist, m[1]));
   }
   const body = html.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>|<!--[\s\S]*?-->/g, '');
-  if (/font-style:\s*(italic|oblique)|font:\s*(italic|oblique)/i.test(css)) fail(`/${route}/ CSS declares italic`);
+  // Italic is fine where the rule sets its own non-Poppins/Roboto family
+  // (testimonial bubble uses Montserrat); the dropped faces are Poppins/Roboto only.
+  for (const [, decl] of css.matchAll(/\{([^{}]*)\}/g)) {
+    if (/font-style:\s*(italic|oblique)|font:\s*(italic|oblique)/i.test(decl) && !/font-family:\s*['"]?Montserrat/i.test(decl)) fail(`/${route}/ CSS declares italic`);
+  }
   if (/<(em|cite|address|dfn|var)[\s>]/i.test(body)) fail(`/${route}/ has a UA-italic element`);
   for (const t of body.match(/<i[\s>][^>]*>/g) ?? []) {
     if (!/class="[^"]*\bfa[srb]?\b/.test(t)) fail(`/${route}/ has a non-icon <i>: ${t}`);
