@@ -115,8 +115,8 @@ export type Block = (
           kit capitalizes h3 but not h4. */
       level?: number;
       style?: string | null;
-      /** The title's own markup, where it carries emphasis: the warranty box
-          is "3 Year Warranty<sup>*</sup>" and the port flattened it. */
+      /** The title's own markup, where it carries emphasis: a footnoted
+          title such as "Name<sup>*</sup>", which the port flattened. */
       titleHtml?: string;
       /** The widget's own text alignment and icon gap, from the original's
           per-element rule. The port centred every icon box on the site; the

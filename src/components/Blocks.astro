@@ -69,7 +69,7 @@ export interface Props {
 type TocEntry = { eid?: string; text: string; level: number; renderLevel: number; id: string };
 
 const { sections: rawSections, blocks: rawBlocks, toc, primaryHeadingEid: suppliedPrimaryHeadingEid, categoriesLevel: suppliedCategoriesLevel, cardsLevel: suppliedCardsLevel } = Astro.props;
-/* The 3-year warranty panels are dropped before anything else reads the page:
+/* Retired warranty panels are dropped before anything else reads the page:
    see src/lib/warranty.ts. */
 const sections = rawSections && withoutWarranty(rawSections);
 const blocks = rawBlocks && withoutWarrantyBlocks(rawBlocks);
@@ -1220,8 +1220,8 @@ const secMargins = (() => {
                   : <span class="feature-ic" aria-hidden="true" style={iconSizeVars(b.eid)}><i class={b.icon}></i></span>
               )}
               {b.image && <img src={img(b.image)} alt={describe(b.image, b.alt ?? '')} width={dimsOf(b.image)?.[0]} height={dimsOf(b.image)?.[1]} loading="lazy" decoding="async" />}
-              {/* `titleHtml` where the title carries emphasis. The warranty
-                  box is "3 Year Warranty<sup>*</sup>" and the port took its
+              {/* `titleHtml` where the title carries emphasis. A footnoted
+                  title such as "Name<sup>*</sup>" was ported as its
                   textContent, so the footnote marker dropped to the baseline
                   with a space in front of it and read as part of the name.
                   `title` and `text` are the same nodes built above. */}
@@ -3179,7 +3179,7 @@ const secMargins = (() => {
      takes the paragraph's 16px back. */
   nav.pagination { display: flex; justify-content: space-between; width: 100%; margin: -16px auto 20px; }
   nav.pagination .nav-next { text-align: end; }
-  /* The warranty box's footnote asterisk ("3 Year Warranty<sup>*</sup>") is
+  /* A feature title's footnote asterisk ("Name<sup>*</sup>") is
      raised without opening the line: the original's title is one 19.2px line
      on a phone, and the sup's own leading made it 23. */
   .feature :is(h1, h2, h3, h4, h5, h6) :global(sup) { line-height: 0; }

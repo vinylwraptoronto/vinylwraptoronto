@@ -2,11 +2,11 @@
 Carry the icon-box titles whose text is markup rather than a plain line.
 
 The fourth widget with this defect, after the two-line buttons, the headings
-and the icon-list items. The site's warranty box is titled
+and the icon-list items. A footnoted icon-box title such as
 
-    3 Year Warranty<sup>*</sup>
+    Name<sup>*</sup>
 
-and the port took its textContent, so it renders "3 Year Warranty *" -- the
+was ported as its textContent, so it rendered "Name *" -- the
 asterisk dropped to the baseline and a space appeared in front of it. It is a
 footnote marker, and on the port it reads as part of the name.
 
@@ -56,8 +56,8 @@ def norm(s):
           .replace("“", '"').replace("”", '"')
           .replace("–", "-").replace("—", "-"))
     # Whitespace-insensitive, because the spacing is the very thing that
-    # differs: the original's "3 Year Warranty<sup>*</sup>" flattens to
-    # "3 Year Warranty*" and the port stored "3 Year Warranty *". Comparing on
+    # differs: a footnoted "Name<sup>*</sup>" flattens to
+    # "Name*" while the port stored "Name *". Comparing on
     # the letters is what lets the two bind to each other.
     return re.sub(r"\s+", "", s).strip().lower()
 
