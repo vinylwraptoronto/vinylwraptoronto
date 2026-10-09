@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { clientIp, originIsSelf, type Db } from '../../lib/auth';
 import { isPhone } from '../../lib/phone';
+import { sendToTenxid } from '../../lib/tenxid-intake';
 
 /**
  * Quote form endpoint.
@@ -30,6 +31,11 @@ import { isPhone } from '../../lib/phone';
  *
  * Without them the submission is still accepted and stored; only the email is
  * skipped. The visitor is told their enquiry was received, because it was.
+ *
+ * Last, the enquiry is copied into the business's 10XiD Jobs as a quote or an
+ * estimate (src/lib/tenxid-intake.ts), when the TENXID_INTAKE_KEY secret is
+ * set. It runs after the response where the Worker allows (waitUntil), and a
+ * failure there changes nothing the visitor sees.
  */
 export const prerender = false;
 
@@ -86,6 +92,7 @@ const json = (body: unknown, status: number) =>
   });
 
 export const POST: APIRoute = async ({ request, locals, url }) => {
+  const runtime = (locals as { runtime?: { ctx?: { waitUntil?: (p: Promise<unknown>) => void } } })?.runtime;
   /* Astro's built-in origin check is off site-wide — it refuses a same-origin
      form navigation whose browser omits the Origin header, which broke the
      admin login. This endpoint had no check of its own and was relying on it,
@@ -289,6 +296,28 @@ export const POST: APIRoute = async ({ request, locals, url }) => {
       /* The enquiry is already saved; only the delivery note is missing. */
     }
   }
+
+  /* The copy in 10XiD. After the row and the email, and never in the way of
+     either: sendToTenxid does not throw, and the visitor's answer below does
+     not depend on it. */
+  const filing = sendToTenxid(
+    {
+      form: get('form'),
+      name,
+      email,
+      phone,
+      wrapType,
+      vehicle,
+      product,
+      message,
+      photoCount: photos.length,
+      page: request.headers.get('referer')?.slice(0, 500) ?? null,
+      submissionId: id,
+    },
+    { key: env.TENXID_INTAKE_KEY as string | undefined, url: env.TENXID_JOBS_URL as string | undefined },
+  );
+  if (runtime?.ctx?.waitUntil) runtime.ctx.waitUntil(filing);
+  else await filing;
 
   /* Nothing was stored and the email failed, so the enquiry really is lost --
      the one case that still owes the visitor the phone number. */

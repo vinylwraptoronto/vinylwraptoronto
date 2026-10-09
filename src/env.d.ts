@@ -13,6 +13,11 @@ interface Env {
   /** Worker secrets for the quote form; absent until they are set. */
   RESEND_API_KEY?: string;
   QUOTE_TO_EMAIL?: string;
+  /** Worker secret: the key made on the 10XiD portal's Website page. Without
+   *  it, enquiries are not copied into 10XiD -- see src/lib/tenxid-intake.ts. */
+  TENXID_INTAKE_KEY?: string;
+  /** Where to file them; defaults to https://app.10xid.com/api/v1/jobs. */
+  TENXID_JOBS_URL?: string;
 }
 
 /** Build-time variables. Both are optional and both have a documented default. */
