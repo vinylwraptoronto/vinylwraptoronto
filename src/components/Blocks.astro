@@ -23,7 +23,9 @@ import iconSize from '../data/icon-size.json';
 import iconBox from '../data/icon-box.json';
 import QuoteForm from './QuoteForm.astro';
 import { img, imgHtml } from '../lib/img';
+import { mailtoHrefs } from '../lib/postdoc';
 import { describe, LINKED } from '../lib/image-desc';
+import { withoutWarranty, withoutWarrantyBlocks } from '../lib/warranty';
 
 export interface Props {
   /** Normal use: whole sections, each with its own padding and container. */
@@ -66,7 +68,11 @@ export interface Props {
  *  Elementor/WordPress export. */
 type TocEntry = { eid?: string; text: string; level: number; renderLevel: number; id: string };
 
-const { sections, blocks, toc, primaryHeadingEid: suppliedPrimaryHeadingEid, categoriesLevel: suppliedCategoriesLevel, cardsLevel: suppliedCardsLevel } = Astro.props;
+const { sections: rawSections, blocks: rawBlocks, toc, primaryHeadingEid: suppliedPrimaryHeadingEid, categoriesLevel: suppliedCategoriesLevel, cardsLevel: suppliedCardsLevel } = Astro.props;
+/* The 3-year warranty panels are dropped before anything else reads the page:
+   see src/lib/warranty.ts. */
+const sections = rawSections && withoutWarranty(rawSections);
+const blocks = rawBlocks && withoutWarrantyBlocks(rawBlocks);
 
 /** True when this call is rendering the inside of a column rather than whole
  *  sections. A before/after pair in a column is drawn at half the content
@@ -1008,7 +1014,7 @@ const secMargins = (() => {
           let openN = 0;
           let closeN = 0;
           const tagNums: number[] = [];
-          const withIds = imgHtml(b.html)
+          const withIds = imgHtml(mailtoHrefs(b.html))
             .replace(
               /<h([2-6])\b([^>]*)>/g,
               (whole, lvl, attrs) => {
@@ -1221,6 +1227,25 @@ const secMargins = (() => {
                   `title` and `text` are the same nodes built above. */}
               {icLeft ? <div class="feature-body">{title}{text}</div> : <>{title}{text}</>}
             </div>
+          );
+        }
+
+        if (b.type === 'pagination' && b.variant === 'theme') {
+          /* Hello Elementor's archive pager, as the theme template prints it:
+             an empty slot where there is no previous page, then Next. */
+          return (
+            <nav class="pagination" aria-label="Pagination">
+              <div class="nav-previous">
+                {b.current > 1 && (
+                  <a href={pagerHref(b.base, b.current - 1)} rel="prev"><span class="meta-nav" aria-hidden="true">&larr;</span> Previous</a>
+                )}
+              </div>
+              <div class="nav-next">
+                {b.current < b.total && (
+                  <a href={pagerHref(b.base, b.current + 1)} rel="next">Next <span class="meta-nav" aria-hidden="true">&rarr;</span></a>
+                )}
+              </div>
+            </nav>
           );
         }
 
@@ -3147,6 +3172,17 @@ const secMargins = (() => {
      not the heading widget's 1. /racing-stripes/ titles its image-boxes h2,
      and they rendered 28px on 28 where the original gives 33.6. */
   .feature :is(h1, h2, h5, h6) { line-height: 1.2; }
+  /* The theme archive pager (Hello Elementor's reset.css / theme.css). */
+  /* 20px under the last entry, as on the original -- where the entry's 16px
+     paragraph margin collapses into the pager's 20px. In this flex column
+     nothing collapses and the column's own 20px gap is added, so the pager
+     takes the paragraph's 16px back. */
+  nav.pagination { display: flex; justify-content: space-between; width: 100%; margin: -16px auto 20px; }
+  nav.pagination .nav-next { text-align: end; }
+  /* The warranty box's footnote asterisk ("3 Year Warranty<sup>*</sup>") is
+     raised without opening the line: the original's title is one 19.2px line
+     on a phone, and the sup's own leading made it 23. */
+  .feature :is(h1, h2, h3, h4, h5, h6) :global(sup) { line-height: 0; }
   .feature p {
     margin: 0;
     /* the body's own type — 14px/21px here was invented */

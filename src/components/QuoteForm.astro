@@ -198,6 +198,9 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
   {/* The click that brought this visitor here (gclid, utm_*), read from the
       first-party cookie at submit time -- see Analytics.astro. */}
   <input type="hidden" name="attribution" value="" />
+  {/* Which form this is, so /api/quote/ can file it in 10XiD as a quote or,
+      for the Limited Time Offer, an estimate -- see src/lib/tenxid-intake.ts. */}
+  <input type="hidden" name="form" value={id} />
 
   <button type="submit" class="qbtn" data-sb-avoid={tone === 'dark' ? '' : undefined}>{submit ?? 'Send Message'}</button>
   <p class="qstatus" role="status" aria-live="polite"></p>
@@ -323,12 +326,12 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
     background-color: #ffffff;
     border-radius: var(--q-radius, 3px);
   }
-  /* White on the brand lime measures 1.9:1, so the label is navy (6.9:1) and
-     keeps the lime paint; on the teal hover navy alone is 4.0:1, so it
-     darkens (5.2:1). !important because global.css forces every
-     .qbtn:hover to #15334c !important, which left the hover at 4.0:1. */
+  /* Lime, as on the original, with navy text: the original's white on lime is
+     1.9:1, and the site's contrast pass (global.css) gives every lime button
+     navy text (6.9:1). On hover it takes that pass's pink with white. */
   .qform--dark .qbtn { background-color: var(--e-global-color-a8178e9); color: #15334c; }
-  .qform--dark .qbtn:hover { background-color: var(--e-global-color-8c22d81); color: #0b1f2f !important; }
+  .qform--dark .qbtn:hover,
+  .qform--dark .qbtn:focus-visible { background-color: #d6007d; color: #ffffff !important; }
 
   .sr-only {
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;

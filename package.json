@@ -25,7 +25,9 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.10",
-    "astro": "^5.14.1"
+    "astro": "^5.14.1",
+    "micromark": "^4.0.2",
+    "micromark-extension-gfm": "^3.0.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",

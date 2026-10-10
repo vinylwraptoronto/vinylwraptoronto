@@ -227,6 +227,9 @@ export type Block = (
       /** Every page number, no ellipsis: Elementor's archive posts widget with
           "Shorten" off, as on the category archives' five-page pager. */
       showAll?: boolean;
+      /** The theme's archive pager (Hello Elementor's `nav.pagination`): only
+          "← Previous" and "Next →", on /wraps-before-after/ and the like. */
+      variant?: 'theme';
     }
   /* Elementor's countdown widget, on the Limited Time Offer panel of 403 post
      pages. It is an *evergreen* countdown: `data-date` is empty and

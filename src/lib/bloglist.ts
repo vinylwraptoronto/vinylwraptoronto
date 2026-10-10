@@ -9,9 +9,9 @@
  * links from it.
  *
  * So the cards block is refilled from the live index at build time and a
- * pagination control is inserted after it. Everything else on the page — the
- * heading, the category list, the "Why Choose Us?" panel, the column widths —
- * is left exactly as ported, because only the listing was ever wrong.
+ * pagination control is inserted after it. The heading, the category list,
+ * the "Why Choose Us?" panel and the column widths are left as ported; the
+ * listing's section is widened to the header's content box (alignToHeader).
  */
 import type { Block, HeadData, PageData, Section } from '../types';
 import { setMeta, type MetaTag } from './pageseo';
@@ -120,7 +120,51 @@ export function blogSections(
     return out;
   };
 
-  return page.sections.map((s) => ({ ...s, blocks: walkBlocks(s.blocks) }));
+  return page.sections.map((s) => {
+    const before = filled;
+    const blocks = walkBlocks(s.blocks);
+    /* The section that holds the listing is the one realigned. */
+    return !before && filled ? alignToHeader({ ...s, blocks }) : { ...s, blocks };
+  });
+}
+
+/**
+ * Lines the index up with the header's content box.
+ *
+ * The header bar is `min(1400px, 100% - 40px)` wide and centred (Header.astro
+ * `.bar`), so the logo and the "I want to" button sit 20px in from the edge on
+ * a phone and inside a 1400px box on a wide screen. As ported, the listing sat
+ * in the 1200px container with three insets stacked inside it -- the
+ * container's 10px, each column's own padding, and on mobile 15px on the
+ * section -- so the cards started 120px further in than the logo at 1440 and
+ * 15px further in at 390.
+ *
+ * Here the container takes the header's width, and every inset on the OUTER
+ * edges goes to zero: the section's side padding, the container's side
+ * padding, the cards column's left padding and the sidebar's right. The gutter
+ * between the two columns keeps its 10px + 15px, and all vertical spacing is
+ * unchanged. Once the columns stack on a phone, each one is an outer edge on
+ * both sides, so both lose their side padding there.
+ */
+function alignToHeader(s: Section): Section {
+  const cols = (b: Block): Block => {
+    if (b.type !== 'columns' || b.cols.length !== 2) return b;
+    const [main, side] = b.cols;
+    return {
+      ...b,
+      cols: [
+        { ...main, padding: '10px 10px 10px 0px', padM: '10px 0px' },
+        { ...side, padding: '15px 0px 15px 15px', padM: '15px 0px' },
+      ],
+    };
+  };
+  return {
+    ...s,
+    maxWidth: 'min(1400px, 100% - 40px)',
+    innerPad: '10px 0px',
+    paddingM: '50px 0px 50px 0px',
+    blocks: s.blocks.map(cols),
+  };
 }
 
 /**
@@ -227,6 +271,40 @@ export function authorSections(
   const bySlug = new Map(index.map((e) => [e.slug, e]));
   const entries = members.map((s) => bySlug.get(s)).filter((e): e is BlogEntry => !!e);
   return listingSections(template, entries, pageNum, base, pageCount(entries.length), name);
+}
+
+/**
+ * A theme archive (see portedListing in archive.ts): its stacked entry list
+ * holding page `pageNum`, twelve at a time, with the theme's own
+ * Previous / Next links under it rather than the numbered Elementor pager.
+ */
+export function portedSections(
+  template: Section[],
+  cards: { title: string; href: string; image: string | null; desc: string | null }[],
+  pageNum: number,
+  base: string,
+  total: number,
+): Section[] {
+  const slice = cards.slice((pageNum - 1) * PER_PAGE, pageNum * PER_PAGE);
+  let filled = false;
+  const walkBlocks = (blocks: Block[]): Block[] => {
+    const out: Block[] = [];
+    for (const block of blocks) {
+      if (block.type === 'columns') {
+        out.push({ ...block, cols: block.cols.map((c) => ({ ...c, blocks: walkBlocks(c.blocks) })) });
+        continue;
+      }
+      if (block.type === 'cards' && !filled) {
+        filled = true;
+        out.push({ ...block, cards: slice } as Block);
+        if (total > 1) out.push({ type: 'pagination', current: pageNum, total, base, variant: 'theme' } as Block);
+        continue;
+      }
+      out.push(block);
+    }
+    return out;
+  };
+  return template.map((s) => ({ ...s, blocks: walkBlocks(s.blocks) }));
 }
 
 /**

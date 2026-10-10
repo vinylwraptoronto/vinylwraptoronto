@@ -349,6 +349,53 @@ try {
   console.warn(`⚠  pull-posts: could not rebuild the category list (${e.message || e}); keeping the committed copy.`);
 }
 
+/* Who each vehicle-brand archive lists, /blogs_vehicles_brand/<term>/.
+
+   Ported like the categories -- twelve frozen cards and no pager -- so
+   /blogs_vehicles_brand/blog-ford/ showed twelve of its 38 posts and its pages
+   2-4 were 404s. The brand terms came across from WordPress without their
+   hierarchy (parent_id is empty on all 539) and with some posts filed only
+   under the model: the original lists a Silverado post under Chevrolet, where
+   D1 files it under blog-chevrolet-silverado alone. A model's slug is its
+   make's plus "-<model>", so a top-level make -- a term no other term's slug
+   prefixes -- lists its own posts and every model's; a model lists its own.
+   Checked against every one of the original's 539 brand archives, all pages:
+   the same posts in the same order on all of them. */
+try {
+  const pairs = await d1(
+    `SELECT t.slug AS term, p.id, p.slug, p.published_at
+       FROM post_terms pt
+       JOIN terms t ON t.id = pt.term_id
+       JOIN posts p ON p.id = pt.post_id
+      WHERE t.taxonomy = 'brand' AND p.status = 'published'`,
+  );
+  const allTerms = (await d1(`SELECT slug FROM terms WHERE taxonomy = 'brand'`)).map((t) => t.slug);
+  const isMake = (slug) => !allTerms.some((o) => o !== slug && slug.startsWith(`${o}-`));
+  const byTerm = new Map();
+  const postOf = new Map();
+  for (const r of pairs) {
+    if (!byTerm.has(r.term)) byTerm.set(r.term, new Set());
+    byTerm.get(r.term).add(r.slug);
+    postOf.set(r.slug, r);
+  }
+  const newestFirst = (a, b) =>
+    String(b.published_at ?? '').localeCompare(String(a.published_at ?? '')) || b.id - a.id;
+  const brandMembers = {};
+  for (const slug of allTerms) {
+    const set = new Set(byTerm.get(slug) ?? []);
+    if (isMake(slug)) {
+      for (const [t, posts] of byTerm) if (t.startsWith(`${slug}-`)) for (const p of posts) set.add(p);
+    }
+    if (set.size) {
+      brandMembers[`/blogs_vehicles_brand/${slug}/`] = [...set].map((p) => postOf.get(p)).sort(newestFirst).map((p) => p.slug);
+    }
+  }
+  fs.writeFileSync(path.join(ROOT, 'src/data/brand-members.json'), JSON.stringify(brandMembers));
+  console.log(`pull-posts: listings for ${Object.keys(brandMembers).length} vehicle-brand archives`);
+} catch (e) {
+  console.warn(`⚠  pull-posts: could not rebuild the vehicle-brand listings (${e.message || e}); keeping the committed copy.`);
+}
+
 /*
  * Site settings.
  *
