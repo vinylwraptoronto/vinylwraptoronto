@@ -47,6 +47,12 @@ export type Block = (
           inside the href, which the port passed through verbatim — so 426
           buttons across 418 pages only appended a hash to the address. */
       popup?: string;
+      /** Call during these hours, open `popup` the rest of the time -- the
+          original switches the PPF hero's "Get an Estimate" between a tel:
+          link and the enquiry popup by time of day. `href` is the tel: link;
+          days are 0 (Sunday) to 6, times are Toronto time, `to` exclusive.
+          See the script in Popups.astro. */
+      callHours?: { days: number[]; from: string; to: string };
       style?: string | null;
       /** Font Awesome classes, e.g. "fas fa-phone-alt". */
       icon?: string | null;
