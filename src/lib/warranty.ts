@@ -15,8 +15,10 @@
  *
  * Dropping them here, before the renderer sees a page, reaches every one of
  * those whatever its source, and keeps the table of contents and heading
- * outline consistent with what is actually drawn. Article prose that mentions
- * the warranty is content, not one of these panels, and is left alone.
+ * outline consistent with what is actually drawn. Prose that named the 3-year
+ * term -- hero lines, landing-page FAQs, post copy -- was removed from the
+ * page data and from D1 itself; scripts/check-warranty.mjs fails the build if
+ * any of it comes back. scripts/index-pages.mjs skips the same panels.
  *
  * A row whose column held nothing but the removed box loses that column, and
  * the columns left over share the row: three thirds become two halves rather

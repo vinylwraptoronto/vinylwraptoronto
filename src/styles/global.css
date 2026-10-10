@@ -175,7 +175,17 @@ label { display: inline-block; line-height: 1; vertical-align: middle; }
 .card-date { color: #5f6368 !important; }
 [style*="background-color:var( --e-global-color-8c22d81" i],
 [style*="background-color:#14a278" i] { background-color: #0f7a5a !important; }
-.btn[style*="f32bb28" i] { --btn-bg: #d6007d; background-color: #d6007d !important; }
+/* By the button's resting colour only. Matching "f32bb28" anywhere in the
+   style also caught every button that merely turns pink on hover -- 46 green,
+   navy and lime buttons, the PPF coverage cards' among them, drawn pink at
+   rest. White on the authored green fails, so green rests take the darker
+   panel shade; lime keeps navy text, white once its hover turns it pink. */
+.btn[style*="--btn-bg:var( --e-global-color-8c22d81" i] { background-color: #0f7a5a !important; }
+.btn[style*="--btn-bg:var( --e-global-color-8c22d81" i]:is(:hover, :focus-visible) { background-color: var(--btn-hover-bg, #0f7a5a) !important; }
+.btn[style*="--btn-bg:var( --e-global-color-a8178e9" i] { color: #15334c !important; }
+.btn[style*="--btn-bg:var( --e-global-color-f32bb28" i],
+.btn[style*="--btn-hover-bg:var( --e-global-color-f32bb28" i]:is(:hover, :focus-visible) { --btn-bg: #d6007d; background-color: #d6007d !important; }
+.btn[style*="--btn-bg:var( --e-global-color-a8178e9" i][style*="--btn-hover-bg:var( --e-global-color-f32bb28" i]:is(:hover, :focus-visible) { color: #fff !important; }
 .compare-pair figcaption { background-color: #d6007d !important; }
 .cdown,
 .cdown *,
@@ -194,3 +204,8 @@ label { display: inline-block; line-height: 1; vertical-align: middle; }
 [style*="background-color:var( --e-global-color-d077a13" i] [style*=";color:#444" i],
 [style*="background-color:var( --e-global-color-d077a13" i] .feature p,
 [style*="background-color:var( --e-global-color-d077a13" i] form[data-form="f-s"] :is(label, .uploadnote, input[type="file"]) { color: #fff !important; }
+/* A white panel on navy (the PPF coverage cards) is light again inside: its
+   grey text stays grey rather than taking the navy section's white. */
+[style*="background-color:var( --e-global-color-d077a13" i] [style*="background-color:#ffffff" i] [style*=";color:var( --e-global-color-text" i] { color: var(--e-global-color-text) !important; }
+[style*="background-color:var( --e-global-color-d077a13" i] [style*="background-color:#ffffff" i] [style*=";color:#4b4f58" i] { color: #4b4f58 !important; }
+[style*="background-color:var( --e-global-color-d077a13" i] [style*="background-color:#ffffff" i] .feature p { color: var(--e-global-color-text) !important; }

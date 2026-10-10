@@ -51,8 +51,54 @@ function withTemplateTitle(sections: Section[]): Section[] {
   return sections.map((s) => (s?.blocks ? { ...s, blocks: walk(s.blocks) } : s));
 }
 
+/* The hero (aad5b5a): the navy title column beside the featured image. The
+   template centres the row's columns vertically (`align-items: center` on
+   the section's widget wraps), so the title sits in the middle of the navy
+   box, and gives the title column (6a05303) a 2px pink bottom border. The
+   port top-aligned the title and drew no border. Posts written through the
+   10XiD portal carry the same hero without the template's ids, so it is also
+   recognised by shape: a first section whose row is a navy column holding
+   only an h1, beside a column holding only an image.
+   The row itself is `elementor-column-gap-no` with the title column's own 5px
+   right margin; the port's 20px gutter made the title column 5px narrower,
+   enough to wrap a long title onto a third line. A 5px gutter puts it within
+   2.5px of the original's width. */
+const HERO_BORDER = 'border-style:solid;border-width:0px 0px 2px 0px;border-color:var( --e-global-color-f32bb28 )';
+
+function isHeroRow(b: any): boolean {
+  if (b?.type !== 'columns' || (b.cols ?? []).length !== 2) return false;
+  const [title, image] = b.cols;
+  const t = title.blocks ?? [];
+  const i = image.blocks ?? [];
+  if (t[0]?.eid === 'cc1fcc1') return true;
+  return (
+    /d077a13|#15334c/i.test(String(title.background ?? '')) &&
+    t.length === 1 && t[0]?.type === 'heading' && t[0]?.level === 1 &&
+    i.length === 1 && i[0]?.type === 'image'
+  );
+}
+
+function withHero(sections: Section[]): Section[] {
+  return sections.map((s, n) => {
+    if (s?.id !== 'aad5b5a' && !(n === 0 && !s?.id)) return s;
+    return {
+      ...s,
+      blocks: (s.blocks ?? []).map((b: any) => {
+        if (!isHeroRow(b)) return b;
+        const [title, ...rest] = b.cols;
+        return {
+          ...b,
+          valign: b.valign ?? 'middle',
+          gap: b.gap ?? 5,
+          cols: [{ ...title, border: title.border ?? HERO_BORDER }, ...rest],
+        };
+      }),
+    };
+  });
+}
+
 export function applyPostTemplate(stored: Section[], meta: PostMeta = {}): Section[] {
-  const sections = withTemplateTitle(stored);
+  const sections = withHero(withTemplateTitle(stored));
   /* Only where the spacer section itself did not survive: on posts where
      525602a carries content (a gallery above the body) it renders as its own
      section, and adding its 40px again put every such post 40px long. */

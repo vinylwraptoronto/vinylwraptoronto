@@ -1779,15 +1779,22 @@ const secMargins = (() => {
               half={b.half}
               submitCase={b.submitCase}
               tone={b.tone}
+              accent={b.accent}
             />
           );
           /* The form widget's own box (a panel colour, padding) and its
              per-breakpoint visibility, as on every other block. Neither was
              carried: the landing page's hero form, hidden on a phone on the
              original, showed there and pushed the hero 239px taller. */
-          const wrapStyle = [b.box, b.style].filter(Boolean).join(';');
+          const wrapStyle = [
+            b.box,
+            b.style,
+            b.width?.d ? `--fw:${b.width.d}` : '',
+            b.width?.t ? `--fw-t:${b.width.t}` : '',
+            b.width?.m ? `--fw-m:${b.width.m}` : '',
+          ].filter(Boolean).join(';');
           return wrapStyle || b.hide?.length
-            ? <div class="formwrap" style={wrapStyle || undefined} data-hide={b.hide?.join(' ')}>{form}</div>
+            ? <div class:list={['formwrap', { 'formwrap--w': !!b.width }]} style={wrapStyle || undefined} data-hide={b.hide?.join(' ')}>{form}</div>
             : form;
         }
 
@@ -1852,8 +1859,9 @@ const secMargins = (() => {
             >
               {b.cols.map((c) => {
                 /* Only a column that sits on a colour of its own gets one; a
-                   declared #ffffff is the page background already. */
-                const tinted = c.background && c.background.toLowerCase() !== '#ffffff';
+                   declared #ffffff is the page background already, unless the
+                   column is a white panel on a coloured section (`solid`). */
+                const tinted = c.background && (c.solid || c.background.toLowerCase() !== '#ffffff');
                 const style = [
                   `--col-w:${c.width}%`,
                   c.tabletWidth != null ? `--col-tw:${c.tabletWidth}%` : '',
@@ -2515,6 +2523,12 @@ const secMargins = (() => {
      spaced. The 20px row gap put 40px between stacked copy where the original
      has 20: every two-column row on a phone came out 20px taller. */
   .cols[data-stack] { row-gap: 0; }
+
+  /* A form widget with its own width (the PPF estimate card: 50%, 75% on a
+     tablet, full on a phone), centred as its section centres it. */
+  .formwrap--w { width: var(--fw, 100%); max-width: 100%; margin-inline: auto; box-sizing: border-box; }
+  @media (max-width: 1024px) { .formwrap--w { width: var(--fw-t, var(--fw, 100%)); } }
+  @media (max-width: 767px) { .formwrap--w { width: var(--fw-m, var(--fw-t, var(--fw, 100%))); } }
   /* A tablet width, where the column sets one; otherwise the desktop share
      holds, as it does in Elementor. */
   @media (max-width: 1024px) {
