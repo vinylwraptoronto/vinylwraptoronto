@@ -453,6 +453,10 @@ export type ColumnsBlock = {
     width: number;
     blocks: Block[];
     background?: string | null;
+    /** Draw `background` even when it is white. A white column is normally the
+        page showing through and is left unpainted; on a coloured section --
+        the PPF coverage cards, white panels on navy -- it is the panel. */
+    solid?: boolean;
     padding?: string | null;
     /** Elementor writes these on `.elementor-element-populated`, which is the
         column box itself here — e.g. the FAQ hero's navy panel carries a 2px

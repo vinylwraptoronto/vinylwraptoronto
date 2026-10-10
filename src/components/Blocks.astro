@@ -1852,8 +1852,9 @@ const secMargins = (() => {
             >
               {b.cols.map((c) => {
                 /* Only a column that sits on a colour of its own gets one; a
-                   declared #ffffff is the page background already. */
-                const tinted = c.background && c.background.toLowerCase() !== '#ffffff';
+                   declared #ffffff is the page background already, unless the
+                   column is a white panel on a coloured section (`solid`). */
+                const tinted = c.background && (c.solid || c.background.toLowerCase() !== '#ffffff');
                 const style = [
                   `--col-w:${c.width}%`,
                   c.tabletWidth != null ? `--col-tw:${c.tabletWidth}%` : '',
