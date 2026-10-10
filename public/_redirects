@@ -41,3 +41,53 @@
 # both forms, because the asset server matches literal paths and will not
 # infer one from the other.
 /vinyl/  /  301
+
+# Blog posts published in October 2026, deleted on 2026-10-10 at the client's
+# request. Each address 301s to the blog index so links and search results land
+# on a live page. The posts are recoverable from the deleted_posts table in D1.
+/gloss-vs-satin-vs-matte-car-wrap-finish/  /blog/  301
+/gloss-vs-satin-vs-matte-car-wrap-finish   /blog/  301
+/prepare-your-truck-for-a-wrap/  /blog/  301
+/prepare-your-truck-for-a-wrap   /blog/  301
+/truck-wrap-preparation-work-truck-checklist/  /blog/  301
+/truck-wrap-preparation-work-truck-checklist   /blog/  301
+/cast-vs-calendered-vinyl-wrap-film/  /blog/  301
+/cast-vs-calendered-vinyl-wrap-film   /blog/  301
+/vehicle-wrap-laminate-printed-wraps/  /blog/  301
+/vehicle-wrap-laminate-printed-wraps   /blog/  301
+/chrome-delete-wrap-guide/  /blog/  301
+/chrome-delete-wrap-guide   /blog/  301
+/van-wrap-design-sprinter-transit-promaster/  /blog/  301
+/van-wrap-design-sprinter-transit-promaster   /blog/  301
+/box-truck-wrap-guide-rivets-corrugations/  /blog/  301
+/box-truck-wrap-guide-rivets-corrugations   /blog/  301
+/black-roof-wrap-guide/  /blog/  301
+/black-roof-wrap-guide   /blog/  301
+/does-a-vinyl-wrap-protect-paint/  /blog/  301
+/does-a-vinyl-wrap-protect-paint   /blog/  301
+/pickup-truck-partial-wrap-ideas/  /blog/  301
+/pickup-truck-partial-wrap-ideas   /blog/  301
+/service-body-truck-wrap/  /blog/  301
+/service-body-truck-wrap   /blog/  301
+/camper-van-wrap-guide/  /blog/  301
+/camper-van-wrap-guide   /blog/  301
+/vehicle-wrap-warranty-explained/  /blog/  301
+/vehicle-wrap-warranty-explained   /blog/  301
+/vinyl-wrap-repair-scratches-tears-lifting/  /blog/  301
+/vinyl-wrap-repair-scratches-tears-lifting   /blog/  301
+/carbon-fibre-vinyl-wrap-guide/  /blog/  301
+/carbon-fibre-vinyl-wrap-guide   /blog/  301
+/wrap-colour-matching-brand-colours/  /blog/  301
+/wrap-colour-matching-brand-colours   /blog/  301
+/wrap-over-ppf-or-ceramic-coating/  /blog/  301
+/wrap-over-ppf-or-ceramic-coating   /blog/  301
+/fleet-wrap-rollout-planning-toronto/  /blog/  301
+/fleet-wrap-rollout-planning-toronto   /blog/  301
+/wraps-for-toronto-businesses/  /blog/  301
+/wraps-for-toronto-businesses   /blog/  301
+/replace-a-car-wrap-signs-of-wear-fading/  /blog/  301
+/replace-a-car-wrap-signs-of-wear-fading   /blog/  301
+/pressure-wash-a-wrapped-car/  /blog/  301
+/pressure-wash-a-wrapped-car   /blog/  301
+/how-long-do-car-wraps-last-toronto/  /blog/  301
+/how-long-do-car-wraps-last-toronto   /blog/  301
