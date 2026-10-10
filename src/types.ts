@@ -287,6 +287,13 @@ export type Block = (
       /** A form drawn on a dark panel: white option labels and upload note,
           the lime submit. See QuoteForm's `tone`. */
       tone?: 'dark';
+      /** The lime submit (navy text, pink on hover) on an otherwise light
+          form -- the PPF page's white estimate card. See QuoteForm's `accent`. */
+      accent?: 'lime';
+      /** The widget's own width per breakpoint (desktop, tablet <=1024px,
+          mobile <=767px), centred in its section: Elementor's
+          `--container-widget-width`. Absent, the form fills its column. */
+      width?: { d?: string; t?: string; m?: string };
     }
   | { type: 'map'; src: string }
   /* Elementor's filterable gallery. It ships no <img>; the picture URLs are the

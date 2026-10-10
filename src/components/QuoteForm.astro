@@ -62,10 +62,13 @@ export interface Props {
       lime submit that turns green on hover. Without them the labels and the
       note were black on navy and the navy button disappeared into the panel. */
   tone?: 'dark';
+  /** The lime submit alone, for a light form whose original button is lime:
+      the PPF page's white estimate card. Same colours as `tone`'s button. */
+  accent?: 'lime';
 }
 const { variant = 'inline', id = 'quote', products, fields, placeholders, submit,
         photoNote = true, radius, submitSize, rows,
-        submitAlign = 'stretch', half = [], submitCase, tone } = Astro.props;
+        submitAlign = 'stretch', half = [], submitCase, tone, accent } = Astro.props;
 /* Custom properties rather than direct declarations: an inline
    `border-radius` would outrank the stylesheet's own focus and error rules. */
 const formVars = [
@@ -98,7 +101,7 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
     /api/quote answers 308 to /api/quote/. A 308 keeps the method and body, so
     submissions did go through, but every one paid an extra round trip and
     re-uploaded its photographs to follow the redirect. */}
-<form class:list={['qform', `qform--${variant}`, tone && `qform--${tone}`]} data-form={id} method="post" action="/api/quote/" enctype="multipart/form-data" novalidate style={formVars}>
+<form class:list={['qform', `qform--${variant}`, tone && `qform--${tone}`, accent && `qform--${accent}`]} data-form={id} method="post" action="/api/quote/" enctype="multipart/form-data" novalidate style={formVars}>
   {groups.map((g) => (
     <div class={g.length > 1 ? 'pair' : 'solo'}>
     {g.map((f) => (
@@ -329,9 +332,12 @@ const ph = (f: string, fallback: string) => placeholders?.[f] ?? fallback;
   /* Lime, as on the original, with navy text: the original's white on lime is
      1.9:1, and the site's contrast pass (global.css) gives every lime button
      navy text (6.9:1). On hover it takes that pass's pink with white. */
-  .qform--dark .qbtn { background-color: var(--e-global-color-a8178e9); color: #15334c; }
+  .qform--dark .qbtn,
+  .qform--lime .qbtn { background-color: var(--e-global-color-a8178e9); color: #15334c; }
   .qform--dark .qbtn:hover,
-  .qform--dark .qbtn:focus-visible { background-color: #d6007d; color: #ffffff !important; }
+  .qform--dark .qbtn:focus-visible,
+  .qform--lime .qbtn:hover,
+  .qform--lime .qbtn:focus-visible { background-color: #d6007d; color: #ffffff !important; }
 
   .sr-only {
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
