@@ -76,6 +76,11 @@ const images = await db
   }>();
 
 const saved = Astro.url.searchParams.get('saved');
+const added = Astro.url.searchParams.get('added');
+const addError = Astro.url.searchParams.get('add_error');
+/* The tabs a new photograph can be filed under; "All" is every photograph,
+   not a category of its own. */
+const tabs = filters.filter((f) => f.index !== 'all');
 const pageLink = (n: number) => `/admin/gallery/${id}/${n > 1 ? `?p=${n}` : ''}`;
 
 /* The filter tag is stored as the index the block uses ("0", "1"), which means
@@ -98,6 +103,49 @@ const tagLabel = (tag: string | null) =>
   </div>
 
   {saved && <p class="ok-note">Saved {saved} {Number(saved) === 1 ? 'photograph' : 'photographs'}.</p>}
+  {added && Number(added) > 0 && (
+    <p class="ok-note">
+      Added {added} {Number(added) === 1 ? 'photograph' : 'photographs'} to the front of the gallery.
+      They appear on the site after the next <a href="/admin/deploy/">publish</a>.
+    </p>
+  )}
+  {addError && <p class="err-note" role="alert">{addError}</p>}
+
+  {/* Add photographs. Multipart, so it posts on its own, separately from the
+      edits below; the route sends it back here either way. */}
+  <form method="post" action="/api/admin/gallery/add/" enctype="multipart/form-data" class="card add">
+    <input type="hidden" name="csrf" value={session.csrfToken} />
+    <input type="hidden" name="gallery_id" value={gallery.id} />
+    <h2>Add photographs</h2>
+    <div class="add-grid">
+      <label class="add-files">
+        <span>Photographs <em>JPEG, PNG, WebP, GIF or AVIF; up to 10 at a time, 12MB each</em></span>
+        <input type="file" name="files" multiple required
+          accept="image/jpeg,image/png,image/webp,image/gif,image/avif" />
+      </label>
+      {tabs.length > 0 && (
+        <label>
+          <span>Category <em>the tab they appear under</em></span>
+          <select name="tag" required>
+            <option value="" selected disabled>Choose a category</option>
+            {tabs.map((f) => <option value={f.index}>{f.label}</option>)}
+          </select>
+        </label>
+      )}
+      <label>
+        <span>Alt text <em>what the photographs show; edit each one below afterwards</em></span>
+        <input type="text" name="alt" maxlength="500" placeholder="e.g. Ford Transit full van wrap, side view" />
+      </label>
+      <label>
+        <span>Caption <em>optional</em></span>
+        <input type="text" name="title" maxlength="500" />
+      </label>
+    </div>
+    <div class="actions">
+      <button type="submit" class="primary">Add to gallery</button>
+      <span class="muted">New photographs go to the front{tabs.length > 0 ? ', under the category chosen and under All' : ''}.</span>
+    </div>
+  </form>
 
   <form method="post" action="/api/admin/gallery/save/">
     <input type="hidden" name="csrf" value={session.csrfToken} />
@@ -190,6 +238,23 @@ const tagLabel = (tag: string | null) =>
   .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
   .empty { color: var(--muted); margin: 0; }
   .muted { color: var(--muted); font-size: 13px; }
+
+  .err-note {
+    margin: 0 0 16px; padding: 10px 14px; border-radius: 8px;
+    background: #fdecec; color: #8a1c1c; font-size: 14px;
+  }
+  .card.add { margin-bottom: 20px; }
+  .card.add h2 { margin: 0 0 12px; font-size: 16px; }
+  .add-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .add-grid label { display: flex; flex-direction: column; gap: 3px; }
+  .add-grid label > span { font-size: 12px; color: var(--muted); }
+  .add-grid label > span em { font-style: normal; opacity: 0.75; }
+  .add-grid input[type='text'], .add-grid select {
+    padding: 7px 9px; font: inherit; font-size: 14px;
+    border: 1px solid #c6ccd4; border-radius: 6px; background: #fff; width: 100%;
+  }
+  .add-grid .add-files { grid-column: 1 / -1; }
+  @media (max-width: 640px) { .add-grid { grid-template-columns: 1fr; } }
 
   .ok-note {
     margin: 0 0 16px; padding: 10px 14px; border-radius: 8px;

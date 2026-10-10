@@ -29,7 +29,7 @@ type StoredGallery = {
   eid: string;
   label: string | null;
   filters: { index: string; label: string }[];
-  items: { src: string; title?: string; tag?: string; alt?: string }[];
+  items: { src: string; title?: string; tag?: string; alt?: string; w?: number; h?: number }[];
 };
 
 /* The widget id alone is not unique -- 64f41a0 is a gallery on four different

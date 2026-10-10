@@ -226,12 +226,15 @@ const dimsOf = (src: string): [number, number] | undefined =>
  *  was built -- falls back to the upload, which is what happened before.
  *
  *  Run `node scripts/gallery-thumbs.mjs --write` after adding gallery images. */
-const tileOf = (src: string, masonry?: boolean): { src: string; w?: number; h?: number } => {
+const tileOf = (src: string, masonry?: boolean, own?: { w?: number; h?: number }): { src: string; w?: number; h?: number } => {
   const box = masonry ? 300 : 768;
   const hit = (galleryThumbs as unknown as Record<string, [string, number, number]>)[`${box}:${src}`];
   if (hit) return { src: hit[0], w: hit[1], h: hit[2] };
   const d = dimsOf(src);
   if (d) return { src, w: d[0], h: d[1] };
+  /* A photograph added from /admin/gallery/ after the manifests were built
+     carries its own size, read from the file at upload. */
+  if (own?.w && own?.h) return { src, w: own.w, h: own.h };
   /* Last, the size WordPress writes into a resized file's own name, as
      thumbBox reads it for cards. /personal-branding/'s top gallery serves
      `...-768x461.webp` files with no entry in either manifest, so its tiles
@@ -1691,8 +1694,10 @@ const secMargins = (() => {
 
                    Either way the upload stays reachable: data-full is what the
                    lightbox opens. */
-                const bt = inColumn ? tileOf(p.before.src) : { src: p.before.src, ...dimsPair(p.before.src) };
-                const at = inColumn ? tileOf(p.after.src) : { src: p.after.src, ...dimsPair(p.after.src) };
+                const own = (x: { width?: number | null; height?: number | null }) =>
+                  ({ w: x.width ?? undefined, h: x.height ?? undefined });
+                const bt = inColumn ? tileOf(p.before.src, false, own(p.before)) : { src: p.before.src, ...dimsPair(p.before.src) };
+                const at = inColumn ? tileOf(p.after.src, false, own(p.after)) : { src: p.after.src, ...dimsPair(p.after.src) };
                 return (
                 <div class="compare-pair">
                   <figure>
@@ -1740,7 +1745,7 @@ const secMargins = (() => {
                 data-rh-m={b.rowHeight?.m}
               >
                 {b.items.map((it) => {
-                  const t = tileOf(it.src, b.masonry || !!b.rowHeight);
+                  const t = tileOf(it.src, b.masonry || !!b.rowHeight, it);
                   return (
                   <figure class="fgal-item" data-tag={it.tag}>
                     {/* The link carries the full-size upload, as the original's

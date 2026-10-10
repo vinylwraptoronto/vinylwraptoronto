@@ -1,0 +1,231 @@
+---
+/**
+ * Before & after: add pairs to /our-work/, and look after the ones added.
+ *
+ * The page's own 69 pairs are part of its design data and stay as they are;
+ * this screen holds the pairs added since, which the build puts in front of
+ * them (src/lib/before-after.ts). Nothing is live until the next publish.
+ */
+import Admin from '../../../layouts/Admin.astro';
+import { applyAdminHeaders } from '../../../lib/auth';
+import { guardPage } from '../../../lib/adminroute';
+import { img } from '../../../lib/img';
+
+export const prerender = false;
+
+applyAdminHeaders(Astro.response.headers);
+const guard = await guardPage(Astro.locals, Astro.cookies, Astro.url);
+if (!guard.ok) return guard.response;
+const { db, session } = guard.ctx;
+
+const rows = await db
+  .prepare(
+    `SELECT id, title, href, before_src, before_alt, after_src, after_alt, hidden
+       FROM before_after
+      WHERE page_slug = 'our-work'
+      ORDER BY position, id`,
+  )
+  .all<{
+    id: number;
+    title: string;
+    href: string | null;
+    before_src: string;
+    before_alt: string | null;
+    after_src: string;
+    after_alt: string | null;
+    hidden: number;
+  }>();
+const pairs = rows.results;
+
+const q = Astro.url.searchParams;
+const added = q.get('added');
+const saved = q.get('saved');
+const addError = q.get('add_error');
+const saveError = q.get('save_error');
+const swapped = q.get('swapped');
+---
+
+<Admin title="Before & after" user={{ username: session.username, csrfToken: session.csrfToken }}>
+  <h1>Before &amp; after</h1>
+  <p class="lede">
+    Pairs added here appear at the top of
+    <a href="/our-work/" target="_blank" rel="noreferrer">/our-work/</a>, in front of its original 69,
+    as the same slider cards. They go live on the next <a href="/admin/deploy/">publish</a>.
+  </p>
+
+  {added && <p class="ok-note">Pair added. Publish to put it on the site.</p>}
+  {swapped && <p class="ok-note">Swapped before and after. Publish to put it on the site.</p>}
+  {saved && <p class="ok-note">Saved {saved} {Number(saved) === 1 ? 'pair' : 'pairs'}.</p>}
+  {addError && <p class="err-note" role="alert">{addError}</p>}
+  {saveError && <p class="err-note" role="alert">{saveError}</p>}
+
+  <form method="post" action="/api/admin/before-after/add/" enctype="multipart/form-data" class="card add">
+    <input type="hidden" name="csrf" value={session.csrfToken} />
+    <h2>Add a pair</h2>
+    {/* Before on the left, after on the right -- the way round the slider
+        draws them -- each in its own labelled box, with a preview of the file
+        picked so a pair cannot go in back to front unnoticed. */}
+    <div class="ba-slots">
+      <label class="slot slot--before">
+        <span class="slot-badge">Before</span>
+        <strong>Before photograph</strong>
+        <span class="slot-help">The vehicle <b>as it came in</b>, before the wrap. Shown on the left of the slider.</span>
+        <img class="slot-preview" alt="" hidden />
+        <input type="file" name="before" required data-preview accept="image/jpeg,image/png,image/webp,image/gif,image/avif" />
+      </label>
+      <label class="slot slot--after">
+        <span class="slot-badge">After</span>
+        <strong>After photograph</strong>
+        <span class="slot-help">The <b>finished wrap</b>. Shown on the right of the slider.</span>
+        <img class="slot-preview" alt="" hidden />
+        <input type="file" name="after" required data-preview accept="image/jpeg,image/png,image/webp,image/gif,image/avif" />
+      </label>
+    </div>
+    <p class="muted slot-note">JPEG, PNG, WebP, GIF or AVIF, up to 12MB each. Take both from the same angle so the slider lines up.</p>
+    <div class="ba-grid">
+      <label>
+        <span>Title <em>shown under the slider</em></span>
+        <input type="text" name="title" required maxlength="200" placeholder="e.g. BMW X4 – Full Wrap" />
+      </label>
+      <label>
+        <span>Project page <em>optional; adds the title link and View Pictures</em></span>
+        <input type="text" name="href" maxlength="300" placeholder="/wraps-before-after/bmw-x4-full-wrap/" />
+      </label>
+      <label>
+        <span>Before alt text <em>optional; defaults to the title + "before"</em></span>
+        <input type="text" name="before_alt" maxlength="500" />
+      </label>
+      <label>
+        <span>After alt text <em>optional; defaults to the title + "after"</em></span>
+        <input type="text" name="after_alt" maxlength="500" />
+      </label>
+    </div>
+    <div class="actions">
+      <button type="submit" class="primary">Add pair</button>
+      <span class="muted">New pairs go first.</span>
+    </div>
+  </form>
+
+  <form method="post" action="/api/admin/before-after/save/">
+    <input type="hidden" name="csrf" value={session.csrfToken} />
+    <div class="card">
+      <h2>Added pairs</h2>
+      {pairs.length === 0 ? (
+        <p class="empty">None yet. The 69 pairs the page was built with are not listed here.</p>
+      ) : (
+        <ul class="pairs">
+          {pairs.map((p, i) => (
+            <li class={p.hidden ? 'is-hidden' : ''}>
+              <input type="hidden" name="id" value={p.id} />
+              <div class="thumbs">
+                <figure><img src={img(p.before_src)} alt="" width="120" height="80" loading="lazy" decoding="async" /><figcaption class="slot-badge">Before</figcaption></figure>
+                <figure><img src={img(p.after_src)} alt="" width="120" height="80" loading="lazy" decoding="async" /><figcaption class="slot-badge slot-badge--after">After</figcaption></figure>
+              </div>
+              <div class="fields">
+                <div class="two">
+                  <label><span>Title</span><input type="text" name={`title_${p.id}`} value={p.title} required maxlength="200" /></label>
+                  <label><span>Project page</span><input type="text" name={`href_${p.id}`} value={p.href ?? ''} maxlength="300" /></label>
+                  <label><span>Before alt text</span><input type="text" name={`before_alt_${p.id}`} value={p.before_alt ?? ''} maxlength="500" /></label>
+                  <label><span>After alt text</span><input type="text" name={`after_alt_${p.id}`} value={p.after_alt ?? ''} maxlength="500" /></label>
+                </div>
+                <div class="minor">
+                  <label class="shown">
+                    <input type="checkbox" name={`shown_${p.id}`} checked={!p.hidden} />
+                    <span>Show on the site</span>
+                  </label>
+                  <span class="move">
+                    <button type="submit" name="move" value={`up:${p.id}`} disabled={i === 0} aria-label="Move earlier" title="Move earlier">↑</button>
+                    <button type="submit" name="move" value={`down:${p.id}`} disabled={i === pairs.length - 1} aria-label="Move later" title="Move later">↓</button>
+                  </span>
+                  {/* For a pair that went in the wrong way round. */}
+                  <button type="submit" class="swap" name="move" value={`swap:${p.id}`}>Swap before &amp; after</button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+    {pairs.length > 0 && (
+      <div class="actions">
+        <button type="submit" class="primary">Save changes</button>
+      </div>
+    )}
+  </form>
+</Admin>
+
+<script>
+  // Show the picked file in its box, so before and after can be checked at a
+  // glance before the pair is added. Purely a preview: the form posts the file.
+  document.querySelectorAll<HTMLInputElement>('input[type=file][data-preview]').forEach((input) => {
+    input.addEventListener('change', () => {
+      const img = input.parentElement?.querySelector<HTMLImageElement>('.slot-preview');
+      const file = input.files?.[0];
+      if (!img) return;
+      if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+      if (file) { img.src = URL.createObjectURL(file); img.hidden = false; }
+      else { img.removeAttribute('src'); img.hidden = true; }
+    });
+  });
+</script>
+
+<style is:global>
+  .ok-note { margin: 0 0 16px; padding: 10px 14px; border-radius: 8px; background: #e6f4ee; color: #14603f; font-size: 14px; }
+  .err-note { margin: 0 0 16px; padding: 10px 14px; border-radius: 8px; background: #fdecec; color: #8a1c1c; font-size: 14px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .empty { color: var(--muted); margin: 0; }
+  .card h2 { margin: 0 0 12px; font-size: 16px; }
+  .card.add { margin-bottom: 20px; }
+  .ba-grid, .pairs .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .ba-grid label, .pairs label { display: flex; flex-direction: column; gap: 3px; }
+  .ba-grid label > span, .pairs label > span { font-size: 12px; color: var(--muted); }
+  .ba-grid label > span em { font-style: normal; opacity: 0.75; }
+  .ba-grid input[type='text'], .pairs input[type='text'] {
+    padding: 7px 9px; font: inherit; font-size: 14px;
+    border: 1px solid #c6ccd4; border-radius: 6px; background: #fff; width: 100%;
+  }
+  .actions { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+  .pairs { list-style: none; margin: 0; padding: 0; }
+  .pairs li { display: flex; gap: 14px; padding: 14px 0; border-top: 1px solid #e7eaee; align-items: flex-start; }
+  .pairs li:first-child { border-top: 0; padding-top: 0; }
+  .pairs li.is-hidden { opacity: 0.55; }
+  .pairs .thumbs { display: flex; flex-direction: column; gap: 6px; flex: none; }
+  .pairs .thumbs img { width: 120px; height: 80px; object-fit: cover; border-radius: 6px; background: #eef0f3; }
+  .pairs .fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+  .pairs .minor { display: flex; gap: 14px; align-items: center; }
+  .pairs .shown { flex-direction: row !important; align-items: center; gap: 6px; }
+  .pairs .shown span { font-size: 13px; color: inherit !important; }
+  .move button {
+    font: inherit; line-height: 1; padding: 5px 9px; margin-left: 4px;
+    border: 1px solid #c6ccd4; border-radius: 6px; background: #fff; cursor: pointer;
+  }
+  .move button[disabled] { opacity: 0.4; cursor: default; }
+  .ba-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 6px; }
+  .slot {
+    position: relative; display: flex; flex-direction: column; gap: 6px;
+    padding: 34px 14px 14px; border: 2px dashed #c6ccd4; border-radius: 10px; background: #fafbfc;
+  }
+  .slot--before { border-color: #ff0099; }
+  .slot--after { border-color: #14a278; }
+  .slot strong { font-size: 15px; }
+  .slot-help { font-size: 13px; color: var(--muted); }
+  .slot-preview { width: 100%; max-height: 180px; object-fit: contain; border-radius: 6px; background: #eef0f3; }
+  .slot-note { margin: 0 0 14px; }
+  .slot-badge {
+    position: absolute; top: 8px; left: 8px; padding: 3px 9px; border-radius: 4px;
+    background: #d6007d; color: #fff; font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
+  }
+  .slot--after .slot-badge, .slot-badge--after { background: #0b6b4f; }
+  .pairs .thumbs figure { position: relative; margin: 0; }
+  .pairs .thumbs .slot-badge { top: 4px; left: 4px; padding: 1px 6px; font-size: 11px; }
+  .swap {
+    font: inherit; font-size: 13px; padding: 5px 10px;
+    border: 1px solid #c6ccd4; border-radius: 6px; background: #fff; cursor: pointer;
+  }
+  @media (max-width: 640px) {
+    .ba-slots { grid-template-columns: 1fr; }
+    .ba-grid, .pairs .two { grid-template-columns: 1fr; }
+    .pairs li { flex-direction: column; }
+    .pairs .thumbs { flex-direction: row; }
+  }
+</style>

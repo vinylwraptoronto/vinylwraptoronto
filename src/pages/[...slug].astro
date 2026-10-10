@@ -16,6 +16,7 @@ import pageSeo from '../data/page-seo.json';
 import blogIndex from '../data/blog-index.json';
 import { applyPageSeo, type PageSeoOverride } from '../lib/pageseo';
 import { withGalleries } from '../lib/gallery';
+import { withBeforeAfter } from '../lib/before-after';
 import { authorSections, blogPageMeta, blogSections, categorySections, pageCount, portedSections, PER_PAGE, type BlogEntry } from '../lib/bloglist';
 /* Any one category listing: they are all Elementor archive template 18965,
    which the author archives share. See authorSections. */
@@ -107,8 +108,10 @@ const { page: raw, pageNum = 1 } = Astro.props as { page: PageData; pageNum?: nu
    has rows -- a gallery it does not know about keeps the pictures the page was
    ported with. Posts are unaffected: their galleries are already in D1, inside
    the post's own sections. */
+/* Before/after pairs added from /admin/before-after/ go in front of the page's
+   own (src/lib/before-after.ts) -- /our-work/'s cards. */
 const withSeo = applyPageSeo(
-  withGalleries(raw),
+  withBeforeAfter(withGalleries(raw)),
   (pageSeo as Record<string, PageSeoOverride>)[raw.slug],
 );
 

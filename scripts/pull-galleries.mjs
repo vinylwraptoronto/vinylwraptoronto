@@ -8,8 +8,8 @@
  * pages with empty galleries, and a content change is reviewable as a diff
  * before it goes out.
  *
- * It refuses to overwrite a good snapshot with a smaller one unless
- * ALLOW_GALLERY_SHRINK is set. "The query returned fewer rows than expected"
+ * It refuses to overwrite a good snapshot when a gallery or more than a quarter
+ * of the photographs has gone, unless ALLOW_GALLERY_SHRINK is set. "The query returned fewer rows than expected"
  * and "somebody deleted the portfolio" look identical from in here, and one of
  * those is 341 photographs.
  */
@@ -73,7 +73,7 @@ let galleries, images;
 try {
   galleries = await d1('SELECT id, page_slug, eid, label, filters FROM galleries ORDER BY id');
   images = await d1(
-    `SELECT gallery_id, src, title, alt, tag
+    `SELECT gallery_id, src, title, alt, tag, width, height
        FROM gallery_images
       WHERE hidden = 0
       ORDER BY gallery_id, position, id`,
@@ -90,6 +90,10 @@ for (const row of images) {
     title: row.title ?? undefined,
     tag: row.tag ?? undefined,
     alt: row.alt ?? undefined,
+    /* Only photographs added from /admin/gallery/ carry a size; the imported
+       ones are measured in src/data/img-dims.json. */
+    w: row.width ?? undefined,
+    h: row.height ?? undefined,
   });
 }
 
@@ -112,9 +116,13 @@ const snapshot = galleries.map((g) => {
 
 const total = countImages(snapshot);
 const had = existing();
+/* Losing a gallery, or more than a quarter of the photographs, is what a bad
+   query or a damaged table looks like. Fewer by a handful is what hiding a
+   photograph in /admin/gallery/ looks like -- which, held to "never smaller",
+   could never reach the site. */
 if (had?.length && !process.env.ALLOW_GALLERY_SHRINK) {
   const before = countImages(had);
-  if (snapshot.length < had.length || total < before) {
+  if (snapshot.length < had.length || total < before * 0.75) {
     bail(
       `D1 returned ${snapshot.length} galleries / ${total} images, ` +
         `down from ${had.length} / ${before}. Set ALLOW_GALLERY_SHRINK=1 if that is intended.`,

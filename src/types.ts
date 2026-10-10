@@ -307,7 +307,9 @@ export type Block = (
   | ({
       type: 'filtergallery';
       filters: { index: string; label: string }[];
-      items: { src: string; title?: string; tag?: string; alt?: string }[];
+      /** `w`/`h`: the file's pixel size, on photographs added from
+          /admin/gallery/ (read at upload); the rest are in img-dims.json. */
+      items: { src: string; title?: string; tag?: string; alt?: string; w?: number; h?: number }[];
     } & GalleryGrid)
   | {
       type: 'postnav';
@@ -392,8 +394,10 @@ export type Block = (
       /* The jet-image-comparison before/after slider on wraps-before-after. */
       type: 'compare';
       pairs: {
-        before: { src: string; alt: string };
-        after: { src: string; alt: string };
+        /* width/height: the file's size, on pairs added from
+           /admin/before-after/ (read at upload); the rest use img-dims.json. */
+        before: { src: string; alt: string; width?: number | null; height?: number | null };
+        after: { src: string; alt: string; width?: number | null; height?: number | null };
         beforeLabel: string;
         afterLabel: string;
       }[];
