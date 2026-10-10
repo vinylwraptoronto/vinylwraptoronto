@@ -209,6 +209,9 @@
     border-top: 2px solid #0f172a;
     border-right: 2px solid #0f172a;
   }
+  /* On hover the controller turns near-black (above), where the dark
+     chevrons disappeared into it; they go white with it. */
+  :global(.compare-pair[data-juxtapose]:hover .jx-arrow::before) { border-color: #fff; }
   :global(.jx-arrow--prev::before) { transform: rotate(-135deg); }
   :global(.jx-arrow--next::before) { transform: rotate(45deg); }
 </style>
