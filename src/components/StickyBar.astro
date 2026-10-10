@@ -94,6 +94,11 @@ import { site } from '../data/site';
     pointer-events: auto;
     animation: sb-fade-in-up 1.25s both;
   }
+  /* Stood aside while it would paint over a control that opted in with
+     `data-sb-avoid` (the dark /contact/ form's submit button; see the script
+     below). `opacity` plus `inert`, not display: the bar keeps its box, so nothing
+     around it moves and its sticky release point is untouched. */
+  .sb-wrap[data-sb-yield] { opacity: 0; pointer-events: none; }
   @keyframes sb-fade-in-up {
     /* No opacity ramp: see the clip-path note above -- a partially
        transparent pill measured below 4.5:1 contrast mid-fade. */
@@ -228,5 +233,49 @@ import { site } from '../data/site';
 
 <script>
   const bar = document.querySelector<HTMLElement>('[data-sticky-bar]');
-  if (bar) window.setTimeout(() => bar.setAttribute('data-shown', ''), 1000);
+  if (bar) {
+    window.setTimeout(() => bar.setAttribute('data-shown', ''), 1000);
+
+    // Contextual accommodation: the pill is pinned over the viewport's bottom
+    // band, so at some viewport heights a control parks under it at scroll 0
+    // (the /contact/ dark form's submit does, on roughly 750-840px tall
+    // phones). No fixed margin avoids that at every height, so a control that
+    // sets `data-sb-avoid` is measured against the pill's real rect and the
+    // pill steps aside only while the two actually overlap. Pages without such
+    // a control never run any of this.
+    const guarded = Array.from(document.querySelectorAll<HTMLElement>('[data-sb-avoid]'));
+    const pill = bar.querySelector<HTMLElement>('.sb-pill');
+    if (guarded.length && pill) {
+      let frame = 0;
+      const update = () => {
+        frame = 0;
+        if (!bar.hasAttribute('data-shown')) return;
+        const p = pill.getBoundingClientRect();
+        const target = guarded.find((el) => {
+          const r = el.getBoundingClientRect();
+          return r.bottom > p.top + 0.5 && r.top < p.bottom - 0.5 &&
+                 r.right > p.left + 0.5 && r.left < p.right - 0.5 &&
+                 r.bottom > 0 && r.top < innerHeight;
+        });
+        const hit = !!target;
+        // `inert` on a subtree holding focus drops focus to <body>. Hand it to
+        // the control the pill is yielding to first (preventScroll, so this
+        // cannot trigger another scroll -> update pass).
+        if (target && bar.contains(document.activeElement)) {
+          target.focus({ preventScroll: true });
+        }
+        bar.toggleAttribute('data-sb-yield', hit);
+        bar.toggleAttribute('inert', hit);
+      };
+      const queue = () => { if (!frame) frame = requestAnimationFrame(update); };
+      addEventListener('scroll', queue, { passive: true });
+      addEventListener('resize', queue);
+      window.visualViewport?.addEventListener('resize', queue);
+      // Late layout shifts (fonts, images) move the control without a scroll.
+      if ('ResizeObserver' in window) new ResizeObserver(queue).observe(document.body);
+      // The pill's rect is only final once its entrance animation has ended.
+      bar.addEventListener('animationend', queue);
+      window.setTimeout(queue, 2400);
+    }
+  }
 </script>

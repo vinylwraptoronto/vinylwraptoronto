@@ -30,6 +30,30 @@ _spec.loader.exec_module(layers)
 from lxml import html as lhtml
 
 
+# Deliberate departures from the source CSS, re-applied on every regeneration so
+# they cannot be lost. Keyed by section id -> breakpoint -> declarations.
+#
+# 5e6ea08 is the /contact/ H1 section. The source gives it 50px above and below
+# at every width, which on a phone parks the dark form's submit button
+# (.qform--dark > .qbtn) 1px above the fixed sticky-booking pill at 390x844 and
+# lets the pill cover it at shorter viewports. Below 768px only, 28px above and
+# 10px below lifts the button ~62px clear (40px target fully hit-testable at
+# 390x844 and 412x915). The pill itself is global and left untouched; keyboard
+# focus is kept clear of it by the 72px scroll-padding-bottom already on <html>.
+# The margins only shift where the button sits; they cannot keep it clear of
+# the pill at every viewport height, so the submit also carries `data-sb-avoid`
+# (QuoteForm, dark tone) and StickyBar hides the pill while their rects overlap.
+OVERRIDES = {
+    "5e6ea08": {"m": "margin-bottom:10px;margin-top:28px"},
+}
+
+
+def apply_overrides(keep):
+    for sid, bps in OVERRIDES.items():
+        keep.setdefault(sid, {}).update(bps)
+    return keep
+
+
 def sides(v):
     p = v.split()
     if len(p) == 1:
@@ -79,6 +103,7 @@ def main():
     keep = {k: {bp: ";".join(f"{p}:{v}" for p, v in sorted(d.items())) for bp, d in bps.items() if d}
             for k, bps in out.items()
             if any(not zero(v) for d in bps.values() for v in d.values())}
+    apply_overrides(keep)
     with open(OUT, "w", encoding="utf8") as fh:
         json.dump(keep, fh, indent=1, sort_keys=True)
         fh.write("\n")
