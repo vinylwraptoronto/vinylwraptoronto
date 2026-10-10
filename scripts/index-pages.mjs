@@ -59,9 +59,29 @@ async function d1(sql, params = []) {
 const esc = (s) =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+/* The 3-year warranty panels the page renderer drops (src/lib/warranty.ts):
+   a feature box naming it, and a "Warranty" heading over a list about it.
+   Indexed, they would put a claim the page no longer makes in front of the
+   analyser. */
+const THREE_YEAR = /\b(?:3|three)[\s-]*years?\b[^.]{0,20}?\bwarrant/i;
+const isWarrantyFeature = (b) => b?.type === 'feature' && THREE_YEAR.test(`${b.title ?? ''} ${b.text ?? ''}`);
+const isWarrantyHeading = (b, next) =>
+  b?.type === 'heading' &&
+  /^\s*warranty\s*$/i.test(b.text ?? '') &&
+  next?.type === 'list' &&
+  next.items?.length > 0 &&
+  next.items.every((i) => THREE_YEAR.test(i.text ?? ''));
+
 function collect(node, out = []) {
   if (Array.isArray(node)) {
-    for (const v of node) collect(v, out);
+    for (let i = 0; i < node.length; i++) {
+      if (isWarrantyFeature(node[i])) continue;
+      if (isWarrantyHeading(node[i], node[i + 1])) {
+        i++;
+        continue;
+      }
+      collect(node[i], out);
+    }
   } else if (node && typeof node === 'object') {
     switch (node.type) {
       case 'heading': {

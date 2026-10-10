@@ -5,11 +5,11 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/pull-posts.mjs && node scripts/pull-galleries.mjs && astro build && node scripts/subset-roboto-css.mjs && node scripts/subset-fontawesome-css.mjs && node scripts/minify-static-css.mjs && node scripts/inline-homepage-css.mjs && node scripts/inline-critical-fonts.mjs && node scripts/trim-route-fonts.mjs && node scripts/check-seo.mjs && node scripts/check-phone.mjs",
+    "build": "node scripts/pull-posts.mjs && node scripts/pull-galleries.mjs && astro build && node scripts/subset-roboto-css.mjs && node scripts/subset-fontawesome-css.mjs && node scripts/minify-static-css.mjs && node scripts/inline-homepage-css.mjs && node scripts/inline-critical-fonts.mjs && node scripts/trim-route-fonts.mjs && node scripts/check-seo.mjs && node scripts/check-phone.mjs && node scripts/check-warranty.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "deploy": "bash scripts/deploy.sh",
-    "check": "npm run check:astro && npm run check:browser && npm run check:routes && npm run check:seo && npm run check:phone && npm run check:a11y && npm run check:tracking && npm run check:lighthouse",
+    "check": "npm run check:astro && npm run check:browser && npm run check:routes && npm run check:seo && npm run check:phone && npm run check:warranty && npm run check:a11y && npm run check:tracking && npm run check:lighthouse",
     "check:astro": "astro check",
     "check:browser": "node scripts/verify.mjs && node scripts/behaviour.mjs",
     "check:routes": "node scripts/sweep.mjs",
@@ -21,7 +21,8 @@
     "galleries:pull": "node scripts/pull-galleries.mjs",
     "admin:user": "node scripts/admin-user.mjs",
     "check:seo": "node scripts/check-seo.mjs",
-    "check:phone": "node scripts/check-phone.mjs"
+    "check:phone": "node scripts/check-phone.mjs",
+    "check:warranty": "node scripts/check-warranty.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.10",
