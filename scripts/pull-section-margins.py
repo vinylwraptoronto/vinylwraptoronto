@@ -40,6 +40,9 @@ from lxml import html as lhtml
 # 10px below lifts the button ~62px clear (40px target fully hit-testable at
 # 390x844 and 412x915). The pill itself is global and left untouched; keyboard
 # focus is kept clear of it by the 72px scroll-padding-bottom already on <html>.
+# The margins only shift where the button sits; they cannot keep it clear of
+# the pill at every viewport height, so the submit also carries `data-sb-avoid`
+# (QuoteForm, dark tone) and StickyBar hides the pill while their rects overlap.
 OVERRIDES = {
     "5e6ea08": {"m": "margin-bottom:10px;margin-top:28px"},
 }

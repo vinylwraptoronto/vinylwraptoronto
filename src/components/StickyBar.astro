@@ -251,12 +251,19 @@ import { site } from '../data/site';
         frame = 0;
         if (!bar.hasAttribute('data-shown')) return;
         const p = pill.getBoundingClientRect();
-        const hit = guarded.some((el) => {
+        const target = guarded.find((el) => {
           const r = el.getBoundingClientRect();
           return r.bottom > p.top + 0.5 && r.top < p.bottom - 0.5 &&
                  r.right > p.left + 0.5 && r.left < p.right - 0.5 &&
                  r.bottom > 0 && r.top < innerHeight;
         });
+        const hit = !!target;
+        // `inert` on a subtree holding focus drops focus to <body>. Hand it to
+        // the control the pill is yielding to first (preventScroll, so this
+        // cannot trigger another scroll -> update pass).
+        if (target && bar.contains(document.activeElement)) {
+          target.focus({ preventScroll: true });
+        }
         bar.toggleAttribute('data-sb-yield', hit);
         bar.toggleAttribute('inert', hit);
       };
