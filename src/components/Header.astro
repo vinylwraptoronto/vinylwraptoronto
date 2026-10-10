@@ -223,9 +223,11 @@ const ownChildren = (c: NavItem) => c.children.filter((g) => g.href !== c.href);
   .brand { flex: 0 0 auto; display: block; text-align: start; }
   .brand img { width: min(153px, 0.12 * min(1400px, 100vw - 40px)); height: auto; display: block; }
 
-  /* The menu spreads across the room between the logo and the "I want to"
-     column, with the same 35px at either end, rather than packing against
-     the button and leaving a hole after the logo.
+  /* The menu sits as one group, centred in the room between the logo and the
+     "I want to" column: the items at the original's own spacing (20px between
+     labels, 40px after one with a caret), with equal space either side of the
+     group rather than a hole after the logo. Spread edge to edge, the items
+     came out 77-97px apart at full width and read as unrelated words.
 
      min-width 0 so a nav that is too wide gives way rather than pushing the
      logo; the steps further down keep it from ever being too wide. */
@@ -237,7 +239,7 @@ const ownChildren = (c: NavItem) => c.children.filter((g) => g.href !== c.href);
   .nav > ul {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     flex-wrap: nowrap;
     list-style: none;
     margin: 0;

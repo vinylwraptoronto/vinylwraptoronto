@@ -3,8 +3,8 @@
  *
  * `body_html` is HTML by contract -- the admin editor writes it and the 10XiD
  * portal's tool is told to -- but two posts written through the portal
- * (/pressure-wash-a-wrapped-car/, /replace-a-car-wrap-signs-of-wear-fading/)
- * arrived as Markdown. The sanitizer only knows tags, so it passed the text
+ * (/pressure-wash-a-wrapped-car/, /replace-a-car-wrap-signs-of-wear-fading/,
+ * since deleted) arrived as Markdown. The sanitizer only knows tags, so it passed the text
  * through untouched and the page printed `## headings`, `**bold**`, table
  * pipes and `[label](url)` links as literal characters, with no heading for
  * the table of contents to link to and no clickable link.
