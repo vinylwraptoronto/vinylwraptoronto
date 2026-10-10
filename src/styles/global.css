@@ -208,3 +208,4 @@ label { display: inline-block; line-height: 1; vertical-align: middle; }
    grey text stays grey rather than taking the navy section's white. */
 [style*="background-color:var( --e-global-color-d077a13" i] [style*="background-color:#ffffff" i] [style*=";color:var( --e-global-color-text" i] { color: var(--e-global-color-text) !important; }
 [style*="background-color:var( --e-global-color-d077a13" i] [style*="background-color:#ffffff" i] [style*=";color:#4b4f58" i] { color: #4b4f58 !important; }
+[style*="background-color:var( --e-global-color-d077a13" i] [style*="background-color:#ffffff" i] .feature p { color: var(--e-global-color-text) !important; }
