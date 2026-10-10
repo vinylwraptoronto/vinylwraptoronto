@@ -1104,7 +1104,15 @@ const secMargins = (() => {
           return (
             <p class="btnrow" data-eid={b.eid} data-hide={b.hide?.join(" ")} style={[b.box, b.style].filter(Boolean).join(";") || undefined}>
               {run.map((rb) => (
-                rb.popup ? (
+                /* A tel: link that becomes the popup outside its hours --
+                   see `callHours` and the script in Popups.astro. */
+                rb.callHours && rb.href && rb.popup ? (
+                  <a class:list={['btn', 'btn--hours', { 'btn--icon-right': rb.iconRight }]} href={rb.href}
+                     data-call-hours={JSON.stringify(rb.callHours)} data-call-popup={rb.popup} style={btnStyle(rb)}>
+                    {rb.icon && <i class:list={['btn-ic', rb.icon]} aria-hidden="true"></i>}
+                    {rb.textHtml ? <span set:html={rb.textHtml} /> : rb.text}
+                  </a>
+                ) : rb.popup ? (
                   <button class:list={['btn', { 'btn--icon-right': rb.iconRight }]} type="button" data-popup={rb.popup} style={btnStyle(rb)}>
                     {rb.icon && <i class:list={['btn-ic', rb.icon]} aria-hidden="true"></i>}
                     {rb.textHtml ? <span set:html={rb.textHtml} /> : rb.text}
@@ -3074,6 +3082,9 @@ const secMargins = (() => {
     align-items: center;
   }
   .btn--icon-right .btn-ic { margin-inline-end: 0; margin-inline-start: 8px; }
+  /* Outside its call hours the button opens the enquiry popup, so the phone
+     icon goes: it would promise a call the click no longer makes. */
+  .btn--hours[data-after-hours] .btn-ic { display: none; }
   .feature-ic {
     display: block;
     /* Elementor's icon-box puts 15px between the icon and the content, not 10:

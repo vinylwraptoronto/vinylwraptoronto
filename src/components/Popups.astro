@@ -389,6 +389,58 @@ const { offer = false } = Astro.props;
 </style>
 
 <script>
+  /* Buttons that call during the shop's hours and open the enquiry popup the
+     rest of the time (`callHours` on a button block -- the PPF hero's "Get an
+     Estimate"). The original switches them server-side with JetEngine's
+     Dynamic Visibility; this site is static, so the switch is made here, in
+     Toronto time whatever the visitor's own zone.
+
+     The markup is a plain tel: link, so with no script the button still
+     calls. The decision is taken again at the moment of the click, in the
+     capture phase -- before the popup handler below looks for data-popup --
+     so a page left open across 5pm does the right thing; the timer only keeps
+     the phone icon honest in between. */
+  (() => {
+    const buttons = document.querySelectorAll<HTMLElement>('[data-call-hours]');
+    if (!buttons.length) return;
+    const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Toronto', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    });
+    const mins = (hhmm: string) => {
+      const [h, m] = hhmm.split(':').map(Number);
+      return h * 60 + (m || 0);
+    };
+    const calling = (el: HTMLElement): boolean => {
+      try {
+        const rule = JSON.parse(el.dataset.callHours!) as { days: number[]; from: string; to: string };
+        const parts = Object.fromEntries(fmt.formatToParts(new Date()).map((p) => [p.type, p.value]));
+        const day = DAYS.indexOf(parts.weekday);
+        const now = (Number(parts.hour) % 24) * 60 + Number(parts.minute);
+        return rule.days.includes(day) && now >= mins(rule.from) && now < mins(rule.to);
+      } catch {
+        return true; // a malformed rule leaves the plain link, which calls
+      }
+    };
+    const apply = (el: HTMLElement) => {
+      if (calling(el)) {
+        el.removeAttribute('data-popup');
+        el.removeAttribute('data-after-hours');
+      } else {
+        el.dataset.popup = el.dataset.callPopup!;
+        el.setAttribute('data-after-hours', '');
+      }
+    };
+    const all = () => buttons.forEach(apply);
+    all();
+    setInterval(all, 60_000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) all(); });
+    document.addEventListener('click', (e) => {
+      const el = (e.target as HTMLElement).closest<HTMLElement>('[data-call-hours]');
+      if (el) apply(el);
+    }, true);
+  })();
+
   (() => {
     let lastFocus: HTMLElement | null = null;
 
